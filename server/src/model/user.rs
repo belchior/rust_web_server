@@ -1,4 +1,5 @@
 use super::organization::Organization;
+use crate::cursor_connection::CursorConnection;
 use mongodb::bson;
 use serde::{Deserialize, Serialize};
 
@@ -14,5 +15,5 @@ pub struct User {
   pub name: String,
   pub website_url: String,
   #[serde(skip_deserializing, skip_serializing_if = "Option::is_none")]
-  pub organizations: Option<Vec<Organization>>,
+  pub organizations: Option<CursorConnection<Organization>>,
 }

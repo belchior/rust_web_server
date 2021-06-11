@@ -12,6 +12,7 @@ actix-cors = "0.5.4"
 mongodb = "1.2.1"
 serde = "1.0.126"
 tokio-stream = "0.1.6"
+base64 = "0.13.0"
 dotenv = "0.15.0"
 
 [dev-dependencies]

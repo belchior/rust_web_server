@@ -1,3 +1,4 @@
+use crate::cursor_connection::CursorConnection;
 use crate::model::organization::Organization;
 use crate::model::user::User;
 use mongodb::{
@@ -10,6 +11,7 @@ use tokio_stream::StreamExt;
 pub async fn find_user_by_login(
   db: &mongodb::Database,
   login: &String,
+  organizations_limit: &u32,
 ) -> Result<Option<User>, mongodb::error::Error> {
   let user_collection: Collection<User> = db.collection_with_type("users");
 
@@ -25,7 +27,10 @@ pub async fn find_user_by_login(
   }
 
   let mut cursor = user_collection
-    .aggregate(pipeline_paginate_organization(&login, None, 5), None)
+    .aggregate(
+      pipeline_paginate_organization(&login, None, organizations_limit),
+      None,
+    )
     .await?;
 
   let mut organizations: Vec<Organization> = vec![];
@@ -34,6 +39,8 @@ pub async fn find_user_by_login(
     organizations.push(org);
   }
 
+  let reference_from = |item: &Organization| item.login.to_owned();
+  let organizations = CursorConnection::new(organizations, reference_from);
   let user = user.map(|user| User {
     organizations: Some(organizations),
     ..user
@@ -45,9 +52,10 @@ pub async fn find_user_by_login(
 fn pipeline_paginate_organization(
   user_login: &String,
   organization_id: Option<&bson::oid::ObjectId>,
-  limit: u32,
+  organizations_limit: &u32,
 ) -> Vec<bson::Document> {
   let filter_by_login = vec![doc! { "$match": { "login": user_login } }];
+
   let lookup_with_organizations = vec![
     doc! { "$lookup": {
       "from": "organizations",
@@ -57,13 +65,15 @@ fn pipeline_paginate_organization(
     } },
     doc! { "$unwind": "$organizations" },
   ];
+
   let paginate = match organization_id {
     Some(_id) => vec![
       doc! { "$match": { "organizations._id": { "$gt": _id } } },
-      doc! { "$limit": limit },
+      doc! { "$limit": organizations_limit },
     ],
-    None => vec![doc! { "$limit": limit }],
+    None => vec![doc! { "$limit": organizations_limit }],
   };
+
   let project = vec![
     doc! { "$replaceRoot": {
       "newRoot": "$organizations"

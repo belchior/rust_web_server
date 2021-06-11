@@ -2,10 +2,21 @@ use crate::repository::user::find_user_by_login;
 use crate::route::http_handler::HttpError;
 use actix_web::{get, web, HttpResponse, Responder};
 use mongodb::Database;
+use serde::Deserialize;
+
+#[derive(Deserialize, Debug)]
+pub struct UserQueryString {
+  pub orgs: Option<u32>,
+}
 
 #[get("/user/{login}")]
-pub async fn user(db: web::Data<Database>, web::Path(login): web::Path<String>) -> impl Responder {
-  let result = find_user_by_login(db.as_ref(), &login).await;
+pub async fn user(
+  db: web::Data<Database>,
+  web::Path(login): web::Path<String>,
+  query: web::Query<UserQueryString>,
+) -> impl Responder {
+  let organizations_limit = query.orgs.unwrap_or(10);
+  let result = find_user_by_login(db.as_ref(), &login, &organizations_limit).await;
 
   if let Err(err) = result {
     println!("Database error: {:#?}", err);

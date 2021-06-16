@@ -1,22 +1,16 @@
-use crate::repository::user::find_user_by_login;
+use crate::cursor_connection::PaginationOptions;
+use crate::repository::repository::find_repositories_by_login;
 use crate::route::http_handler::HttpError;
 use actix_web::{get, web, HttpResponse, Responder};
 use mongodb::Database;
-use serde::Deserialize;
 
-#[derive(Deserialize, Debug)]
-pub struct UserQueryString {
-  pub orgs_limit: Option<u32>,
-}
-
-#[get("/user/{login}")]
-pub async fn user(
+#[get("/repositories/{login}")]
+pub async fn repositories(
   db: web::Data<Database>,
   web::Path(login): web::Path<String>,
-  query_string: web::Query<UserQueryString>,
+  web::Query(pagination_options): web::Query<PaginationOptions>,
 ) -> impl Responder {
-  let organizations_limit = std::cmp::min(100, query_string.orgs_limit.unwrap_or(10));
-  let result = find_user_by_login(db.as_ref(), &login, &organizations_limit).await;
+  let result = find_repositories_by_login(db.as_ref(), &login, pagination_options).await;
 
   if let Err(err) = result {
     println!("Database error: {:#?}", err);
@@ -26,8 +20,8 @@ pub async fn user(
     });
   }
 
-  let maybe_document = result.unwrap();
-  if let None = maybe_document {
+  let maybe_documents = result.unwrap();
+  if let None = maybe_documents {
     println!("User {} not found", login);
     return HttpResponse::NotFound().json(HttpError {
       status: 400,
@@ -35,5 +29,5 @@ pub async fn user(
     });
   }
 
-  HttpResponse::Ok().json(maybe_document)
+  HttpResponse::Ok().json(maybe_documents)
 }

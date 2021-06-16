@@ -27,8 +27,9 @@ async fn main() -> std::io::Result<()> {
     App::new()
       .wrap(get_cors())
       .data(db.clone())
-      .service(route::hello)
+      .service(route::root)
       .service(route::user::user)
+      .service(route::repositories::repositories)
   })
   .bind(server_uri)?
   .run()

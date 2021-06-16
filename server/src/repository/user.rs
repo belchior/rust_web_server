@@ -39,7 +39,7 @@ pub async fn find_user_by_login(
     organizations.push(org);
   }
 
-  let reference_from = |item: &Organization| item.login.to_owned();
+  let reference_from = |item: &Organization| item._id.to_hex();
   let organizations = CursorConnection::new(organizations, reference_from);
   let user = user.map(|user| User {
     organizations: Some(organizations),

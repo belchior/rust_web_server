@@ -28,6 +28,8 @@ use serde::{Deserialize, Serialize};
                                   3     CURSOR
 */
 
+// @TODO implement forward e backward pagination
+
 type ReferenceFrom<T> = fn(item: &T) -> String;
 
 fn reference_to_cursor(reference: String) -> String {
@@ -55,6 +57,7 @@ impl<T> Edges<T> {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct PageInfo {
+  // @TODO implement hasNextPage and hasPreviousPage
   start_cursor: Option<String>,
   end_cursor: Option<String>,
 }
@@ -92,4 +95,32 @@ impl<T> CursorConnection<T> {
       edges: Edges::items_to_edges(items, reference_from),
     }
   }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct PaginationOptions {
+  pub cursor: Option<String>,
+  pub limit: Option<i64>,
+}
+
+#[derive(Debug)]
+pub enum Error {
+  DecodeError(base64::DecodeError),
+  Utf8Error(std::str::Utf8Error),
+}
+impl From<base64::DecodeError> for Error {
+  fn from(error: base64::DecodeError) -> Self {
+    Error::DecodeError(error)
+  }
+}
+impl From<std::str::Utf8Error> for Error {
+  fn from(error: std::str::Utf8Error) -> Self {
+    Error::Utf8Error(error)
+  }
+}
+
+pub fn cursor_to_reference(cursor: String) -> Result<String, Error> {
+  let result = base64::decode(cursor)?;
+  let result = std::str::from_utf8(&result)?;
+  Ok(result.to_owned())
 }

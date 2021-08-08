@@ -1971,7 +1971,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust_graphql_server"
+name = "rust_web_server"
 version = "0.1.0"
 dependencies = [
  "actix-cors",

@@ -1,2 +1,6 @@
+# directories
 */target/
 client/
+
+# files
+*.DS_Store

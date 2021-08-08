@@ -1,44 +1,32 @@
-use crate::cursor_connection::{cursor_to_reference, CursorConnection, PaginationOptions};
+use crate::cursor_connection::{
+  cursor_to_reference, CursorConnection, Direction, PaginationArguments,
+};
 use crate::model::repository::Repository;
 use crate::model::user::User;
 use mongodb::{
-  bson::{self, doc},
+  bson::{self, doc, Document},
   error::Error as MongodbError,
   Collection,
 };
 use tokio_stream::StreamExt;
 
-fn to_filter(cursor: Option<String>, user: &User) -> bson::Document {
-  let default_doc = doc! { "owner._id": &user._id };
-
+fn cursor_to_object_id(cursor: Option<String>) -> Option<bson::oid::ObjectId> {
   if cursor.is_none() {
-    return default_doc;
+    return None;
   }
 
   let reference = cursor_to_reference(cursor.unwrap());
   if reference.is_err() {
-    return default_doc;
+    return None;
   }
 
-  let repo_id = bson::oid::ObjectId::with_string(&reference.unwrap());
-  if repo_id.is_err() {
-    return default_doc;
+  let id = bson::oid::ObjectId::with_string(&reference.unwrap());
+  if id.is_err() {
+    return None;
   }
-  let repo_id = repo_id.unwrap();
 
-  doc! {
-    "owner._id": &user._id,
-    "_id": {
-      "$gt": repo_id
-    }
-  }
-}
-
-fn to_options(limit: Option<i64>) -> mongodb::options::FindOptions {
-  let limit = std::cmp::min(100, limit.unwrap_or(10));
-  mongodb::options::FindOptions::builder()
-    .limit(limit)
-    .build()
+  let id = id.unwrap();
+  Some(id)
 }
 
 fn to_cursor_connection(repositories: Vec<Repository>) -> CursorConnection<Repository> {
@@ -55,17 +43,51 @@ async fn find_user(db: &mongodb::Database, login: &String) -> Result<Option<User
 
 async fn find_repositories(
   db: &mongodb::Database,
-  user: User,
-  pagination_options: PaginationOptions,
+  user: &User,
+  pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
   let repo_collection = db.collection("repositories");
 
-  let filter = to_filter(pagination_options.cursor, &user);
-  let options = to_options(pagination_options.limit);
-  let cursor = repo_collection.find(filter, options).await?;
+  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
+
+  let repo_id = cursor_to_object_id(cursor);
+  let stage_match = match repo_id {
+    None => doc! {
+      "$match": {
+        "owner._id": &user._id,
+      }
+    },
+    Some(repo_id) => {
+      let operator = match direction {
+        Direction::Forward => "$gt",
+        _ => "$lt",
+      };
+      doc! {
+        "$match": {
+          "owner._id": &user._id,
+          "_id": { operator: repo_id }
+        }
+      }
+    }
+  };
+
+  let order = match direction {
+    Direction::Forward => 1,
+    _ => -1,
+  };
+  let stage_sort = doc! { "$sort": { "_id": order } };
+
+  let pipeline = vec![
+    stage_match,
+    stage_sort,
+    doc! { "$limit": limit },
+    doc! { "$sort": { "_id": 1 } },
+  ];
+
+  let cursor = repo_collection.aggregate(pipeline, None).await?;
 
   let result = cursor
-    .collect::<Vec<Result<bson::Document, MongodbError>>>()
+    .collect::<Vec<Result<Document, MongodbError>>>()
     .await;
 
   let repositories = result
@@ -81,12 +103,12 @@ async fn find_repositories(
 pub async fn find_repositories_by_login(
   db: &mongodb::Database,
   login: &String,
-  pagination_options: PaginationOptions,
+  pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
   let result = find_user(db, login).await?;
 
   match result {
-    Some(user) => find_repositories(db, user, pagination_options).await,
+    Some(user) => find_repositories(db, &user, pagination_arguments).await,
     None => Ok(None),
   }
 }

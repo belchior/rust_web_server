@@ -1,4 +1,4 @@
-use crate::cursor_connection::PaginationOptions;
+use crate::cursor_connection::PaginationArguments;
 use crate::repository::repository::find_repositories_by_login;
 use crate::route::http_handler::HttpError;
 use actix_web::{get, web, HttpResponse, Responder};
@@ -8,9 +8,9 @@ use mongodb::Database;
 pub async fn repositories(
   db: web::Data<Database>,
   web::Path(login): web::Path<String>,
-  web::Query(pagination_options): web::Query<PaginationOptions>,
+  web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let result = find_repositories_by_login(db.as_ref(), &login, pagination_options).await;
+  let result = find_repositories_by_login(db.as_ref(), &login, pagination_arguments).await;
 
   if let Err(err) = result {
     println!("Database error: {:#?}", err);

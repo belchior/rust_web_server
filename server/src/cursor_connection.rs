@@ -28,8 +28,6 @@ use serde::{Deserialize, Serialize};
                                   3     CURSOR
 */
 
-// @TODO implement forward e backward pagination
-
 type ReferenceFrom<T> = fn(item: &T) -> String;
 
 fn reference_to_cursor(reference: String) -> String {
@@ -41,7 +39,6 @@ struct Edges<T> {
   cursor: String,
   node: T,
 }
-
 impl<T> Edges<T> {
   fn items_to_edges(items: Vec<T>, reference_from: ReferenceFrom<T>) -> Vec<Self> {
     items
@@ -61,7 +58,6 @@ struct PageInfo {
   start_cursor: Option<String>,
   end_cursor: Option<String>,
 }
-
 impl PageInfo {
   fn new<T>(items: &Vec<T>, reference_from: ReferenceFrom<T>) -> Self {
     if items.len() == 0 {
@@ -87,7 +83,6 @@ pub struct CursorConnection<T> {
   page_info: PageInfo,
   edges: Vec<Edges<T>>,
 }
-
 impl<T> CursorConnection<T> {
   pub fn new(items: Vec<T>, reference_from: ReferenceFrom<T>) -> Self {
     Self {
@@ -97,16 +92,58 @@ impl<T> CursorConnection<T> {
   }
 }
 
+#[derive(Debug)]
+pub enum Direction {
+  Forward,
+  Backward,
+}
+
 #[derive(Deserialize, Debug)]
-pub struct PaginationOptions {
-  pub cursor: Option<String>,
-  pub limit: Option<i64>,
+pub struct PaginationArguments {
+  pub first: Option<i64>,
+  pub after: Option<String>,
+  pub last: Option<i64>,
+  pub before: Option<String>,
+}
+impl PaginationArguments {
+  pub fn parse_args(self) -> Result<(Direction, i64, Option<String>), Error> {
+    use Direction::*;
+
+    match &self {
+      PaginationArguments {
+        first: Some(limit),
+        after: Some(cursor),
+        ..
+      } => Ok((Forward, limit.clone(), Some(cursor.clone()))),
+
+      PaginationArguments {
+        first: Some(limit),
+        after: None,
+        ..
+      } => Ok((Forward, limit.clone(), None)),
+
+      PaginationArguments {
+        last: Some(limit),
+        before: Some(cursor),
+        ..
+      } => Ok((Backward, limit.clone(), Some(cursor.clone()))),
+
+      PaginationArguments {
+        last: Some(limit),
+        after: None,
+        ..
+      } => Ok((Backward, limit.clone(), None)),
+
+      _ => Err(Error::InvalidPaginationArguments),
+    }
+  }
 }
 
 #[derive(Debug)]
 pub enum Error {
   DecodeError(base64::DecodeError),
   Utf8Error(std::str::Utf8Error),
+  InvalidPaginationArguments,
 }
 impl From<base64::DecodeError> for Error {
   fn from(error: base64::DecodeError) -> Self {

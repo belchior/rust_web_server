@@ -1,6 +1,6 @@
-use crate::cursor_connection::PaginationArguments;
+use crate::http::cursor_connection::PaginationArguments;
+use crate::http::http_handler::HttpError;
 use crate::repository::repository::find_repositories_by_login;
-use crate::route::http_handler::HttpError;
 use actix_web::{get, web, HttpResponse, Responder};
 use mongodb::Database;
 

@@ -1,4 +1,4 @@
-use crate::cursor_connection::CursorConnection;
+use crate::http::cursor_connection::CursorConnection;
 use crate::model::organization::Organization;
 use crate::model::user::User;
 use mongodb::{

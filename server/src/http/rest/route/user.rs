@@ -1,5 +1,5 @@
+use crate::http::http_handler::HttpError;
 use crate::repository::user::find_user_by_login;
-use crate::route::http_handler::HttpError;
 use actix_web::{get, web, HttpResponse, Responder};
 use mongodb::Database;
 use serde::Deserialize;

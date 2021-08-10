@@ -1,4 +1,4 @@
-use crate::cursor_connection::{
+use crate::http::cursor_connection::{
   cursor_to_reference, CursorConnection, Direction, PaginationArguments,
 };
 use crate::model::repository::Repository;

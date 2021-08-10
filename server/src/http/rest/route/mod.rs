@@ -1,4 +1,3 @@
-pub mod http_handler;
 pub mod repositories;
 pub mod user;
 

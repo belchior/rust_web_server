@@ -5,8 +5,8 @@ mod repository;
 
 use dotenv::dotenv;
 
-fn main() -> std::io::Result<()> {
+fn main() -> () {
   dotenv().ok();
   env_logger::init();
-  http::main()
+  http::main();
 }

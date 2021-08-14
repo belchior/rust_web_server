@@ -1,32 +1,31 @@
 use base64;
 use serde::{Deserialize, Serialize};
 
-/*
-  forward pagination argument
-  first = 3
-  after = CURSOR -> 01
-
-  previousPage          nextPage
-       |                   |
-  |----|----|----|----|----|----|----|----|----|----
-  | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09
-  |----|----|----|----|----|----|----|----|----|----
-       |    |_____________|
-     CURSOR        3
-
-
-  backward pagination argument
-  last   = 3
-  before = CURSOR -> 08
-
-                 previousPage          nextPage
-                      |                   |
-  |----|----|----|----|----|----|----|----|----|----
-  | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09
-  |----|----|----|----|----|----|----|----|----|----
-                           |_____________||
-                                  3     CURSOR
-*/
+///
+///   forward pagination argument
+///   first = 3
+///   after = CURSOR -> 01
+///
+///   previousPage          nextPage
+///        |                   |
+///   |----|----|----|----|----|----|----|----|----|----
+///   | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09
+///   |----|----|----|----|----|----|----|----|----|----
+///        |    |_____________|
+///      CURSOR        3
+///
+///   backward pagination argument
+///   last   = 3
+///   before = CURSOR -> 08
+///
+///                  previousPage          nextPage
+///                       |                   |
+///   |----|----|----|----|----|----|----|----|----|----
+///   | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09
+///   |----|----|----|----|----|----|----|----|----|----
+///                            |_____________||
+///                                   3     CURSOR
+///
 
 type ReferenceFrom<T> = fn(item: &T) -> String;
 
@@ -100,41 +99,83 @@ pub enum Direction {
 
 #[derive(Deserialize, Debug)]
 pub struct PaginationArguments {
-  pub first: Option<i64>,
+  pub first: Option<u64>,
   pub after: Option<String>,
-  pub last: Option<i64>,
+  pub last: Option<u64>,
   pub before: Option<String>,
 }
 impl PaginationArguments {
-  pub fn parse_args(self) -> Result<(Direction, i64, Option<String>), Error> {
+  pub fn is_valid(arg: &Self) -> bool {
+    match &arg {
+      Self {
+        first: Some(_),
+        last: Some(_),
+        ..
+      } => false,
+
+      Self {
+        after: Some(_),
+        before: Some(_),
+        ..
+      } => false,
+
+      _ => true,
+    }
+  }
+
+  pub fn parse_args(self) -> Result<(Direction, u64, Option<String>), Error> {
     use Direction::*;
+    let default_limit = 15;
 
     match &self {
-      PaginationArguments {
+      Self {
+        first: None,
+        after: None,
+        last: None,
+        before: None,
+      } => Ok((Forward, default_limit, None)),
+
+      Self {
+        first: Some(_),
+        last: Some(_),
+        ..
+      } => Err(Error::InvalidPaginationArguments),
+
+      Self {
+        after: Some(_),
+        before: Some(_),
+        ..
+      } => Err(Error::InvalidPaginationArguments),
+
+      Self {
         first: Some(limit),
         after: Some(cursor),
         ..
       } => Ok((Forward, limit.clone(), Some(cursor.clone()))),
 
-      PaginationArguments {
-        first: Some(limit),
-        after: None,
-        ..
-      } => Ok((Forward, limit.clone(), None)),
-
-      PaginationArguments {
+      Self {
         last: Some(limit),
         before: Some(cursor),
         ..
-      } => Ok((Backward, limit.clone(), Some(cursor.clone()))),
+      } => Ok((Forward, limit.clone(), Some(cursor.clone()))),
 
-      PaginationArguments {
-        last: Some(limit),
-        after: None,
+      Self {
+        first: Some(limit), ..
+      } => Ok((Forward, limit.clone(), None)),
+
+      Self {
+        after: Some(cursor),
         ..
+      } => Ok((Forward, default_limit, Some(cursor.clone()))),
+
+      Self {
+        last: Some(limit), ..
       } => Ok((Backward, limit.clone(), None)),
 
-      _ => Err(Error::InvalidPaginationArguments),
+      Self {
+        before: Some(cursor),
+        ..
+      } => Ok((Backward, default_limit, Some(cursor.clone()))),
     }
   }
 }

@@ -11,6 +11,11 @@ pub async fn repositories(
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
+  if PaginationArguments::is_valid(&pagination_arguments) == false {
+    return HttpResponse::NotFound()
+      .json(HttpError::new("Invalid pagination arguments", Some(404)));
+  }
+
   let result = find_repositories_by_login(db.as_ref(), &login, pagination_arguments).await;
 
   if let Err(err) = result {

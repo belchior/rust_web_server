@@ -94,6 +94,26 @@ pub async fn find_followers_by_login(
   Ok(Some(followers))
 }
 
+pub async fn find_following_by_login(
+  db: &mongodb::Database,
+  login: &String,
+  pagination_arguments: PaginationArguments,
+) -> Result<Option<CursorConnection<User>>, mongodb::error::Error> {
+  let user_collection: Collection<User> = db.collection_with_type("users");
+  let pipeline = pipeline_paginated_following(login, pagination_arguments);
+  let mut cursor = user_collection.aggregate(pipeline, None).await?;
+
+  let mut following: Vec<User> = vec![];
+  while let Some(result) = cursor.next().await {
+    let follower: User = bson::from_document(result?)?;
+    following.push(follower);
+  }
+
+  let following = utils::users_to_cursor_connection(following);
+
+  Ok(Some(following))
+}
+
 fn pipeline_paginate_organization(
   login: &String,
   organization_id: Option<&bson::oid::ObjectId>,
@@ -240,5 +260,55 @@ fn pipeline_paginated_followers(login: &String, pagination_arguments: Pagination
     .chain(project_followers)
     .chain(paginate_folowers)
     .chain(lookup_with_users)
+    .collect()
+}
+
+fn pipeline_paginated_following(login: &String, pagination_arguments: PaginationArguments) -> Vec<bson::Document> {
+  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
+  let user_id = utils::to_object_id(cursor);
+  let order = utils::to_order(&direction);
+  let operator = utils::to_operator(&direction);
+
+  let filter_by_login = vec![doc! { "$match": { "login": login } }];
+
+  let project_following = vec![
+    doc! { "$unwind": "$following" },
+    doc! { "$project": { "_id": "$following._id" } },
+  ];
+
+  let paginate_folowing = match user_id {
+    Some(user_id) => vec![
+      doc! { "$sort": { "_id": order } },
+      doc! { "$match": { "_id": { operator: user_id } } },
+      doc! { "$limit": limit },
+      doc! { "$sort": { "_id": 1 } },
+    ],
+    None => vec![
+      doc! { "$sort": { "_id": order } },
+      doc! { "$limit": limit },
+      doc! { "$sort": { "_id": 1 } },
+    ],
+  };
+
+  let lookup_with_using = vec![
+    doc! { "$lookup": {
+      "from": "users",
+      "localField": "_id",
+      "foreignField": "_id",
+      "as": "item"
+    } },
+    doc! { "$replaceRoot": {
+      "newRoot": {
+        "$arrayElemAt": [ "$item", 0 ]
+      }
+    } },
+  ];
+
+  vec![]
+    .into_iter()
+    .chain(filter_by_login)
+    .chain(project_following)
+    .chain(paginate_folowing)
+    .chain(lookup_with_using)
     .collect()
 }

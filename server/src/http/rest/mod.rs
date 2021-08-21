@@ -25,6 +25,7 @@ pub async fn main() -> std::io::Result<()> {
       .service(route::user::user)
       .service(route::user::repositories)
       .service(route::user::starred_repositories)
+      .service(route::user::followers)
       .wrap_fn(|req, srv| {
         log::info!("Request {} {}", req.method(), req.uri());
         let fut = srv.call(req);

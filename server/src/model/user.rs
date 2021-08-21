@@ -9,11 +9,15 @@ pub struct User {
   #[serde(rename = "_id")]
   pub _id: bson::oid::ObjectId,
   pub avatar_url: String,
-  pub bio: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub bio: Option<String>,
   pub email: String,
   pub login: String,
-  pub name: String,
-  pub website_url: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub name: Option<String>,
   #[serde(skip_deserializing, skip_serializing_if = "Option::is_none")]
   pub organizations: Option<CursorConnection<Organization>>,
+  pub url: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub website_url: Option<String>,
 }

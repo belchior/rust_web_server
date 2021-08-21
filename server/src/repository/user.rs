@@ -74,6 +74,26 @@ pub async fn find_starred_repositories_by_login(
   Ok(Some(repositories))
 }
 
+pub async fn find_followers_by_login(
+  db: &mongodb::Database,
+  login: &String,
+  pagination_arguments: PaginationArguments,
+) -> Result<Option<CursorConnection<User>>, mongodb::error::Error> {
+  let user_collection: Collection<User> = db.collection_with_type("users");
+  let pipeline = pipeline_paginated_followers(login, pagination_arguments);
+  let mut cursor = user_collection.aggregate(pipeline, None).await?;
+
+  let mut followers: Vec<User> = vec![];
+  while let Some(result) = cursor.next().await {
+    let follower: User = bson::from_document(result?)?;
+    followers.push(follower);
+  }
+
+  let followers = utils::users_to_cursor_connection(followers);
+
+  Ok(Some(followers))
+}
+
 fn pipeline_paginate_organization(
   login: &String,
   organization_id: Option<&bson::oid::ObjectId>,
@@ -127,21 +147,23 @@ fn pipeline_paginated_starred_repositories(
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let repository_id = utils::to_object_id(cursor);
   let order = utils::to_order(&direction);
+  let operator = utils::to_operator(&direction);
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 
-  let paginate = match repository_id {
+  let project_starred_repositories = vec![
+    doc! { "$unwind": "$starredRepositories" },
+    doc! { "$project": { "_id": "$starredRepositories._id" } },
+  ];
+
+  let paginate_repositories = match repository_id {
     Some(repository_id) => vec![
-      doc! { "$unwind": "$starredRepositories" },
-      doc! { "$project": { "_id": "$starredRepositories._id" } },
       doc! { "$sort": { "_id": order } },
-      doc! { "$match": { "_id": { "$gt": repository_id } } },
+      doc! { "$match": { "_id": { operator: repository_id } } },
       doc! { "$limit": limit },
       doc! { "$sort": { "_id": 1 } },
     ],
     None => vec![
-      doc! { "$unwind": "$starredRepositories" },
-      doc! { "$project": { "_id": "$starredRepositories._id" } },
       doc! { "$sort": { "_id": order } },
       doc! { "$limit": limit },
       doc! { "$sort": { "_id": 1 } },
@@ -165,7 +187,58 @@ fn pipeline_paginated_starred_repositories(
   vec![]
     .into_iter()
     .chain(filter_by_login)
-    .chain(paginate)
+    .chain(project_starred_repositories)
+    .chain(paginate_repositories)
     .chain(lookup_with_repositories)
+    .collect()
+}
+
+fn pipeline_paginated_followers(login: &String, pagination_arguments: PaginationArguments) -> Vec<bson::Document> {
+  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
+  let user_id = utils::to_object_id(cursor);
+  let order = utils::to_order(&direction);
+  let operator = utils::to_operator(&direction);
+
+  let filter_by_login = vec![doc! { "$match": { "login": login } }];
+
+  let project_followers = vec![
+    doc! { "$unwind": "$followers" },
+    doc! { "$project": { "_id": "$followers._id" } },
+  ];
+
+  let paginate_folowers = match user_id {
+    Some(user_id) => vec![
+      doc! { "$sort": { "_id": order } },
+      doc! { "$match": { "_id": { operator: user_id } } },
+      doc! { "$limit": limit },
+      doc! { "$sort": { "_id": 1 } },
+    ],
+    None => vec![
+      doc! { "$sort": { "_id": order } },
+      doc! { "$limit": limit },
+      doc! { "$sort": { "_id": 1 } },
+    ],
+  };
+
+  let lookup_with_users = vec![
+    doc! { "$lookup": {
+      "from": "users",
+      "localField": "_id",
+      "foreignField": "_id",
+      "as": "item"
+    } },
+    doc! { "$replaceRoot": {
+      "newRoot": {
+        "$arrayElemAt": [ "$item", 0 ]
+      }
+    } },
+  ];
+
+  vec![]
+    .into_iter()
+    .chain(filter_by_login)
+    .chain(project_followers)
+    .chain(paginate_folowers)
+    .chain(lookup_with_users)
     .collect()
 }

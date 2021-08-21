@@ -7,41 +7,43 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'rust_graphql'",
+      "name": "Debug executable 'rust_web_server'",
       "cargo": {
         "args": [
           "build",
-          "--bin=rust_graphql",
-          "--package=rust_graphql"
+          "--manifest-path=server/Cargo.toml",
+          "--bin=rust_web_server",
+          "--package=rust_web_server"
         ],
         "filter": {
-          "name": "rust_graphql",
+          "name": "rust_web_server",
           "kind": "bin"
         }
       },
       "args": [],
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}/server"
     },
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'rust_graphql'",
+      "name": "Debug unit tests in executable 'rust_web_server'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
-          "--bin=rust_graphql",
-          "--package=rust_graphql"
+          "--manifest-path=server/Cargo.toml",
+          "--bin=rust_web_server",
+          "--package=rust_web_server"
         ],
         "filter": {
-          "name": "rust_graphql",
+          "name": "rust_web_server",
           "kind": "bin"
         }
       },
       "args": [
         ""
       ],
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}/server"
     }
   ]
 }

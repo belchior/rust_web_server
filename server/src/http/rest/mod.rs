@@ -2,6 +2,7 @@ pub mod route;
 
 use crate::db::db_client_connection;
 use crate::http::cors::get_cors;
+use actix_web::dev::Service;
 use actix_web::{App, HttpServer};
 use log;
 use std::env;
@@ -22,7 +23,16 @@ pub async fn main() -> std::io::Result<()> {
       .data(db.clone())
       .service(route::root)
       .service(route::user::user)
-      .service(route::repositories::repositories)
+      .service(route::user::repositories)
+      .service(route::user::starred_repositories)
+      .wrap_fn(|req, srv| {
+        log::info!("Request {} {}", req.method(), req.uri());
+        let fut = srv.call(req);
+        async {
+          let res = fut.await?;
+          Ok(res)
+        }
+      })
   })
   .bind(server_uri)?
   .run()

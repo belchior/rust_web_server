@@ -1,5 +1,5 @@
 use base64;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 ///
 ///   forward pagination argument
@@ -27,55 +27,6 @@ use serde::{Deserialize, Serialize};
 ///                                   3     CURSOR
 ///
 
-type ReferenceFrom<T> = fn(item: &T) -> String;
-
-fn reference_to_cursor(reference: String) -> String {
-  base64::encode(reference)
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Edges<T> {
-  cursor: String,
-  node: T,
-}
-impl<T> Edges<T> {
-  fn items_to_edges(items: Vec<T>, reference_from: ReferenceFrom<T>) -> Vec<Self> {
-    items
-      .into_iter()
-      .map(|item| Self {
-        cursor: reference_to_cursor(reference_from(&item)),
-        node: item,
-      })
-      .collect()
-  }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct PageInfo {
-  // @TODO implement hasNextPage and hasPreviousPage
-  start_cursor: Option<String>,
-  end_cursor: Option<String>,
-}
-impl PageInfo {
-  fn new<T>(items: &Vec<T>, reference_from: ReferenceFrom<T>) -> Self {
-    if items.len() == 0 {
-      return Self {
-        start_cursor: None,
-        end_cursor: None,
-      };
-    }
-
-    let first_item = items.first().unwrap();
-    let last_item = items.last().unwrap();
-
-    Self {
-      start_cursor: Some(reference_to_cursor(reference_from(first_item))),
-      end_cursor: Some(reference_to_cursor(reference_from(last_item))),
-    }
-  }
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CursorConnection<T> {
@@ -100,8 +51,10 @@ pub enum Direction {
 #[derive(Deserialize, Debug)]
 pub struct PaginationArguments {
   pub first: Option<u64>,
+  #[serde(default, deserialize_with = "optional_string")]
   pub after: Option<String>,
   pub last: Option<u64>,
+  #[serde(default, deserialize_with = "optional_string")]
   pub before: Option<String>,
 }
 impl PaginationArguments {
@@ -159,22 +112,16 @@ impl PaginationArguments {
         ..
       } => Ok((Forward, limit.clone(), Some(cursor.clone()))),
 
-      Self {
-        first: Some(limit), ..
-      } => Ok((Forward, limit.clone(), None)),
+      Self { first: Some(limit), .. } => Ok((Forward, limit.clone(), None)),
 
       Self {
-        after: Some(cursor),
-        ..
+        after: Some(cursor), ..
       } => Ok((Forward, default_limit, Some(cursor.clone()))),
 
-      Self {
-        last: Some(limit), ..
-      } => Ok((Backward, limit.clone(), None)),
+      Self { last: Some(limit), .. } => Ok((Backward, limit.clone(), None)),
 
       Self {
-        before: Some(cursor),
-        ..
+        before: Some(cursor), ..
       } => Ok((Backward, default_limit, Some(cursor.clone()))),
     }
   }
@@ -201,4 +148,61 @@ pub fn cursor_to_reference(cursor: String) -> Result<String, Error> {
   let result = base64::decode(cursor)?;
   let result = std::str::from_utf8(&result)?;
   Ok(result.to_owned())
+}
+
+type ReferenceFrom<T> = fn(item: &T) -> String;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Edges<T> {
+  cursor: String,
+  node: T,
+}
+impl<T> Edges<T> {
+  fn items_to_edges(items: Vec<T>, reference_from: ReferenceFrom<T>) -> Vec<Self> {
+    items
+      .into_iter()
+      .map(|item| Self {
+        cursor: reference_to_cursor(reference_from(&item)),
+        node: item,
+      })
+      .collect()
+  }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct PageInfo {
+  // @TODO implement hasNextPage and hasPreviousPage
+  start_cursor: Option<String>,
+  end_cursor: Option<String>,
+}
+impl PageInfo {
+  fn new<T>(items: &Vec<T>, reference_from: ReferenceFrom<T>) -> Self {
+    if items.len() == 0 {
+      return Self {
+        start_cursor: None,
+        end_cursor: None,
+      };
+    }
+
+    let first_item = items.first().unwrap();
+    let last_item = items.last().unwrap();
+
+    Self {
+      start_cursor: Some(reference_to_cursor(reference_from(first_item))),
+      end_cursor: Some(reference_to_cursor(reference_from(last_item))),
+    }
+  }
+}
+
+fn reference_to_cursor(reference: String) -> String {
+  base64::encode(reference)
+}
+
+fn optional_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+  Deserialize::deserialize(d).map(|value: Option<_>| match value {
+    None => None,
+    Some("" | "null") => None,
+    Some(value) => Some(value.to_owned()),
+  })
 }

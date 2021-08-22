@@ -1,4 +1,5 @@
 use crate::http::cursor_connection::{cursor_to_reference, CursorConnection, Direction};
+use crate::model::organization::Organization;
 use crate::model::repository::Repository;
 use crate::model::user::User;
 use mongodb::bson;
@@ -36,6 +37,7 @@ pub fn to_operator(direction: &Direction) -> &'static str {
   }
 }
 
+// TODO abtract all fn *_to_cursor_connection to one generic function
 pub fn repository_to_cursor_connection(models_list: Vec<Repository>) -> CursorConnection<Repository> {
   let reference_from = |item: &Repository| item._id.to_hex();
   CursorConnection::new(models_list, reference_from)
@@ -43,5 +45,10 @@ pub fn repository_to_cursor_connection(models_list: Vec<Repository>) -> CursorCo
 
 pub fn users_to_cursor_connection(models_list: Vec<User>) -> CursorConnection<User> {
   let reference_from = |item: &User| item._id.to_hex();
+  CursorConnection::new(models_list, reference_from)
+}
+
+pub fn organizations_to_cursor_connection(models_list: Vec<Organization>) -> CursorConnection<Organization> {
+  let reference_from = |item: &Organization| item._id.to_hex();
   CursorConnection::new(models_list, reference_from)
 }

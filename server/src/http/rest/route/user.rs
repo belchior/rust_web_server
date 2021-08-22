@@ -23,6 +23,7 @@ pub async fn user(
   let organizations_limit = std::cmp::min(100, query_string.orgs_limit.unwrap_or(10));
   let result = find_user_by_login(db.as_ref(), &login, &organizations_limit).await;
 
+  // TODO find a better way to abtract common error handlers, maybe with a middeware
   if let Err(err) = result {
     log::error!("Database error: {:#?}", err);
     return HttpResponse::InternalServerError().json(HttpError::new("Internal Server Error", None));

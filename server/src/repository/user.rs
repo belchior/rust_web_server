@@ -5,6 +5,7 @@ use crate::model::repository::Repository;
 use crate::model::user::User;
 use mongodb::{
   bson::{self, doc},
+  error::Error as MongodbError,
   options::FindOneOptions,
   Collection,
 };
@@ -14,23 +15,21 @@ pub async fn find_user_by_login(
   db: &mongodb::Database,
   login: &String,
   organization_limit: &u32,
-) -> Result<Option<User>, mongodb::error::Error> {
+) -> Result<Option<User>, MongodbError> {
   let user_collection: Collection<User> = db.collection_with_type("users");
 
   let filter = doc! { "login": login };
   let options = FindOneOptions::builder()
     .projection(doc! { "organizations": 0 })
     .build();
-
   let user = user_collection.find_one(filter, options).await?;
 
   if user.is_none() {
     return Ok(None);
   }
 
-  let mut cursor = user_collection
-    .aggregate(pipeline_paginate_organization(&login, None, organization_limit), None)
-    .await?;
+  let pipeline = pipeline_paginated_organization(&login, None, organization_limit);
+  let mut cursor = user_collection.aggregate(pipeline, None).await?;
 
   let mut organizations: Vec<Organization> = vec![];
   while let Some(result) = cursor.next().await {
@@ -38,8 +37,7 @@ pub async fn find_user_by_login(
     organizations.push(org);
   }
 
-  let reference_from = |item: &Organization| item._id.to_hex();
-  let organizations = CursorConnection::new(organizations, reference_from);
+  let organizations = utils::organizations_to_cursor_connection(organizations);
   let user = user.map(|user| User {
     organizations: Some(organizations),
     ..user
@@ -52,18 +50,13 @@ pub async fn find_starred_repositories_by_login(
   db: &mongodb::Database,
   login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<Repository>>, mongodb::error::Error> {
+) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
   let user_collection: Collection<User> = db.collection_with_type("users");
 
-  let mut cursor = user_collection
-    .aggregate(
-      pipeline_paginated_starred_repositories(login, pagination_arguments),
-      None,
-    )
-    .await?;
+  let pipeline = pipeline_paginated_starred_repositories(login, pagination_arguments);
+  let mut cursor = user_collection.aggregate(pipeline, None).await?;
 
   let mut repositories: Vec<Repository> = vec![];
-
   while let Some(result) = cursor.next().await {
     let repo: Repository = bson::from_document(result?)?;
     repositories.push(repo);
@@ -78,7 +71,7 @@ pub async fn find_followers_by_login(
   db: &mongodb::Database,
   login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<User>>, mongodb::error::Error> {
+) -> Result<Option<CursorConnection<User>>, MongodbError> {
   let user_collection: Collection<User> = db.collection_with_type("users");
   let pipeline = pipeline_paginated_followers(login, pagination_arguments);
   let mut cursor = user_collection.aggregate(pipeline, None).await?;
@@ -98,7 +91,7 @@ pub async fn find_following_by_login(
   db: &mongodb::Database,
   login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<User>>, mongodb::error::Error> {
+) -> Result<Option<CursorConnection<User>>, MongodbError> {
   let user_collection: Collection<User> = db.collection_with_type("users");
   let pipeline = pipeline_paginated_following(login, pagination_arguments);
   let mut cursor = user_collection.aggregate(pipeline, None).await?;
@@ -114,7 +107,7 @@ pub async fn find_following_by_login(
   Ok(Some(following))
 }
 
-fn pipeline_paginate_organization(
+fn pipeline_paginated_organization(
   login: &String,
   organization_id: Option<&bson::oid::ObjectId>,
   organization_limit: &u32,

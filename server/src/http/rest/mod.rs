@@ -21,12 +21,16 @@ pub async fn main() -> std::io::Result<()> {
     App::new()
       .wrap(get_cors())
       .data(db.clone())
+      // TODO find a better way to register a route that don't require one by one router registration
       .service(route::root)
       .service(route::user::user)
       .service(route::user::repositories)
       .service(route::user::starred_repositories)
       .service(route::user::followers)
       .service(route::user::following)
+      .service(route::organization::organization)
+      .service(route::organization::people)
+      // TODO makes this middleware execute only for development mode
       .wrap_fn(|req, srv| {
         log::info!("Request {} {}", req.method(), req.uri());
         let fut = srv.call(req);

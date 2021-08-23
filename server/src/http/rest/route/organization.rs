@@ -1,6 +1,6 @@
 use crate::http::cursor_connection::PaginationArguments;
 use crate::http::http_handler::HttpError;
-use crate::repository::organization::{find_organization_by_login, find_people_by_login};
+use crate::repository::organization::{find_organization_by_login, find_people_by_login, find_repositories_by_login};
 use actix_web::{get, web, HttpResponse, Responder};
 use log;
 use mongodb::Database;
@@ -39,7 +39,29 @@ pub async fn people(
   let maybe_document = result.unwrap();
   if let None = maybe_document {
     log::info!("People from {} not found", login);
-    return HttpResponse::NotFound().json(HttpError::new("People from not found", Some(404)));
+    return HttpResponse::NotFound().json(HttpError::new("People from organization not found", Some(404)));
+  }
+
+  HttpResponse::Ok().json(maybe_document)
+}
+
+#[get("/organization/{login}/repositories")]
+pub async fn repositories(
+  db: web::Data<Database>,
+  web::Path(login): web::Path<String>,
+  web::Query(pagination_arguments): web::Query<PaginationArguments>,
+) -> impl Responder {
+  let result = find_repositories_by_login(db.as_ref(), &login, pagination_arguments).await;
+
+  if let Err(err) = result {
+    log::error!("Database error: {:#?}", err);
+    return HttpResponse::InternalServerError().json(HttpError::new("Internal Server Error", None));
+  }
+
+  let maybe_document = result.unwrap();
+  if let None = maybe_document {
+    log::info!("Repositories from {} not found", login);
+    return HttpResponse::NotFound().json(HttpError::new("Repositories from organization not found", Some(404)));
   }
 
   HttpResponse::Ok().json(maybe_document)

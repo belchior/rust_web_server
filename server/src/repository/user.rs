@@ -1,8 +1,6 @@
 use super::utils;
 use crate::http::cursor_connection::{CursorConnection, PaginationArguments};
-use crate::model::organization::Organization;
-use crate::model::repository::Repository;
-use crate::model::user::User;
+use crate::model::{Organization, Repository, User};
 use mongodb::{
   bson::{self, doc},
   error::Error as MongodbError,
@@ -62,7 +60,7 @@ pub async fn find_starred_repositories_by_login(
     repositories.push(repo);
   }
 
-  let repositories = utils::repository_to_cursor_connection(repositories);
+  let repositories = utils::repositories_to_cursor_connection(repositories);
 
   Ok(Some(repositories))
 }

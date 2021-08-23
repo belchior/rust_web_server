@@ -1,6 +1,6 @@
 // TODO the mod cursor_connection should be outside of http module
 use crate::http::cursor_connection::CursorConnection;
-use crate::model::user::User;
+use crate::model::User;
 use mongodb::bson;
 use serde::{Deserialize, Serialize};
 

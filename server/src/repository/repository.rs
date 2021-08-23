@@ -1,7 +1,6 @@
 use super::utils;
 use crate::http::cursor_connection::{CursorConnection, PaginationArguments};
-use crate::model::repository::Repository;
-use crate::model::user::User;
+use crate::model::{Repository, User};
 use mongodb::{
   bson::{self, doc, Document},
   error::Error as MongodbError,
@@ -44,7 +43,7 @@ async fn find_repositories(
     .map(|document| bson::from_document(document.unwrap()).unwrap())
     .collect::<Vec<Repository>>();
 
-  let repositories = utils::repository_to_cursor_connection(repositories);
+  let repositories = utils::repositories_to_cursor_connection(repositories);
 
   Ok(Some(repositories))
 }

@@ -30,6 +30,7 @@ pub async fn main() -> std::io::Result<()> {
       .service(route::user::following)
       .service(route::organization::organization)
       .service(route::organization::people)
+      .service(route::organization::repositories)
       // TODO makes this middleware execute only for development mode
       .wrap_fn(|req, srv| {
         log::info!("Request {} {}", req.method(), req.uri());

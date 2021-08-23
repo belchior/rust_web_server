@@ -24,6 +24,7 @@ pub async fn main() -> std::io::Result<()> {
       // TODO find a better way to register a route that don't require one by one router registration
       .service(route::root)
       .service(route::user::user)
+      .service(route::user::organizations)
       .service(route::user::repositories)
       .service(route::user::starred_repositories)
       .service(route::user::followers)

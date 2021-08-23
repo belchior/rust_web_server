@@ -9,24 +9,27 @@ use mongodb::{
 };
 use tokio_stream::StreamExt;
 
-pub async fn find_user_by_login(
-  db: &mongodb::Database,
-  login: &String,
-  organization_limit: &u32,
-) -> Result<Option<User>, MongodbError> {
+pub async fn find_user_by_login(db: &mongodb::Database, login: &String) -> Result<Option<User>, MongodbError> {
   let user_collection: Collection<User> = db.collection_with_type("users");
 
   let filter = doc! { "login": login };
   let options = FindOneOptions::builder()
     .projection(doc! { "organizations": 0 })
     .build();
+
   let user = user_collection.find_one(filter, options).await?;
 
-  if user.is_none() {
-    return Ok(None);
-  }
+  Ok(user)
+}
 
-  let pipeline = pipeline_paginated_organization(&login, None, organization_limit);
+pub async fn find_organizations_by_login(
+  db: &mongodb::Database,
+  login: &String,
+  pagination_arguments: PaginationArguments,
+) -> Result<Option<CursorConnection<Organization>>, MongodbError> {
+  let user_collection: Collection<User> = db.collection_with_type("users");
+
+  let pipeline = pipeline_paginated_organization(&login, pagination_arguments);
   let mut cursor = user_collection.aggregate(pipeline, None).await?;
 
   let mut organizations: Vec<Organization> = vec![];
@@ -36,12 +39,8 @@ pub async fn find_user_by_login(
   }
 
   let organizations = utils::organizations_to_cursor_connection(organizations);
-  let user = user.map(|user| User {
-    organizations: Some(organizations),
-    ..user
-  });
 
-  Ok(user)
+  Ok(Some(organizations))
 }
 
 pub async fn find_starred_repositories_by_login(
@@ -105,11 +104,12 @@ pub async fn find_following_by_login(
   Ok(Some(following))
 }
 
-fn pipeline_paginated_organization(
-  login: &String,
-  organization_id: Option<&bson::oid::ObjectId>,
-  organization_limit: &u32,
-) -> Vec<bson::Document> {
+fn pipeline_paginated_organization(login: &String, pagination_arguments: PaginationArguments) -> Vec<bson::Document> {
+  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
+  let organization_id = utils::to_object_id(cursor);
+  let order = utils::to_order(&direction);
+  let operator = utils::to_operator(&direction);
+
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 
   let lookup_with_organizations = vec![
@@ -122,15 +122,21 @@ fn pipeline_paginated_organization(
     doc! { "$unwind": "$organizations" },
   ];
 
-  let paginate = match organization_id {
+  let paginate_organizations = match organization_id {
     Some(_id) => vec![
-      doc! { "$match": { "organizations._id": { "$gt": _id } } },
-      doc! { "$limit": organization_limit },
+      doc! { "$sort": { "_id": order } },
+      doc! { "$match": { "organizations._id": { operator: _id } } },
+      doc! { "$limit": limit },
+      doc! { "$sort": { "_id": 1 } },
     ],
-    None => vec![doc! { "$limit": organization_limit }],
+    None => vec![
+      doc! { "$sort": { "_id": order } },
+      doc! { "$limit": limit },
+      doc! { "$sort": { "_id": 1 } },
+    ],
   };
 
-  let project = vec![
+  let project_organizations = vec![
     doc! { "$replaceRoot": {
       "newRoot": "$organizations"
     } },
@@ -146,8 +152,8 @@ fn pipeline_paginated_organization(
     .into_iter()
     .chain(filter_by_login)
     .chain(lookup_with_organizations)
-    .chain(paginate)
-    .chain(project)
+    .chain(paginate_organizations)
+    .chain(project_organizations)
     .collect()
 }
 

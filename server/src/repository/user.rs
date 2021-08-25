@@ -145,6 +145,7 @@ fn pipeline_paginated_organization(login: &String, pagination_arguments: Paginat
       "name": 1,
       "avatarUrl": 1,
       "url": 1,
+      "__typename": 1,
     } },
   ];
 

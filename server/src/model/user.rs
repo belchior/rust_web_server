@@ -20,4 +20,6 @@ pub struct User {
   pub url: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub website_url: Option<String>,
+  #[serde(rename = "__typename")]
+  pub typename: String,
 }

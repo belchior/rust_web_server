@@ -52,7 +52,6 @@ fn pipeline_paginated_repositories(
   pagination_arguments: PaginationArguments,
   user_id: &bson::oid::ObjectId,
 ) -> Vec<bson::Document> {
-  log::info!("{:?}", &pagination_arguments);
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let order = utils::to_order(&direction);
   let operator = utils::to_operator(&direction);

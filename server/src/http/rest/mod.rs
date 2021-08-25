@@ -23,6 +23,7 @@ pub async fn main() -> std::io::Result<()> {
       .data(db.clone())
       // TODO find a better way to register a route that don't require one by one router registration
       .service(route::root)
+      .service(route::profile::profile)
       .service(route::user::user)
       .service(route::user::organizations)
       .service(route::user::repositories)

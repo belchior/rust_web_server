@@ -1,13 +1,16 @@
 use crate::http::http_handler::HttpError;
 use crate::repository::organization::find_organization_by_login;
 use crate::repository::user::find_user_by_login;
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse, Responder, Scope};
 use futures::join;
 use log;
 use mongodb::Database;
 
-#[get("/profile/{login}")]
-pub async fn profile(db: web::Data<Database>, web::Path(login): web::Path<String>) -> impl Responder {
+pub fn scope() -> Scope {
+  web::scope("/profile/{login}").route("", web::get().to(profile))
+}
+
+async fn profile(db: web::Data<Database>, web::Path(login): web::Path<String>) -> impl Responder {
   let (user, organization) = join!(
     find_user_by_login(db.as_ref(), &login),
     find_organization_by_login(db.as_ref(), &login)

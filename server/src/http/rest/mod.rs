@@ -1,4 +1,4 @@
-pub mod route;
+mod route;
 
 use crate::db::db_client_connection;
 use crate::http::cors::get_cors;
@@ -20,20 +20,12 @@ pub async fn main() -> std::io::Result<()> {
   HttpServer::new(move || {
     App::new()
       .wrap(get_cors())
+      // TODO convert this to AppState { db: Database }
       .data(db.clone())
-      // TODO find a better way to register a route that don't require one by one router registration
-      .service(route::root)
-      .service(route::profile::profile)
-      .service(route::user::user)
-      .service(route::user::organizations)
-      .service(route::user::repositories)
-      .service(route::user::starred_repositories)
-      .service(route::user::followers)
-      .service(route::user::following)
-      .service(route::organization::organization)
-      .service(route::organization::people)
-      .service(route::organization::repositories)
-      // TODO makes this middleware execute only for development mode
+      .service(route::profile::scope())
+      .service(route::user::scope())
+      .service(route::organization::scope())
+      // TODO put this middleware out of the mod file and configure logs base on environment
       .wrap_fn(|req, srv| {
         log::info!("Request {} {}", req.method(), req.uri());
         let fut = srv.call(req);

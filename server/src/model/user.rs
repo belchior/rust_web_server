@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
+  // TODO find a way to serialize _id to id with hex version
   #[serde(rename = "_id")]
   pub _id: bson::oid::ObjectId,
   pub avatar_url: String,

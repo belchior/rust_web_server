@@ -5,12 +5,21 @@ use crate::repository::user::{
   find_followers_by_login, find_following_by_login, find_organizations_by_login, find_starred_repositories_by_login,
   find_user_by_login,
 };
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse, Responder, Scope};
 use log;
 use mongodb::Database;
 
-#[get("/user/{login}")]
-pub async fn user(db: web::Data<Database>, web::Path(login): web::Path<String>) -> impl Responder {
+pub fn scope() -> Scope {
+  web::scope("/user/{login}")
+    .route("", web::get().to(user))
+    .route("/organizations", web::get().to(organizations))
+    .route("/repositories", web::get().to(repositories))
+    .route("/starred-repositories", web::get().to(starred_repositories))
+    .route("/followers", web::get().to(followers))
+    .route("/following", web::get().to(following))
+}
+
+async fn user(db: web::Data<Database>, web::Path(login): web::Path<String>) -> impl Responder {
   let result = find_user_by_login(db.as_ref(), &login).await;
 
   // TODO find a better way to abtract common error handlers, maybe with a middeware
@@ -28,14 +37,14 @@ pub async fn user(db: web::Data<Database>, web::Path(login): web::Path<String>) 
   HttpResponse::Ok().json(maybe_document)
 }
 
-#[get("/user/{login}/organizations")]
-pub async fn organizations(
+async fn organizations(
   db: web::Data<Database>,
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
+  // TODO convert this common validation into a actix_web::middleware
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::NotFound().json(HttpError::new("Invalid pagination arguments", Some(404)));
+    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments", Some(400)));
   }
 
   let result = find_organizations_by_login(db.as_ref(), &login, pagination_arguments).await;
@@ -54,14 +63,13 @@ pub async fn organizations(
   HttpResponse::Ok().json(maybe_documents)
 }
 
-#[get("/user/{login}/repositories")]
-pub async fn repositories(
+async fn repositories(
   db: web::Data<Database>,
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::NotFound().json(HttpError::new("Invalid pagination arguments", Some(404)));
+    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments", Some(400)));
   }
 
   let result = find_repositories_by_login(db.as_ref(), &login, pagination_arguments).await;
@@ -80,14 +88,13 @@ pub async fn repositories(
   HttpResponse::Ok().json(maybe_documents)
 }
 
-#[get("/user/{login}/starred-repositories")]
-pub async fn starred_repositories(
+async fn starred_repositories(
   db: web::Data<Database>,
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::NotFound().json(HttpError::new("Invalid pagination arguments", Some(404)));
+    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments", Some(400)));
   }
 
   let result = find_starred_repositories_by_login(db.as_ref(), &login, pagination_arguments).await;
@@ -106,14 +113,13 @@ pub async fn starred_repositories(
   HttpResponse::Ok().json(maybe_documents)
 }
 
-#[get("/user/{login}/followers")]
-pub async fn followers(
+async fn followers(
   db: web::Data<Database>,
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::NotFound().json(HttpError::new("Invalid pagination arguments", Some(404)));
+    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments", Some(400)));
   }
 
   let result = find_followers_by_login(db.as_ref(), &login, pagination_arguments).await;
@@ -132,14 +138,13 @@ pub async fn followers(
   HttpResponse::Ok().json(maybe_documents)
 }
 
-#[get("/user/{login}/following")]
-pub async fn following(
+async fn following(
   db: web::Data<Database>,
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::NotFound().json(HttpError::new("Invalid pagination arguments", Some(404)));
+    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments", Some(400)));
   }
 
   let result = find_following_by_login(db.as_ref(), &login, pagination_arguments).await;

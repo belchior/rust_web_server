@@ -1,4 +1,4 @@
-use crate::http::cursor_connection::CursorConnection;
+use crate::lib::cursor_connection::CursorConnection;
 use crate::model::Organization;
 use mongodb::bson;
 use serde::{Deserialize, Serialize};

@@ -23,7 +23,7 @@ pub struct Repository {
   #[serde(rename = "_id")]
   pub _id: bson::oid::ObjectId,
   pub description: Option<String>,
-  // @TODO the correct type of this field should be u32
+  // TODO the correct type of this field should be u32
   pub fork_count: f64,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub license_info: Option<License>,

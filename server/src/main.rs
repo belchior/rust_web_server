@@ -1,5 +1,6 @@
 mod db;
 mod http;
+mod lib;
 mod model;
 mod repository;
 

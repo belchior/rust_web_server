@@ -1,5 +1,5 @@
-use crate::http::cursor_connection::PaginationArguments;
 use crate::http::http_handler::HttpError;
+use crate::lib::cursor_connection::PaginationArguments;
 use crate::repository::repository::find_repositories_by_login;
 use crate::repository::user::{
   find_followers_by_login, find_following_by_login, find_organizations_by_login, find_starred_repositories_by_login,

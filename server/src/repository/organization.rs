@@ -1,5 +1,5 @@
 use super::utils;
-use crate::http::cursor_connection::{CursorConnection, PaginationArguments};
+use crate::lib::cursor_connection::{CursorConnection, PaginationArguments};
 use crate::model::{Organization, Repository, User};
 use mongodb::{
   bson::{self, doc},

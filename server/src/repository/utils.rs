@@ -1,4 +1,4 @@
-use crate::http::cursor_connection::{cursor_to_reference, CursorConnection, Direction};
+use crate::lib::cursor_connection::{cursor_to_reference, CursorConnection, Direction};
 use crate::model::{Organization, Repository, User};
 use mongodb::bson;
 

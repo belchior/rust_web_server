@@ -23,7 +23,8 @@ async fn people(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments".to_string(), Some(400)));
+    let result_error = HttpError::new("Invalid pagination arguments".to_string()).status(400);
+    return HttpResponse::BadRequest().json(result_error);
   }
 
   let result = find_people_by_login(db.as_ref(), &login, pagination_arguments).await;
@@ -37,7 +38,8 @@ async fn repositories(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments".to_string(), Some(400)));
+    let result_error = HttpError::new("Invalid pagination arguments".to_string()).status(400);
+    return HttpResponse::BadRequest().json(result_error);
   }
 
   let result = find_repositories_by_login(db.as_ref(), &login, pagination_arguments).await;

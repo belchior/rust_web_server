@@ -4,18 +4,21 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct HttpError {
-  pub status: Option<u32>,
-  pub message: String,
+  message: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  status: Option<u32>,
 }
 impl HttpError {
-  pub fn new(message: String, status: Option<u32>) -> Self {
+  pub fn new(message: String) -> Self {
     Self {
-      status: match status {
-        Some(_) => status,
-        None => Some(500),
-      },
       message: message.to_owned(),
+      status: None,
     }
+  }
+
+  pub fn status(mut self, status: u32) -> Self {
+    self.status = Some(status);
+    self
   }
 }
 
@@ -26,15 +29,16 @@ where
 {
   if let Err(err) = result {
     log::error!("Internal Server Error: {:#?}", err);
-    // TODO rethink HttpError struct, maybe it is unnecessary
-    return HttpResponse::InternalServerError().json(HttpError::new("Internal Server Error".to_string(), None));
+    let result_error = HttpError::new("Internal Server Error".to_string()).status(500);
+    return HttpResponse::InternalServerError().json(result_error);
   }
 
   let result = result.unwrap();
   if let None = result {
     log::info!("{} not found", model_name);
     let error_message = format!("{} not found", model_name);
-    return HttpResponse::NotFound().json(HttpError::new(error_message, Some(404)));
+    let result_error = HttpError::new(error_message).status(404);
+    return HttpResponse::NotFound().json(result_error);
   }
 
   HttpResponse::Ok().json(result)

@@ -31,7 +31,8 @@ async fn organizations(
 ) -> impl Responder {
   // TODO convert this common validation into a actix_web::middleware
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments".to_string(), Some(400)));
+    let result_error = HttpError::new("Invalid pagination arguments".to_string()).status(400);
+    return HttpResponse::BadRequest().json(result_error);
   }
 
   let result = find_organizations_by_login(db.as_ref(), &login, pagination_arguments).await;
@@ -45,7 +46,8 @@ async fn repositories(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments".to_string(), Some(400)));
+    let result_error = HttpError::new("Invalid pagination arguments".to_string()).status(400);
+    return HttpResponse::BadRequest().json(result_error);
   }
 
   let result = find_repositories_by_login(db.as_ref(), &login, pagination_arguments).await;
@@ -59,7 +61,8 @@ async fn starred_repositories(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments".to_string(), Some(400)));
+    let result_error = HttpError::new("Invalid pagination arguments".to_string()).status(400);
+    return HttpResponse::BadRequest().json(result_error);
   }
 
   let result = find_starred_repositories_by_login(db.as_ref(), &login, pagination_arguments).await;
@@ -73,7 +76,8 @@ async fn followers(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments".to_string(), Some(400)));
+    let result_error = HttpError::new("Invalid pagination arguments".to_string()).status(400);
+    return HttpResponse::BadRequest().json(result_error);
   }
 
   let result = find_followers_by_login(db.as_ref(), &login, pagination_arguments).await;
@@ -87,7 +91,8 @@ async fn following(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   if PaginationArguments::is_valid(&pagination_arguments) == false {
-    return HttpResponse::BadRequest().json(HttpError::new("Invalid pagination arguments".to_string(), Some(400)));
+    let result_error = HttpError::new("Invalid pagination arguments".to_string()).status(400);
+    return HttpResponse::BadRequest().json(result_error);
   }
 
   let result = find_following_by_login(db.as_ref(), &login, pagination_arguments).await;

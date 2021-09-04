@@ -19,13 +19,13 @@ async fn profile(db: web::Data<Database>, web::Path(login): web::Path<String>) -
   match (user, organization) {
     (Err(err), _) | (_, Err(err)) => {
       log::error!("Database error: {:#?}", err);
-      HttpResponse::InternalServerError().json(HttpError::new("Internal Server Error", None))
+      HttpResponse::InternalServerError().json(HttpError::new("Internal Server Error".to_string(), None))
     }
     (Ok(Some(user)), _) => HttpResponse::Ok().json(user),
     (_, Ok(Some(organization))) => HttpResponse::Ok().json(organization),
     _ => {
       log::info!("Profile {} not found", login);
-      HttpResponse::NotFound().json(HttpError::new("Profile not found", Some(404)))
+      HttpResponse::NotFound().json(HttpError::new("Profile not found".to_string(), Some(404)))
     }
   }
 }

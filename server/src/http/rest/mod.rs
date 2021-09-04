@@ -37,6 +37,7 @@ pub async fn main() -> std::io::Result<()> {
           Ok(res)
         }
       })
+      .default_service(route::not_found())
   })
   .bind(server_uri)?
   .run()

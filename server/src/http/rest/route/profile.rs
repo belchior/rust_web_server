@@ -1,32 +1,32 @@
 use crate::http::http_handler::HttpError;
+use crate::http::rest::AppState;
 use crate::repository::organization::find_organization_by_login;
 use crate::repository::user::find_user_by_login;
 use actix_web::{web, HttpResponse, Responder, Scope};
 use futures::join;
 use log;
-use mongodb::Database;
 
 pub fn scope() -> Scope {
   web::scope("/profile/{login}").route("", web::get().to(profile))
 }
 
-async fn profile(db: web::Data<Database>, web::Path(login): web::Path<String>) -> impl Responder {
+async fn profile(state: web::Data<AppState>, web::Path(login): web::Path<String>) -> impl Responder {
   let (user, organization) = join!(
-    find_user_by_login(db.as_ref(), &login),
-    find_organization_by_login(db.as_ref(), &login)
+    find_user_by_login(&state.db, &login),
+    find_organization_by_login(&state.db, &login)
   );
 
   match (user, organization) {
     (Err(err), _) | (_, Err(err)) => {
-      log::error!("Database error: {:#?}", err);
-      let result_error = HttpError::new("Internal Server Error".to_string()).status(500);
-      HttpResponse::BadRequest().json(result_error)
+      log::error!("Internal server error: {:#?}", err);
+      let result_error = HttpError::new("Internal server error".to_string());
+      HttpResponse::InternalServerError().json(result_error)
     }
     (Ok(Some(user)), _) => HttpResponse::Ok().json(user),
     (_, Ok(Some(organization))) => HttpResponse::Ok().json(organization),
     _ => {
       log::info!("Profile {} not found", login);
-      let result_error = HttpError::new("Profile not found".to_string()).status(404);
+      let result_error = HttpError::new("Profile not found".to_string());
       HttpResponse::BadRequest().json(result_error)
     }
   }

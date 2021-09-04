@@ -7,6 +7,10 @@ use actix_web::{App, HttpServer};
 use log;
 use std::env;
 
+pub struct AppState {
+  db: mongodb::Database,
+}
+
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
   let db = db_client_connection().await.unwrap();
@@ -20,8 +24,7 @@ pub async fn main() -> std::io::Result<()> {
   HttpServer::new(move || {
     App::new()
       .wrap(get_cors())
-      // TODO convert this to AppState { db: Database }
-      .data(db.clone())
+      .data(AppState { db: db.clone() })
       .service(route::profile::scope())
       .service(route::user::scope())
       .service(route::organization::scope())

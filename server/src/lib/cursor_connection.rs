@@ -172,7 +172,7 @@ impl<T> Edges<T> {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct PageInfo {
-  // @TODO implement hasNextPage and hasPreviousPage
+  // TODO implement hasNextPage and hasPreviousPage
   start_cursor: Option<String>,
   end_cursor: Option<String>,
 }

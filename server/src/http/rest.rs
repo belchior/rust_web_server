@@ -2,8 +2,7 @@ mod route;
 
 use crate::db::db_client_connection;
 use crate::http::cors::get_cors;
-use actix_web::dev::Service;
-use actix_web::{App, HttpServer};
+use actix_web::{middleware, App, HttpServer};
 use log;
 use std::env;
 
@@ -28,15 +27,7 @@ pub async fn main() -> std::io::Result<()> {
       .service(route::profile::scope())
       .service(route::user::scope())
       .service(route::organization::scope())
-      // TODO put this middleware out of the mod file and configure logs base on environment
-      .wrap_fn(|req, srv| {
-        log::info!("Request {} {}", req.method(), req.uri());
-        let fut = srv.call(req);
-        async {
-          let res = fut.await?;
-          Ok(res)
-        }
-      })
+      .wrap(middleware::Logger::new("%U"))
       .default_service(route::not_found())
   })
   .bind(server_uri)?

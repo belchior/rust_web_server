@@ -1,8 +1,9 @@
+mod middleware;
 mod route;
 
 use crate::db::db_client_connection;
 use crate::http::cors::get_cors;
-use actix_web::{middleware, App, HttpServer};
+use actix_web::{App, HttpServer};
 use log;
 use std::env;
 
@@ -27,7 +28,7 @@ pub async fn main() -> std::io::Result<()> {
       .service(route::profile::scope())
       .service(route::user::scope())
       .service(route::organization::scope())
-      .wrap(middleware::Logger::new("%U"))
+      .wrap(actix_web::middleware::Logger::new("%U"))
       .default_service(route::not_found())
   })
   .bind(server_uri)?

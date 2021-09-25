@@ -1,0 +1,65 @@
+{
+  "name": "learning-graphql-client",
+  "description": "client",
+  "version": "0.1.0",
+  "author": "Belchior Oliveira",
+  "license": "MIT",
+  "engines": {
+    "node": "16.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/belchior/learning-graphql.git"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "lint": "tsc --noEmit && eslint 'src/**/*.tsx'",
+    "test": "react-scripts test --coverage --color",
+    "test:watch": "react-scripts test"
+  },
+  "dependencies": {
+    "@material-ui/core": "^4.11.4",
+    "@material-ui/icons": "^4.11.2",
+    "@material-ui/lab": "^4.0.0-alpha.58",
+    "@testing-library/jest-dom": "^5.13.0",
+    "@testing-library/user-event": "^13.1.9",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-query": "^3.16.1",
+    "react-router-dom": "^5.1.2"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^12.1.0",
+    "@types/jest": "^27.0.2",
+    "@types/node": "^16.10.1",
+    "@types/react": "^17.0.9",
+    "@types/react-dom": "^17.0.6",
+    "@types/react-router-dom": "^5.1.7",
+    "@typescript-eslint/eslint-plugin": "^4.26.0",
+    "@typescript-eslint/parser": "^4.26.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^7.28.0",
+    "eslint-plugin-jest": "^24.3.6",
+    "esm": "^3.2.25",
+    "react-scripts": "^4.0.3",
+    "typescript": "^4.3.2"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.tsx"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

@@ -15,7 +15,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "lint": "tsc --noEmit && eslint 'src/**/*.tsx'",
-    "test": "react-scripts test --coverage --color",
+    "test": "CI=true react-scripts test --coverage --color",
     "test:watch": "react-scripts test"
   },
   "dependencies": {

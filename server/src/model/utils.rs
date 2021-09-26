@@ -1,5 +1,5 @@
+use super::{organization::Organization, repository::Repository, user::User};
 use crate::lib::cursor_connection::{cursor_to_reference, CursorConnection, Direction};
-use crate::model::{Organization, Repository, User};
 use mongodb::bson;
 
 pub fn to_object_id(cursor: Option<String>) -> Option<bson::oid::ObjectId> {

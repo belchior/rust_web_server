@@ -1,7 +1,6 @@
 use crate::http::http_handler::HttpError;
 use crate::http::rest::AppState;
-use crate::repository::organization::find_organization_by_login;
-use crate::repository::user::find_user_by_login;
+use crate::model::{organization::find_organization_by_login, user::find_user_by_login};
 use actix_web::{web, HttpResponse, Responder, Scope};
 use futures::join;
 use log;

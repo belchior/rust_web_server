@@ -7,23 +7,23 @@
 
 # cargo clean;
 
-RUSTFLAGS="-Zinstrument-coverage" LLVM_PROFILE_FILE="target/debug/rust_calc-%m.profraw" cargo +nightly test --tests;
+RUSTFLAGS="-Zinstrument-coverage" LLVM_PROFILE_FILE="target/debug/rust_web_server-%m.profraw" cargo +nightly test --tests;
 
-cargo +nightly profdata -- merge -sparse target/debug/rust_calc-*.profraw -o target/debug/rust_calc.profdata;
+cargo +nightly profdata -- merge -sparse target/debug/rust_web_server-*.profraw -o target/debug/rust_web_server.profdata;
 
 cargo +nightly cov -- report \
     --use-color  \
     --ignore-filename-regex='/.cargo/registry' \
     --ignore-filename-regex='.*_spec\.rs$' \
-    --instr-profile=target/debug/rust_calc.profdata \
-    --object target/debug/deps/rust_calc-f0967c694a838d0e;
+    --instr-profile=target/debug/rust_web_server.profdata \
+    --object target/debug/deps/rust_web_server-f0967c694a838d0e;
 
 cargo +nightly cov -- show \
     --use-color \
     --ignore-filename-regex='/.cargo/registry' \
     --ignore-filename-regex='.*_spec\.rs$' \
-    --instr-profile=target/debug/rust_calc.profdata \
-    --object target/debug/deps/rust_calc-f0967c694a838d0e \
+    --instr-profile=target/debug/rust_web_server.profdata \
+    --object target/debug/deps/rust_web_server-f0967c694a838d0e \
     --show-instantiations --show-line-counts-or-regions \
     --Xdemangler=rustfilt \
     --output-dir=./target/debug \

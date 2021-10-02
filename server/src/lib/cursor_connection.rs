@@ -127,7 +127,7 @@ impl PaginationArguments {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
   DecodeError(base64::DecodeError),
   Utf8Error(std::str::Utf8Error),
@@ -205,4 +205,36 @@ fn optional_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<String>, D:
     Some("" | "null") => None,
     Some(value) => Some(value.to_owned()),
   })
+}
+
+#[cfg(test)]
+mod cursor_connection_spec {
+  use super::*;
+  use pretty_assertions::assert_eq;
+
+  #[test]
+  fn testing_cursor_connection_new() {
+    let items = vec!["a", "b"];
+    let referece_from = |item: &str| item._id.to_hex();
+    let cursor_connection = CursorConnection::new(items, reference_from);
+    let expected_reference = "ref_1234".to_owned();
+
+    assert_eq!(reference, Ok(expected_reference));
+  }
+
+  #[test]
+  fn testing_cursor_to_reference() {
+    let reference = cursor_to_reference("cmVmXzEyMzQ=".to_owned());
+    let expected_reference = "ref_1234".to_owned();
+
+    assert_eq!(reference, Ok(expected_reference));
+  }
+
+  #[test]
+  fn testing_reference_to_cursor() {
+    let cursor = reference_to_cursor("ref_1234".to_owned());
+    let expected_cursor = "cmVmXzEyMzQ=".to_owned();
+
+    assert_eq!(cursor, expected_cursor);
+  }
 }

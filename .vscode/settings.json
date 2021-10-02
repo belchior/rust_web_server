@@ -1,5 +1,6 @@
 {
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
-  "editor.wordWrapColumn": 120
+  "editor.wordWrapColumn": 120,
+  "explorer.sortOrder": "mixed"
 }

@@ -38,6 +38,7 @@ scripts/coverage.sh
 
 Actix Web
 
+- https://actix.rs/docs/getting-started/
 - https://docs.rs/actix-web/3.3.2/actix_web/
 - https://docs.rs/serde/1.0.126/serde/
 

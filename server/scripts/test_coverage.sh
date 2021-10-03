@@ -16,6 +16,7 @@ cargo +nightly profdata -- merge -sparse target/debug/$RUST_PKG_NAME-*.profraw -
 cargo +nightly cov -- report \
     --use-color \
     --ignore-filename-regex='/rustc/.*' \
+    --ignore-filename-regex='./*_spec\.rs$' \
     --ignore-filename-regex='/.cargo/registry' \
     --instr-profile=target/debug/$RUST_PKG_NAME.profdata \
     --object target/debug/deps/$RUST_PKG_NAME-$RUST_COVERAGE_NUMBER;
@@ -23,6 +24,7 @@ cargo +nightly cov -- report \
 cargo +nightly cov -- show \
     --use-color \
     --ignore-filename-regex='/rustc/.*' \
+    --ignore-filename-regex='./*_spec\.rs$' \
     --ignore-filename-regex='/.cargo/registry' \
     --instr-profile=target/debug/$RUST_PKG_NAME.profdata \
     --object target/debug/deps/$RUST_PKG_NAME-$RUST_COVERAGE_NUMBER \

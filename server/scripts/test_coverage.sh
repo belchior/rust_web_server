@@ -7,23 +7,25 @@
 
 # cargo clean;
 
-RUSTFLAGS="-Zinstrument-coverage" LLVM_PROFILE_FILE="target/debug/rust_calc-%m.profraw" cargo +nightly test --tests;
+source .env
+rm target/debug/$RUST_PKG_NAME-*.profraw
+RUSTFLAGS="-Zinstrument-coverage" LLVM_PROFILE_FILE="target/debug/$RUST_PKG_NAME-%m.profraw" cargo +nightly test --tests;
 
-cargo +nightly profdata -- merge -sparse target/debug/rust_calc-*.profraw -o target/debug/rust_calc.profdata;
+cargo +nightly profdata -- merge -sparse target/debug/$RUST_PKG_NAME-*.profraw -o target/debug/$RUST_PKG_NAME.profdata;
 
 cargo +nightly cov -- report \
-    --use-color  \
+    --use-color \
+    --ignore-filename-regex='/rustc/.*' \
     --ignore-filename-regex='/.cargo/registry' \
-    --ignore-filename-regex='.*_spec\.rs$' \
-    --instr-profile=target/debug/rust_calc.profdata \
-    --object target/debug/deps/rust_calc-f0967c694a838d0e;
+    --instr-profile=target/debug/$RUST_PKG_NAME.profdata \
+    --object target/debug/deps/$RUST_PKG_NAME-$RUST_COVERAGE_NUMBER;
 
 cargo +nightly cov -- show \
     --use-color \
+    --ignore-filename-regex='/rustc/.*' \
     --ignore-filename-regex='/.cargo/registry' \
-    --ignore-filename-regex='.*_spec\.rs$' \
-    --instr-profile=target/debug/rust_calc.profdata \
-    --object target/debug/deps/rust_calc-f0967c694a838d0e \
+    --instr-profile=target/debug/$RUST_PKG_NAME.profdata \
+    --object target/debug/deps/$RUST_PKG_NAME-$RUST_COVERAGE_NUMBER \
     --show-instantiations --show-line-counts-or-regions \
     --Xdemangler=rustfilt \
     --output-dir=./target/debug \

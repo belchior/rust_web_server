@@ -1,4 +1,49 @@
-# Client
+# Rust Web Server
+
+## Stack
+
+**Server**
+
+- Rust
+- Actix Web
+- MongoDB
+
+**Client**
+
+- TypeScript
+- React
+- Material UI
+
+
+## Development
+
+**Server**
+
+install dependencies
+
+```shell
+cargo install --path .
+```
+
+start dev
+
+```shell
+scripts/start_dev.sh
+```
+
+test
+
+```shell
+scripts/test.sh
+```
+
+build
+
+```shell
+scripts/build.sh
+```
+
+**Client**
 
 install dependencies
 
@@ -12,32 +57,11 @@ start dev
 npm start
 ```
 
-# Server
-
-## Development
-
-install dependencies
-
-```shell
-cargo install --path .
-```
-
-start dev
-
-```shell
-cargo watch -w ./src -x 'run --bin rust_web_server'
-```
-
-coverage
-
-```shell
-scripts/coverage.sh
-```
-
 ## References
 
 Actix Web
 
+- https://actix.rs/docs/getting-started/
 - https://docs.rs/actix-web/3.3.2/actix_web/
 - https://docs.rs/serde/1.0.126/serde/
 

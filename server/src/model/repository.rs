@@ -22,6 +22,7 @@ pub struct License {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Owner {
   pub _id: bson::oid::ObjectId,
+  pub login: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

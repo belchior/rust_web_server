@@ -4,7 +4,6 @@ use mongodb::{
   bson::{self, doc},
   error::Error as MongodbError,
   options::FindOneOptions,
-  Collection,
 };
 use serde::{Deserialize, Serialize};
 use tokio_stream::StreamExt;
@@ -32,8 +31,7 @@ pub struct User {
 }
 
 pub async fn find_user_by_login(db: &mongodb::Database, login: &String) -> Result<Option<User>, MongodbError> {
-  let user_collection: Collection<User> = db.collection_with_type("users");
-
+  let user_collection = db.collection::<User>("users");
   let filter = doc! { "login": login };
   let options = FindOneOptions::builder()
     .projection(doc! { "organizations": 0 })
@@ -49,8 +47,7 @@ pub async fn find_organizations_by_login(
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<Organization>>, MongodbError> {
-  let user_collection: Collection<User> = db.collection_with_type("users");
-
+  let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_organization(&login, pagination_arguments);
   let mut cursor = user_collection.aggregate(pipeline, None).await?;
 
@@ -70,8 +67,7 @@ pub async fn find_starred_repositories_by_login(
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
-  let user_collection: Collection<User> = db.collection_with_type("users");
-
+  let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_starred_repositories(login, pagination_arguments);
   let mut cursor = user_collection.aggregate(pipeline, None).await?;
 
@@ -91,7 +87,7 @@ pub async fn find_followers_by_login(
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<User>>, MongodbError> {
-  let user_collection: Collection<User> = db.collection_with_type("users");
+  let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_followers(login, pagination_arguments);
   let mut cursor = user_collection.aggregate(pipeline, None).await?;
 
@@ -111,7 +107,7 @@ pub async fn find_following_by_login(
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<User>>, MongodbError> {
-  let user_collection: Collection<User> = db.collection_with_type("users");
+  let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_following(login, pagination_arguments);
   let mut cursor = user_collection.aggregate(pipeline, None).await?;
 

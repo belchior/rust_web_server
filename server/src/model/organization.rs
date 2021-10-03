@@ -4,7 +4,6 @@ use mongodb::{
   bson::{self, doc},
   error::Error as MongodbError,
   options::FindOneOptions,
-  Collection,
 };
 use serde::{Deserialize, Serialize};
 use tokio_stream::StreamExt;
@@ -35,7 +34,7 @@ pub async fn find_organization_by_login(
   db: &mongodb::Database,
   login: &String,
 ) -> Result<Option<Organization>, MongodbError> {
-  let organization_collection: Collection<Organization> = db.collection_with_type("organizations");
+  let organization_collection = db.collection::<Organization>("organizations");
 
   let filter = doc! { "login": login };
   let options = FindOneOptions::builder().projection(doc! { "people": 0 }).build();
@@ -49,7 +48,7 @@ pub async fn find_people_by_login(
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<User>>, MongodbError> {
-  let organization_collection: Collection<Organization> = db.collection_with_type("organizations");
+  let organization_collection = db.collection::<Organization>("organizations");
 
   let pipeline = pipeline_paginated_people(login, pagination_arguments);
   let mut cursor = organization_collection.aggregate(pipeline, None).await?;
@@ -70,7 +69,7 @@ pub async fn find_repositories_by_login(
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
-  let repositories_collection: Collection<Repository> = db.collection_with_type("repositories");
+  let repositories_collection = db.collection::<Repository>("repositories");
   let organization = find_organization_by_login(db, login).await?;
 
   if let None = organization {

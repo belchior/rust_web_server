@@ -12,7 +12,7 @@ pub fn to_object_id(cursor: Option<String>) -> Option<bson::oid::ObjectId> {
     return None;
   }
 
-  let id = bson::oid::ObjectId::with_string(&reference.unwrap());
+  let id = bson::oid::ObjectId::parse_str(&reference.unwrap());
   if id.is_err() {
     return None;
   }

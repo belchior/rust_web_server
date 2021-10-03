@@ -3,7 +3,6 @@ use crate::lib::cursor_connection::{CursorConnection, PaginationArguments};
 use mongodb::{
   bson::{self, doc, Document},
   error::Error as MongodbError,
-  Collection,
 };
 use serde::{Deserialize, Serialize};
 use tokio_stream::StreamExt;
@@ -22,7 +21,6 @@ pub struct License {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Owner {
   pub _id: bson::oid::ObjectId,
-  pub login: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,8 +29,7 @@ pub struct Repository {
   #[serde(rename = "_id")]
   pub _id: bson::oid::ObjectId,
   pub description: Option<String>,
-  // TODO the correct type of this field should be u32
-  pub fork_count: f64,
+  pub fork_count: u32,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub license_info: Option<License>,
   pub name: String,
@@ -55,7 +52,7 @@ pub async fn find_repositories_by_login(
 }
 
 async fn find_user(db: &mongodb::Database, login: &String) -> Result<Option<User>, MongodbError> {
-  let user_collection: Collection<User> = db.collection_with_type("users");
+  let user_collection = db.collection::<User>("users");
   user_collection.find_one(doc! { "login": login }, None).await
 }
 
@@ -64,7 +61,7 @@ async fn find_repositories(
   user_id: &bson::oid::ObjectId,
   pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
-  let repo_collection = db.collection("repositories");
+  let repo_collection = db.collection::<Repository>("repositories");
   let pipeline = pipeline_paginated_repositories(pagination_arguments, &user_id);
 
   let cursor = repo_collection.aggregate(pipeline, None).await?;

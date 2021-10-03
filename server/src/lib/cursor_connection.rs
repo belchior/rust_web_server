@@ -93,10 +93,10 @@ pub enum Direction {
 
 #[derive(Deserialize, Debug)]
 pub struct PaginationArguments {
-  pub first: Option<u64>,
+  pub first: Option<u32>,
   #[serde(default, deserialize_with = "optional_string")]
   pub after: Option<String>,
-  pub last: Option<u64>,
+  pub last: Option<u32>,
   #[serde(default, deserialize_with = "optional_string")]
   pub before: Option<String>,
 }
@@ -119,7 +119,7 @@ impl PaginationArguments {
     }
   }
 
-  pub fn parse_args(self) -> Result<(Direction, u64, Option<String>), Error> {
+  pub fn parse_args(self) -> Result<(Direction, u32, Option<String>), Error> {
     use Direction::*;
     let default_limit = 15;
 

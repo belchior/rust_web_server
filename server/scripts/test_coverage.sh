@@ -7,8 +7,8 @@
 
 # cargo clean;
 
-source .env
-rm target/debug/$RUST_PKG_NAME-*.profraw
+RUST_PKG_NAME="$(grep 'name\s*=\s*"' Cargo.toml | sed -E 's/.*"(.*)"/\1/')"
+RUST_COVERAGE_ID="$(ls target/debug/deps/rust_web_server-*.d | sed -E 's/.*-(.*)\.d$/\1/')"
 RUSTFLAGS="-Zinstrument-coverage" LLVM_PROFILE_FILE="target/debug/$RUST_PKG_NAME-%m.profraw" cargo +nightly test --tests;
 
 cargo +nightly profdata -- merge -sparse target/debug/$RUST_PKG_NAME-*.profraw -o target/debug/$RUST_PKG_NAME.profdata;
@@ -19,7 +19,7 @@ cargo +nightly cov -- report \
     --ignore-filename-regex='./*_spec\.rs$' \
     --ignore-filename-regex='/.cargo/registry' \
     --instr-profile=target/debug/$RUST_PKG_NAME.profdata \
-    --object target/debug/deps/$RUST_PKG_NAME-$RUST_COVERAGE_NUMBER;
+    --object target/debug/deps/$RUST_PKG_NAME-$RUST_COVERAGE_ID;
 
 cargo +nightly cov -- show \
     --use-color \
@@ -27,7 +27,7 @@ cargo +nightly cov -- show \
     --ignore-filename-regex='./*_spec\.rs$' \
     --ignore-filename-regex='/.cargo/registry' \
     --instr-profile=target/debug/$RUST_PKG_NAME.profdata \
-    --object target/debug/deps/$RUST_PKG_NAME-$RUST_COVERAGE_NUMBER \
+    --object target/debug/deps/$RUST_PKG_NAME-$RUST_COVERAGE_ID \
     --show-instantiations --show-line-counts-or-regions \
     --Xdemangler=rustfilt \
     --output-dir=./target/debug \

@@ -8,7 +8,7 @@ use mongodb::{
 use serde::{Deserialize, Serialize};
 use tokio_stream::StreamExt;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Organization {
   #[serde(rename = "_id")]

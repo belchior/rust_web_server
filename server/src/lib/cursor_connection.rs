@@ -190,7 +190,7 @@ impl From<std::str::Utf8Error> for Error {
 pub fn cursor_to_reference(cursor: String) -> Result<String, Error> {
   let result = base64::decode(cursor)?;
   let result = std::str::from_utf8(&result)?;
-  Ok(result.to_owned())
+  Ok(result.to_string())
 }
 
 type ReferenceFrom<T> = fn(item: &T) -> String;
@@ -203,6 +203,6 @@ fn optional_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<String>, D:
   Deserialize::deserialize(d).map(|value: Option<_>| match value {
     None => None,
     Some("" | "null") => None,
-    Some(value) => Some(value.to_owned()),
+    Some(value) => Some(value.to_string()),
   })
 }

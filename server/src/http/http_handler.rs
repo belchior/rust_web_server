@@ -9,7 +9,7 @@ pub struct HttpError {
 impl HttpError {
   pub fn new(message: String) -> Self {
     Self {
-      message: message.to_owned(),
+      message: message.to_string(),
     }
   }
 }

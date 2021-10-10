@@ -5,22 +5,22 @@ use pretty_assertions::assert_eq;
 
 #[test]
 fn should_produce_an_cursor_connection_instance_with_edges() {
-  let items = vec!["test 00".to_owned(), "test 01".to_owned()];
+  let items = vec!["test 00".to_string(), "test 01".to_string()];
   let reference_from = |item: &String| item.clone();
   let cursor_connection = CursorConnection::new(items, reference_from);
   let expected_cursor_connection = CursorConnection {
     page_info: PageInfo {
-      start_cursor: Some("dGVzdCAwMA==".to_owned()),
-      end_cursor: Some("dGVzdCAwMQ==".to_owned()),
+      start_cursor: Some("dGVzdCAwMA==".to_string()),
+      end_cursor: Some("dGVzdCAwMQ==".to_string()),
     },
     edges: vec![
       Edges {
-        cursor: "dGVzdCAwMA==".to_owned(),
-        node: "test 00".to_owned(),
+        cursor: "dGVzdCAwMA==".to_string(),
+        node: "test 00".to_string(),
       },
       Edges {
-        cursor: "dGVzdCAwMQ==".to_owned(),
-        node: "test 01".to_owned(),
+        cursor: "dGVzdCAwMQ==".to_string(),
+        node: "test 01".to_string(),
       },
     ],
   };
@@ -46,8 +46,8 @@ fn should_produce_an_cursor_connection_instance_without_edges() {
 
 #[test]
 fn testing_cursor_to_reference() {
-  let reference = cursor_to_reference("cmVmXzEyMzQ=".to_owned());
-  let expected_reference = "ref_1234".to_owned();
+  let reference = cursor_to_reference("cmVmXzEyMzQ=".to_string());
+  let expected_reference = "ref_1234".to_string();
 
   assert_eq!(reference, Ok(expected_reference));
 }
@@ -82,7 +82,7 @@ fn should_be_valid_pass_only_first() {
 fn should_be_valid_pass_only_after() {
   let arg = PaginationArguments {
     first: None,
-    after: Some("tff3g3fD=".to_owned()),
+    after: Some("tff3g3fD=".to_string()),
     last: None,
     before: None,
   };
@@ -108,7 +108,7 @@ fn should_be_valid_pass_only_before() {
     first: None,
     after: None,
     last: None,
-    before: Some("tff3g3fD=".to_owned()),
+    before: Some("tff3g3fD=".to_string()),
   };
 
   assert!(PaginationArguments::is_valid(&arg) == true);
@@ -118,9 +118,9 @@ fn should_be_valid_pass_only_before() {
 fn should_be_invalid_pass_first_and_last_attributes() {
   let arg = PaginationArguments {
     first: None,
-    after: Some("tff3g3fD=".to_owned()),
+    after: Some("tff3g3fD=".to_string()),
     last: None,
-    before: Some("tff3g3fD=".to_owned()),
+    before: Some("tff3g3fD=".to_string()),
   };
 
   assert!(PaginationArguments::is_valid(&arg) == false);
@@ -170,9 +170,9 @@ fn should_parse_with_error_when_there_is_first_and_last_attributes() {
 fn should_parse_with_error_when_there_is_after_and_before_attributes() {
   let arg = PaginationArguments {
     first: None,
-    after: Some("tff3g3fD=".to_owned()),
+    after: Some("tff3g3fD=".to_string()),
     last: None,
-    before: Some("tff3g3fD=".to_owned()),
+    before: Some("tff3g3fD=".to_string()),
   };
   let expected_values = Err(Error::InvalidPaginationArguments);
 
@@ -183,11 +183,11 @@ fn should_parse_with_error_when_there_is_after_and_before_attributes() {
 fn should_parse_when_there_is_first_and_after_attributes() {
   let arg = PaginationArguments {
     first: Some(10),
-    after: Some("tff3g3fD=".to_owned()),
+    after: Some("tff3g3fD=".to_string()),
     last: None,
     before: None,
   };
-  let expected_values = Ok((Direction::Forward, 10, Some("tff3g3fD=".to_owned())));
+  let expected_values = Ok((Direction::Forward, 10, Some("tff3g3fD=".to_string())));
 
   assert_eq!(arg.parse_args(), expected_values);
 }
@@ -198,9 +198,9 @@ fn should_parse_when_there_is_last_and_before_attributes() {
     first: None,
     after: None,
     last: Some(10),
-    before: Some("tff3g3fD=".to_owned()),
+    before: Some("tff3g3fD=".to_string()),
   };
-  let expected_values = Ok((Direction::Backward, 10, Some("tff3g3fD=".to_owned())));
+  let expected_values = Ok((Direction::Backward, 10, Some("tff3g3fD=".to_string())));
 
   assert_eq!(arg.parse_args(), expected_values);
 }
@@ -222,11 +222,11 @@ fn should_parse_when_there_is_only_first_attribute() {
 fn should_parse_when_there_is_only_after_attribute() {
   let arg = PaginationArguments {
     first: None,
-    after: Some("tff3g3fD=".to_owned()),
+    after: Some("tff3g3fD=".to_string()),
     last: None,
     before: None,
   };
-  let expected_values = Ok((Direction::Forward, 15, Some("tff3g3fD=".to_owned())));
+  let expected_values = Ok((Direction::Forward, 15, Some("tff3g3fD=".to_string())));
 
   assert_eq!(arg.parse_args(), expected_values);
 }
@@ -250,9 +250,9 @@ fn should_parse_when_there_is_only_before_attribute() {
     first: None,
     after: None,
     last: None,
-    before: Some("tff3g3fD=".to_owned()),
+    before: Some("tff3g3fD=".to_string()),
   };
-  let expected_values = Ok((Direction::Backward, 15, Some("tff3g3fD=".to_owned())));
+  let expected_values = Ok((Direction::Backward, 15, Some("tff3g3fD=".to_string())));
 
   assert_eq!(arg.parse_args(), expected_values);
 }

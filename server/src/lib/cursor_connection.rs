@@ -33,7 +33,7 @@ pub struct Edges<T> {
   pub node: T,
 }
 impl<T> Edges<T> {
-  fn items_to_edges(items: Vec<T>, reference_from: ReferenceFrom<T>) -> Vec<Self> {
+  fn into_edges(items: Vec<T>, reference_from: ReferenceFrom<T>) -> Vec<Self> {
     items
       .into_iter()
       .map(|item| Self {
@@ -80,7 +80,7 @@ impl<T> CursorConnection<T> {
   pub fn new(items: Vec<T>, reference_from: ReferenceFrom<T>) -> Self {
     Self {
       page_info: PageInfo::new(&items, reference_from),
-      edges: Edges::items_to_edges(items, reference_from),
+      edges: Edges::into_edges(items, reference_from),
     }
   }
 }

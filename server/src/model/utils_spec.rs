@@ -8,13 +8,44 @@ use crate::lib::cursor_connection::{CursorConnection, Direction};
 use mongodb::bson;
 use pretty_assertions::assert_eq;
 
-#[test]
-fn should_convert_cursor_to_object_id() {
-  let cursor = Some("NWU4MGVjN2Q1MmYxNTcyMGJlMmJiYTc5".to_string());
-  let object_id = to_object_id(cursor);
-  let expected_object_id = bson::oid::ObjectId::parse_str("5e80ec7d52f15720be2bba79").unwrap();
+#[cfg(test)]
+mod describe_to_object_id {
+  use super::*;
+  use base64;
+  use pretty_assertions::assert_eq;
 
-  assert_eq!(object_id, Some(expected_object_id));
+  #[test]
+  fn should_convert_cursor_to_object_id() {
+    let cursor = Some("NWU4MGVjN2Q1MmYxNTcyMGJlMmJiYTc5".to_string());
+    let object_id = to_object_id(cursor);
+    let expected_object_id = bson::oid::ObjectId::parse_str("5e80ec7d52f15720be2bba79").unwrap();
+
+    assert_eq!(object_id, Some(expected_object_id));
+  }
+
+  #[test]
+  fn should_return_none_when_cursor_is_none() {
+    let cursor = None;
+    let object_id = to_object_id(cursor);
+
+    assert_eq!(object_id, None);
+  }
+
+  #[test]
+  fn should_return_none_when_cursor_is_not_a_valid_cursor() {
+    let cursor = Some("invalid_cursor".to_string());
+    let object_id = to_object_id(cursor);
+
+    assert_eq!(object_id, None);
+  }
+
+  #[test]
+  fn should_return_none_when_cursor_is_not_a_valid_object_id() {
+    let cursor = Some(base64::encode("invalid_object_id"));
+    let object_id = to_object_id(cursor);
+
+    assert_eq!(object_id, None);
+  }
 }
 
 #[test]

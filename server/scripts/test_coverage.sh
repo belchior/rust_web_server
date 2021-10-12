@@ -38,7 +38,7 @@ cargo +nightly cov -- show \
     --output-dir=$COVERAGE_PATH \
     --format=html;
 
-echo "\n\nAll files can be found at:\n$(pwd)/$COVERAGE_PATH/coverage/index.html\n\n";
+echo "\n\nAll files can be found at:\n$(pwd)/$COVERAGE_PATH/index.html\n\n";
 
 # Reference
 # https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/instrument-coverage.html

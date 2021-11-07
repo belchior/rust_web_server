@@ -12,6 +12,8 @@ COVERAGE_PATH="target/debug/test_coverage"
 
 mkdir -p "$COVERAGE_PATH"
 
+rm -f "target/debug/deps/$PKG_NAME"*
+
 RUSTFLAGS="-Z instrument-coverage" LLVM_PROFILE_FILE="$COVERAGE_PATH/$PKG_NAME-%m.profraw" cargo +nightly test --tests;
 cargo +nightly profdata -- merge -sparse $COVERAGE_PATH/$PKG_NAME-*.profraw -o $COVERAGE_PATH/$PKG_NAME.profdata;
 
@@ -21,7 +23,7 @@ cargo +nightly cov -- report \
     --use-color \
     --ignore-filename-regex='/rustc/.*' \
     --ignore-filename-regex='./*_spec\.rs$' \
-    --ignore-filename-regex='/.cargo/registry' \
+    --ignore-filename-regex='/cargo/registry' \
     --instr-profile=$COVERAGE_PATH/$PKG_NAME.profdata \
     --object target/debug/deps/$PKG_NAME-$COVERAGE_ID;
 
@@ -29,7 +31,7 @@ cargo +nightly cov -- show \
     --use-color \
     --ignore-filename-regex='/rustc/.*' \
     --ignore-filename-regex='./*_spec\.rs$' \
-    --ignore-filename-regex='/.cargo/registry' \
+    --ignore-filename-regex='/cargo/registry' \
     --instr-profile=$COVERAGE_PATH/$PKG_NAME.profdata \
     --object target/debug/deps/$PKG_NAME-$COVERAGE_ID \
     --show-instantiations \

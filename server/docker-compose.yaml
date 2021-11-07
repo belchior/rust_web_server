@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  base_image:
+    build:
+      context: ./
+      dockerfile: Dockerfile.base
+    image: base_image
+
+  mongodb:
+    image: mongo:4.2
+    container_name: mongodb
+    volumes:
+      - /usr/local/var/mongodb:/data/db
+    networks:
+      - my_network
+
+  server:
+    image: base_image
+    container_name: server
+    command: bash scripts/start_dev.sh
+    ports:
+      - "8080:8080"
+    environment:
+      - "DATABASE_URI=mongodb://mongodb:27017"
+      - "DATABASE_NAME=learning"
+    volumes:
+      - "./scripts:/server/scripts"
+      - "./src:/server/src"
+      - "./.env:/server/.env"
+    depends_on:
+      - mongodb
+    networks:
+      - my_network
+
+  test_server:
+    image: base_image
+    container_name: test_server
+    command: bash scripts/test_watch.sh
+    environment:
+      - "DATABASE_URI=mongodb://mongodb:27017"
+      - "DATABASE_NAME=test_learning"
+    volumes:
+      - "./scripts:/server/scripts"
+      - "./src:/server/src"
+      - "./tests:/server/tests"
+      - "./.env:/server/.env"
+    depends_on:
+      - mongodb
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge

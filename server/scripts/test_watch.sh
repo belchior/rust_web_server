@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cargo watch -x test
+cargo watch -w ./src -w ./tests -x test

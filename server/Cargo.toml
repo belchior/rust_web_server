@@ -2,7 +2,7 @@
 name = "rust_web_server"
 version = "0.1.0"
 authors = ["Belchior Oliveira <belchior@outlook.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,12 +13,11 @@ actix-web = "3.3.2"
 base64 = "0.13.0"
 dotenv = "0.15.0"
 env_logger = "0.9.0"
-futures = "0.3.16"
+futures = "0.3.17"
 log = "0.4.14"
-mongodb = "2.0.0"
-serde = "1.0.126"
-tokio-stream = "0.1.6"
+mongodb = { version = "2.0.1", default-features = false, features = ["async-std-runtime"] }
+serde = "1.0.130"
+tokio-stream = "0.1.7"
 
 [dev-dependencies]
-cargo-watch = "8.1.1"
-pretty_assertions = "0.7.2"
+pretty_assertions = "1.0.0"

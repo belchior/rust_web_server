@@ -1,9 +1,16 @@
-pub mod organization;
-pub mod profile;
-pub mod user;
+mod organization;
+mod profile;
+mod user;
 
 use crate::http::http_handler::HttpError;
 use actix_web::{web, HttpResponse, Route};
+
+pub fn config_route(cfg: &mut web::ServiceConfig) {
+  cfg
+    .service(profile::scope())
+    .service(user::scope())
+    .service(organization::scope());
+}
 
 pub fn not_found() -> Route {
   web::route().to(|| {

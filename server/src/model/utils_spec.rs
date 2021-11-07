@@ -79,7 +79,7 @@ fn should_convert_a_list_repositories_to_cursor_connection() {
     vec![Repository {
       _id: repo_id,
       description: None,
-      fork_count: 0,
+      fork_count: 0_f64,
       license_info: None,
       name: "Repo".to_string(),
       owner: Owner { _id: owner_id },
@@ -90,7 +90,7 @@ fn should_convert_a_list_repositories_to_cursor_connection() {
   let cursor_connection = repositories_to_cursor_connection(vec![Repository {
     _id: repo_id,
     description: None,
-    fork_count: 0,
+    fork_count: 0_f64,
     license_info: None,
     name: "Repo".to_string(),
     owner: Owner { _id: owner_id },

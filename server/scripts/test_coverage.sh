@@ -8,23 +8,24 @@
 
 
 PKG_NAME="$(grep 'name\s*=\s*"' Cargo.toml | sed -E 's/.*"(.*)"/\1/')"
-COVERAGE_PATH="target/debug/test_coverage"
+COVERAGE_DATA="target/debug/coverage"
+COVERAGE_PATH="coverage"
 
-mkdir -p "$COVERAGE_PATH"
+mkdir -p "$COVERAGE_DATA"
 
 rm -f "target/debug/deps/$PKG_NAME"*
 
-RUSTFLAGS="-Z instrument-coverage" LLVM_PROFILE_FILE="$COVERAGE_PATH/$PKG_NAME-%m.profraw" cargo +nightly test --tests;
-cargo +nightly profdata -- merge -sparse $COVERAGE_PATH/$PKG_NAME-*.profraw -o $COVERAGE_PATH/$PKG_NAME.profdata;
+RUSTFLAGS="-Z instrument-coverage" LLVM_PROFILE_FILE="$COVERAGE_DATA/$PKG_NAME-%m.profraw" cargo +nightly test;
+cargo +nightly profdata -- merge -sparse $COVERAGE_DATA/$PKG_NAME-*.profraw -o $COVERAGE_DATA/$PKG_NAME.profdata;
 
-COVERAGE_ID="$(ls target/debug/deps/rust_web_server-*.d | head -n1 | cut -d " " -f1 | sed -E 's/.*-(.*)\.d$/\1/')"
+COVERAGE_ID="$(ls target/debug/deps/$PKG_NAME-*.d | head -n1 | cut -d " " -f1 | sed -E 's/.*-(.*)\.d$/\1/')"
 
 cargo +nightly cov -- report \
     --use-color \
     --ignore-filename-regex='/rustc/.*' \
     --ignore-filename-regex='./*_spec\.rs$' \
     --ignore-filename-regex='/cargo/registry' \
-    --instr-profile=$COVERAGE_PATH/$PKG_NAME.profdata \
+    --instr-profile=$COVERAGE_DATA/$PKG_NAME.profdata \
     --object target/debug/deps/$PKG_NAME-$COVERAGE_ID;
 
 cargo +nightly cov -- show \
@@ -32,7 +33,7 @@ cargo +nightly cov -- show \
     --ignore-filename-regex='/rustc/.*' \
     --ignore-filename-regex='./*_spec\.rs$' \
     --ignore-filename-regex='/cargo/registry' \
-    --instr-profile=$COVERAGE_PATH/$PKG_NAME.profdata \
+    --instr-profile=$COVERAGE_DATA/$PKG_NAME.profdata \
     --object target/debug/deps/$PKG_NAME-$COVERAGE_ID \
     --show-instantiations \
     --show-line-counts-or-regions \

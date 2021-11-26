@@ -16,8 +16,8 @@ RUN mkdir src && echo "fn main() {}" >> src/main.rs &&\
 
 # Run
 # docker run -it --rm \
+#     -v "$(pwd)/coverage:/server/coverage" \
 #     -v "$(pwd)/scripts:/server/scripts" \
 #     -v "$(pwd)/src:/server/src" \
-#     -v "$(pwd)/tests:/server/tests" \
 #     -v "$(pwd)/.env:/server/.env" \
 #     base_image

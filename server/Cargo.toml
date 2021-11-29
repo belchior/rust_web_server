@@ -21,3 +21,4 @@ tokio-stream = "0.1.7"
 
 [dev-dependencies]
 pretty_assertions = "1.0.0"
+actix-rt = "2.5.0"

@@ -10,3 +10,6 @@ fn main() -> () {
   env_logger::init();
   http::main();
 }
+
+#[cfg(test)]
+mod mock;

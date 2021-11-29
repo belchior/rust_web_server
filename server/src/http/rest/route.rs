@@ -18,3 +18,6 @@ pub fn not_found() -> Route {
     HttpResponse::BadRequest().json(result_error)
   })
 }
+
+#[cfg(test)]
+mod user_spec;

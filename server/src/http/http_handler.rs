@@ -1,10 +1,10 @@
 use actix_web::HttpResponse;
 use log;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct HttpError {
-  message: String,
+  pub message: String,
 }
 impl HttpError {
   pub fn new(message: String) -> Self {

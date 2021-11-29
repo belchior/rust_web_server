@@ -33,3 +33,6 @@ pub async fn main() -> std::io::Result<()> {
   .run()
   .await
 }
+
+#[cfg(test)]
+mod route_spec;

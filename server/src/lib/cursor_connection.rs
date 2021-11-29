@@ -83,6 +83,10 @@ impl<T> CursorConnection<T> {
       edges: Edges::into_edges(items, reference_from),
     }
   }
+
+  pub fn to_vec(cursor: CursorConnection<T>) -> Vec<T> {
+    cursor.edges.into_iter().map(|edge| edge.node).collect()
+  }
 }
 
 #[derive(Debug, PartialEq)]

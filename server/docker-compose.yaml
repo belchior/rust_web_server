@@ -1,11 +1,16 @@
 version: '3.8'
 
+networks:
+  my_network:
+    driver: bridge
+
 services:
   base_image:
     build:
       context: ./
       dockerfile: Dockerfile.base
     image: base_image
+    container_name: base_image
 
   mongodb:
     image: mongo:4.2
@@ -25,10 +30,12 @@ services:
       - "DATABASE_URI=mongodb://mongodb:27017"
       - "DATABASE_NAME=learning"
     volumes:
+      - "./release:/server/release"
       - "./scripts:/server/scripts"
       - "./src:/server/src"
       - "./.env:/server/.env"
     depends_on:
+      - base_image
       - mongodb
     networks:
       - my_network
@@ -46,10 +53,7 @@ services:
       - "./src:/server/src"
       - "./.env:/server/.env"
     depends_on:
+      - base_image
       - mongodb
     networks:
       - my_network
-
-networks:
-  my_network:
-    driver: bridge

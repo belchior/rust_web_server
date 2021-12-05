@@ -6,16 +6,20 @@ RUN mkdir src && echo "fn main() {}" >> src/main.rs &&\
     rustup toolchain install nightly &&\
     rustup +nightly component add llvm-tools-preview &&\
     cargo build &&\
+    cargo build --release &&\
     cargo test --no-run &&\
     RUSTFLAGS="-Z instrument-coverage" cargo +nightly test --no-run &&\
     rm -r src &&\
-    rm target/debug/deps/rust_web_server*
+    rm target/debug/deps/rust_web_server* &&\
+    rm target/release/deps/rust_web_server* &&\
+    rm target/release/rust_web_server*
 
 # Build
 # docker build -f Dockerfile.base -t base_image .
 
 # Run
 # docker run -it --rm \
+#     -v "$(pwd)/release:/server/release" \
 #     -v "$(pwd)/coverage:/server/coverage" \
 #     -v "$(pwd)/scripts:/server/scripts" \
 #     -v "$(pwd)/src:/server/src" \

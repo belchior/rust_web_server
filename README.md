@@ -19,41 +19,52 @@
 
 **Server**
 
-install dependencies
+start server in development mode
 
-```shell
-cargo install --path .
+```sh
+docker-compose up server
 ```
 
-start dev
+build server for production
 
-```shell
-scripts/start_dev.sh
+```sh
+docker-compose run --rm server ./scripts/build.sh
 ```
 
-test
+running tests
 
-```shell
-scripts/test.sh
+```sh
+# in watch mode
+docker-compose run --rm test_server
+
+# single execution
+docker-compose run --rm test_server ./scripts/test.sh
+
+# single execution with coverage
+docker-compose run --rm test_server ./scripts/test_coverage.sh
 ```
 
-build
+debug database
 
-```shell
-scripts/build.sh
+```sh
+# in development environment
+docker-compose exec mongodb mongo learning
+
+# in test environment
+docker-compose exec mongodb mongo test_learning
 ```
 
 **Client**
 
 install dependencies
 
-```shell
+```sh
 npm ci
 ```
 
 start dev
 
-```shell
+```sh
 npm start
 ```
 

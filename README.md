@@ -88,3 +88,4 @@ MongoDB
 Rust
 
 - https://blog.rust-lang.org/inside-rust/2020/02/25/intro-rustc-self-profile.html
+- https://doc.rust-lang.org/book/ch11-02-running-tests.html#controlling-how-tests-are-run

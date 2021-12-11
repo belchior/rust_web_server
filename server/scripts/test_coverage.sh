@@ -15,7 +15,7 @@ mkdir -p "$COVERAGE_DATA"
 
 rm -f "target/debug/deps/$PKG_NAME"*
 
-RUSTFLAGS="-Z instrument-coverage" LLVM_PROFILE_FILE="$COVERAGE_DATA/$PKG_NAME-%m.profraw" cargo +nightly test;
+RUSTFLAGS="-Z instrument-coverage" LLVM_PROFILE_FILE="$COVERAGE_DATA/$PKG_NAME-%m.profraw" cargo +nightly test -- --test-threads=1;
 cargo +nightly profdata -- merge -sparse $COVERAGE_DATA/$PKG_NAME-*.profraw -o $COVERAGE_DATA/$PKG_NAME.profdata;
 
 COVERAGE_ID="$(ls target/debug/deps/$PKG_NAME-*.d | head -n1 | cut -d " " -f1 | sed -E 's/.*-(.*)\.d$/\1/')"

@@ -20,4 +20,8 @@ pub fn not_found() -> Route {
 }
 
 #[cfg(test)]
+mod organization_spec;
+#[cfg(test)]
+mod profile_spec;
+#[cfg(test)]
 mod user_spec;

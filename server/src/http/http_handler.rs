@@ -16,7 +16,7 @@ impl HttpError {
 
 pub fn to_response<T, E>(result: Result<Option<T>, E>, model_name: &'static str) -> HttpResponse
 where
-  T: Serialize,
+  T: Serialize + std::fmt::Debug,
   E: std::fmt::Debug,
 {
   if let Err(err) = result {
@@ -33,5 +33,6 @@ where
     return HttpResponse::NotFound().json(result_error);
   }
 
+  let result = result.unwrap();
   HttpResponse::Ok().json(result)
 }

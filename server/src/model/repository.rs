@@ -63,9 +63,7 @@ async fn find_repositories(
 ) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
   let repo_collection = db.collection::<Repository>("repositories");
   let pipeline = pipeline_paginated_repositories(pagination_arguments, &user_id);
-
   let cursor = repo_collection.aggregate(pipeline, None).await?;
-
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
 
   let repositories = result

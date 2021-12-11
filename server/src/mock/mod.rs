@@ -1,68 +1,116 @@
-use crate::lib::cursor_connection::CursorConnection;
-use crate::model::user::User;
-use futures::TryStreamExt;
+use crate::db::db_client_connection;
 use mongodb::{
-  bson::{self, doc, Bson},
+  bson::{self, doc},
   error::Error as MongodbError,
-  results::{InsertManyResult, InsertOneResult},
-  Cursor, Database,
+  results::InsertOneResult,
+  Database,
 };
 
-pub async fn insert_users(db: &Database) -> Result<InsertManyResult, MongodbError> {
-  let foo_org = doc! { "_id": bson::oid::ObjectId::new(), "login": "bar-org", "avatar_url": "https://foo.com/avatar.jpg", "url":"https://github.com/foo", "__typename": "Organization" };
-  let users = vec![
-    doc! { "login": "foo", "email": "foo@email.com", "avatarUrl": "https://foo.com/avatar.jpg", "url":"https://github.com/foo", "__typename": "User" },
-    doc! { "login": "bar", "email": "bar@email.com", "avatarUrl": "https://bar.com/avatar.jpg", "url":"https://github.com/bar", "__typename": "User", "documents": vec![doc! { "_id": foo_org.get_object_id("_id").unwrap() }] },
-  ];
-
-  insert_one_organization(db, foo_org).await?;
-  insert_many_users(db, users).await
+pub async fn setup() -> (Database, InsertOneResult) {
+  let db = db_client_connection().await.unwrap();
+  drop_collections(&db).await;
+  let users = insert_mocked_data(&db).await.unwrap();
+  (db, users)
 }
 
-pub async fn delete_users(db: &Database, user_ids: InsertManyResult) {
-  let ids: Vec<_> = user_ids.inserted_ids.into_values().collect();
-  let cursor = find_users_by_ids(db, ids.clone()).await.unwrap();
-  let users: Vec<_> = cursor.try_collect().await.unwrap();
-  let org_ids = organization_ids_from_users(users);
-
-  delete_many(db, org_ids, "organizations").await;
-  delete_many(db, ids, "users").await;
+fn random_id() -> bson::oid::ObjectId {
+  bson::oid::ObjectId::new()
 }
 
-async fn delete_many(db: &Database, ids: Vec<Bson>, collection_name: &str) {
+async fn insert_mocked_data(db: &Database) -> Result<InsertOneResult, MongodbError> {
+  let user_foo_id = random_id();
+  let user_bar_id = random_id();
+  let user_dee_id = random_id();
+  let repository_bar_id = random_id();
+  let organization_foo_id = random_id();
+
+  let repository_foo = doc! {
+    "_id": random_id(),
+    "forkCount": 9.0,
+    "name": "repository_foo",
+    "owner": { "_id": organization_foo_id, "ref": "organizations" }
+  };
+  let user_foo = doc! {
+    "__typename": "User",
+    "_id": user_foo_id,
+    "avatarUrl": "https://foo.com/avatar.jpg",
+    "email": "foo@email.com",
+    "login": "user_foo",
+    "organizations": vec![doc! { "_id": organization_foo_id }],
+    "url":"https://github.com/foo",
+  };
+  let organization_foo = doc! {
+    "__typename": "Organization",
+    "_id": organization_foo_id,
+    "avatarUrl": "https://foo.com/avatar.jpg",
+    "login": "organization_foo",
+    "people": vec![doc!{ "_id": user_foo_id, "ref": "users" }],
+    "url": "https://github.com/foo",
+  };
+
+  let user_dee = doc! {
+    "__typename": "User",
+    "_id": user_dee_id,
+    "avatarUrl": "https://dee.com/avatar.jpg",
+    "email": "dee@email.com",
+    "followers": vec![doc! { "_id": user_bar_id }],
+    "following": vec![doc! { "_id": user_bar_id }],
+    "login": "user_dee",
+    "url":"https://github.com/bar",
+  };
+  let repository_bar = doc! {
+    "_id": repository_bar_id,
+    "forkCount": 2.0,
+    "name": "repository_bar",
+    "owner": { "_id": user_bar_id, "ref": "users" }
+  };
+  let user_bar = doc! {
+    "__typename": "User",
+    "_id": user_bar_id,
+    "avatarUrl": "https://bar.com/avatar.jpg",
+    "email": "bar@email.com",
+    "followers": vec![doc! { "_id": user_dee_id }],
+    "following": vec![doc! { "_id": user_dee_id }],
+    "login": "user_bar",
+    "starredRepositories": vec![doc! { "_id": repository_bar_id }],
+    "url":"https://github.com/bar",
+  };
+
+  insert_organization(db, organization_foo).await?;
+  insert_repository(db, repository_foo).await?;
+  insert_repository(db, repository_bar).await?;
+  insert_user(db, user_bar).await?;
+  insert_user(db, user_dee).await?;
+  insert_user(db, user_foo).await
+}
+
+async fn drop_collections(db: &Database) {
+  let orgs_collection = db.collection::<bson::Document>("organizations");
+  let repo_collection = db.collection::<bson::Document>("repositories");
+  let users_collection = db.collection::<bson::Document>("users");
+
+  orgs_collection.delete_many(doc! {}, None).await.unwrap();
+  repo_collection.delete_many(doc! {}, None).await.unwrap();
+  users_collection.delete_many(doc! {}, None).await.unwrap();
+}
+
+async fn insert_organization(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {
+  insert_one(db, document, "organizations").await
+}
+
+async fn insert_repository(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {
+  insert_one(db, document, "repositories").await
+}
+
+async fn insert_user(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {
+  insert_one(db, document, "users").await
+}
+
+async fn insert_one(
+  db: &Database,
+  document: bson::Document,
+  collection_name: &str,
+) -> Result<InsertOneResult, MongodbError> {
   let collection = db.collection::<bson::Document>(collection_name);
-  let query = doc! { "_id": { "$in": ids } };
-
-  collection.delete_many(query, None).await.unwrap();
-}
-
-async fn find_users_by_ids(db: &Database, ids: Vec<Bson>) -> Result<Cursor<User>, MongodbError> {
-  let collection = db.collection::<User>("users");
-  let filter = doc! { "_id": { "$in": ids } };
-
-  collection.find(filter, None).await
-}
-
-async fn insert_one_organization(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {
-  let collection = db.collection::<bson::Document>("organizations");
-
   collection.insert_one(document, None).await
-}
-
-async fn insert_many_users(db: &Database, documents: Vec<bson::Document>) -> Result<InsertManyResult, MongodbError> {
-  let user_collection = db.collection::<bson::Document>("users");
-
-  user_collection.insert_many(documents, None).await
-}
-
-fn organization_ids_from_users(users: Vec<User>) -> Vec<bson::Bson> {
-  users
-    .into_iter()
-    .map(|user| match user.organizations {
-      None => vec![],
-      Some(orgs) => CursorConnection::to_vec(orgs),
-    })
-    .flatten()
-    .map(|org| bson::Bson::ObjectId(org._id))
-    .collect()
 }

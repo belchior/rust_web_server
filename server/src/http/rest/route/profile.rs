@@ -26,7 +26,7 @@ async fn profile(state: web::Data<AppState>, web::Path(login): web::Path<String>
     _ => {
       log::info!("Profile {} not found", login);
       let result_error = HttpError::new("Profile not found".to_string());
-      HttpResponse::BadRequest().json(result_error)
+      HttpResponse::NotFound().json(result_error)
     }
   }
 }

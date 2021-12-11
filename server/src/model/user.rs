@@ -1,7 +1,7 @@
 use super::{organization::Organization, repository::Repository, utils};
 use crate::lib::cursor_connection::{CursorConnection, PaginationArguments};
 use mongodb::{
-  bson::{self, doc},
+  bson::{self, doc, Document},
   error::Error as MongodbError,
   options::FindOneOptions,
 };
@@ -69,13 +69,13 @@ pub async fn find_starred_repositories_by_login(
 ) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_starred_repositories(login, pagination_arguments);
-  let mut cursor = user_collection.aggregate(pipeline, None).await?;
+  let cursor = user_collection.aggregate(pipeline, None).await?;
+  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
 
-  let mut repositories: Vec<Repository> = vec![];
-  while let Some(result) = cursor.next().await {
-    let repo: Repository = bson::from_document(result?)?;
-    repositories.push(repo);
-  }
+  let repositories = result
+    .into_iter()
+    .map(|document| bson::from_document(document.unwrap()).unwrap())
+    .collect::<Vec<Repository>>();
 
   let repositories = utils::repositories_to_cursor_connection(repositories);
 
@@ -89,13 +89,13 @@ pub async fn find_followers_by_login(
 ) -> Result<Option<CursorConnection<User>>, MongodbError> {
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_followers(login, pagination_arguments);
-  let mut cursor = user_collection.aggregate(pipeline, None).await?;
+  let cursor = user_collection.aggregate(pipeline, None).await?;
+  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
 
-  let mut followers: Vec<User> = vec![];
-  while let Some(result) = cursor.next().await {
-    let follower: User = bson::from_document(result?)?;
-    followers.push(follower);
-  }
+  let followers = result
+    .into_iter()
+    .map(|document| bson::from_document(document.unwrap()).unwrap())
+    .collect::<Vec<User>>();
 
   let followers = utils::users_to_cursor_connection(followers);
 
@@ -109,13 +109,13 @@ pub async fn find_following_by_login(
 ) -> Result<Option<CursorConnection<User>>, MongodbError> {
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_following(login, pagination_arguments);
-  let mut cursor = user_collection.aggregate(pipeline, None).await?;
+  let cursor = user_collection.aggregate(pipeline, None).await?;
+  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
 
-  let mut following: Vec<User> = vec![];
-  while let Some(result) = cursor.next().await {
-    let follower: User = bson::from_document(result?)?;
-    following.push(follower);
-  }
+  let following = result
+    .into_iter()
+    .map(|document| bson::from_document(document.unwrap()).unwrap())
+    .collect::<Vec<User>>();
 
   let following = utils::users_to_cursor_connection(following);
 

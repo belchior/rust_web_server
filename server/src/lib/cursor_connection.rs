@@ -91,7 +91,7 @@ pub enum Direction {
   Backward,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationArguments {
   pub first: Option<u32>,
   #[serde(default, deserialize_with = "optional_string")]

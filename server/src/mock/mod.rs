@@ -6,11 +6,11 @@ use mongodb::{
   Database,
 };
 
-pub async fn setup() -> (Database, InsertOneResult) {
+pub async fn setup() -> Database {
   let db = db_client_connection().await.unwrap();
   drop_collections(&db).await;
-  let users = insert_mocked_data(&db).await.unwrap();
-  (db, users)
+  insert_mocked_data(&db).await.unwrap();
+  db
 }
 
 fn random_id() -> bson::oid::ObjectId {
@@ -89,9 +89,9 @@ async fn drop_collections(db: &Database) {
   let repo_collection = db.collection::<bson::Document>("repositories");
   let users_collection = db.collection::<bson::Document>("users");
 
-  orgs_collection.delete_many(doc! {}, None).await.unwrap();
-  repo_collection.delete_many(doc! {}, None).await.unwrap();
-  users_collection.delete_many(doc! {}, None).await.unwrap();
+  orgs_collection.drop(None).await.unwrap();
+  repo_collection.drop(None).await.unwrap();
+  users_collection.drop(None).await.unwrap();
 }
 
 async fn insert_organization(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {

@@ -22,17 +22,21 @@ COVERAGE_ID="$(ls target/debug/deps/$PKG_NAME-*.d | head -n1 | cut -d " " -f1 | 
 
 cargo +nightly cov -- report \
     --use-color \
-    --ignore-filename-regex='/rustc/.*' \
-    --ignore-filename-regex='./*_spec\.rs$' \
+    --ignore-filename-regex='/rustc' \
     --ignore-filename-regex='/cargo/registry' \
+    --ignore-filename-regex='./*/mock' \
+    --ignore-filename-regex='./*_spec.rs$' \
+    --ignore-filename-regex='./main.rs' \
     --instr-profile=$COVERAGE_DATA/$PKG_NAME.profdata \
     --object target/debug/deps/$PKG_NAME-$COVERAGE_ID;
 
 cargo +nightly cov -- show \
     --use-color \
-    --ignore-filename-regex='/rustc/.*' \
-    --ignore-filename-regex='./*_spec\.rs$' \
+    --ignore-filename-regex='/rustc' \
     --ignore-filename-regex='/cargo/registry' \
+    --ignore-filename-regex='./*/mock' \
+    --ignore-filename-regex='./*_spec.rs$' \
+    --ignore-filename-regex='./main.rs' \
     --instr-profile=$COVERAGE_DATA/$PKG_NAME.profdata \
     --object target/debug/deps/$PKG_NAME-$COVERAGE_ID \
     --show-instantiations \

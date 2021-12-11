@@ -51,7 +51,19 @@ where
 
   fn call(&mut self, req: ServiceRequest) -> Self::Future {
     if let Some(query) = req.uri().query() {
-      let pagination_arguments = Query::<PaginationArguments>::from_query(query).unwrap();
+      let pagination_arguments = Query::<PaginationArguments>::from_query(query);
+
+      if let Err(_) = pagination_arguments {
+        // TODO find a way to reuse this block of code without start a type dependency war
+        let (request, _) = req.into_parts();
+        let result_error = HttpError::new("Invalid pagination arguments".to_string());
+        let response = HttpResponse::BadRequest().json(result_error);
+        let service_response = ServiceResponse::new(request, response);
+        return Box::pin(async { Ok(service_response) });
+      }
+
+      let pagination_arguments = pagination_arguments.unwrap();
+
       if PaginationArguments::is_valid(&pagination_arguments) == false {
         let (request, _) = req.into_parts();
         let result_error = HttpError::new("Invalid pagination arguments".to_string());

@@ -12,4 +12,6 @@ fn main() -> () {
 }
 
 #[cfg(test)]
+mod db_spec;
+#[cfg(test)]
 mod mock;

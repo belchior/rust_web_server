@@ -19,32 +19,41 @@
 
 **Server**
 
-start server in development mode
+The `base_image` contains all compiled dependencies to be used in `development` `testing` and build to `production`.
+
+All commands depends on `base_image` to run, to build it manually you should run the command below
+
+```sh
+docker build -f Dockerfile.base -t base_image .
+```
+
+To start's server in development mode
 
 ```sh
 docker-compose up server
 ```
 
-build server for production
+To build server for production
 
 ```sh
-docker-compose run --rm server ./scripts/build.sh
+# before run this command you must build the base_image first
+docker build -t rust_web_server .
 ```
 
-running tests
+To run tests
 
 ```sh
 # in watch mode
 docker-compose run --rm test_server
 
-# single execution
+# for single execution
 docker-compose run --rm test_server ./scripts/test.sh
 
-# single execution with coverage
+# for single execution with coverage
 docker-compose run --rm test_server ./scripts/test_coverage.sh
 ```
 
-debug database
+To debug database
 
 ```sh
 # in development environment
@@ -56,13 +65,13 @@ docker-compose exec mongodb mongo test_learning
 
 **Client**
 
-install dependencies
+To install dependencies
 
 ```sh
 npm ci
 ```
 
-start dev
+To start's in development mode
 
 ```sh
 npm start
@@ -89,3 +98,5 @@ Rust
 
 - https://blog.rust-lang.org/inside-rust/2020/02/25/intro-rustc-self-profile.html
 - https://doc.rust-lang.org/book/ch11-02-running-tests.html#controlling-how-tests-are-run
+- https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/instrument-coverage.html
+

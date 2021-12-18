@@ -23,7 +23,7 @@ services:
   server:
     image: base_image
     container_name: server
-    command: bash scripts/start_dev.sh
+    command: scripts/start_dev.sh
     ports:
       - "8080:8080"
     environment:
@@ -43,7 +43,7 @@ services:
   test_server:
     image: base_image
     container_name: test_server
-    command: bash scripts/test_watch.sh
+    command: scripts/test_watch.sh
     environment:
       - "DATABASE_URI=mongodb://mongodb:27017"
       - "DATABASE_NAME=test_learning"

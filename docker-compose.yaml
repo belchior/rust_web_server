@@ -1,0 +1,118 @@
+version: '3.8'
+
+networks:
+  my_network:
+    driver: bridge
+
+services:
+  server_base_image:
+    image: server_base_image
+    container_name: server_base_image
+    build:
+      context: ./server
+      dockerfile: Dockerfile.base
+
+  server_build:
+    image: server
+    container_name: server
+    build:
+      context: ./server
+    depends_on:
+      - server_base_image
+
+  server:
+    image: server_base_image
+    container_name: server
+    command: scripts/start_dev.sh
+    ports:
+      - 8080:8080
+    environment:
+      - DATABASE_URI=mongodb://database:27017
+      - DATABASE_NAME=database
+    volumes:
+      - ./server/release:/server/release
+      - ./server/scripts:/server/scripts
+      - ./server/src:/server/src
+      - ./server/.env:/server/.env
+    depends_on:
+      - server_base_image
+      - database
+    networks:
+      - my_network
+
+  server_test:
+    image: server_base_image
+    container_name: server_test
+    command: scripts/test_watch.sh
+    environment:
+      - DATABASE_URI=mongodb://database:27017
+      - DATABASE_NAME=test_database
+    volumes:
+      - ./server/coverage:/server/coverage
+      - ./server/scripts:/server/scripts
+      - ./server/src:/server/src
+      - ./server/.env:/server/.env
+    depends_on:
+      - server_base_image
+      - database
+    networks:
+      - my_network
+
+  database:
+    image: mongo:4.2
+    container_name: database
+    networks:
+      - my_network
+
+  database_seed:
+    image: mongo:4.2
+    container_name: database_seed
+    command: scripts/database_seed.sh
+    environment:
+      - DATABASE_HOST=database:27017
+      - DATABASE_NAME=database
+    depends_on:
+      - database
+    volumes:
+      - ./server/database_seed:/data/seed
+      - ./server/scripts:/scripts
+    networks:
+      - my_network
+
+  client_base_image:
+    image: client_base_image
+    container_name: client_base_image
+    build:
+      context: ./client
+      dockerfile: Dockerfile.base
+
+  client_build:
+    image: client
+    container_name: client
+    build:
+      context: ./client
+      args:
+        - SERVER_URL=http://localhost:8080
+    depends_on:
+      - client_base_image
+
+  client:
+    image: client_base_image
+    container_name: client
+    command: npm start
+    working_dir: /client
+    ports:
+      - 3000:3000
+    volumes:
+      - ./client/coverage:/client/coverage
+      - ./client/public:/client/public
+      - ./client/src:/client/src
+      - ./client/.env.development:/client/.env.development
+      - ./client/.eslintrc.js:/client/.eslintrc.js
+      - ./client/package.json:/client/package.json
+      - ./client/package-lock.json:/client/package-lock.json
+      - ./client/tsconfig.json:/client/tsconfig.json
+    depends_on:
+      - client_base_image
+    networks:
+      - my_network

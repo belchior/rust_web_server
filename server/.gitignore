@@ -1,7 +1,7 @@
 # directories
-*release/
-*coverage/
-*target/
+coverage/
+release/
+target/
 
 # files
 *.DS_Store

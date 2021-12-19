@@ -1,0 +1,20 @@
+FROM node:16-alpine
+WORKDIR /client
+COPY package* .
+RUN npm ci
+
+# Build
+# docker build -f Dockerfile.base -t client_base_image .
+
+# Run
+# docker run -it --rm \
+#   -v "$(pwd)/coverage:/client/coverage" \
+#   -v "$(pwd)/public:/client/public" \
+#   -v "$(pwd)/src:/client/src" \
+#   -v "$(pwd)/.eslintrc.js:/client/.eslintrc.js" \
+#   -v "$(pwd)/.env.development:/client/.env.development" \
+#   -v "$(pwd)/package.json:/client/package.json" \
+#   -v "$(pwd)/package-lock.json:/client/package-lock.json" \
+#   -v "$(pwd)/tsconfig.json:/client/tsconfig.json" \
+#   client_base_image \
+#   npm start

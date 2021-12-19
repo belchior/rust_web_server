@@ -29,7 +29,7 @@ RUN rm -r src &&\
     rm target/x86_64-unknown-linux-musl/release/rust_web_server*
 
 # Build
-# docker build -f Dockerfile.base -t base_image .
+# docker build -f Dockerfile.base -t server_base_image .
 
 # Run
 # docker run -it --rm \
@@ -38,4 +38,4 @@ RUN rm -r src &&\
 #     -v "$(pwd)/scripts:/server/scripts" \
 #     -v "$(pwd)/src:/server/src" \
 #     -v "$(pwd)/.env:/server/.env" \
-#     base_image
+#     server_base_image

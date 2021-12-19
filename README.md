@@ -17,14 +17,27 @@
 
 ## Development
 
-**Server**
-
-The `base_image` contains all compiled dependencies to be used in `development` `testing` and build to `production`.
-
-All commands depends on `base_image` to run, to build it manually you should run the command below
+To start developing you should build the `base_image` for `server` and `client` running the command below
 
 ```sh
-docker build -f Dockerfile.base -t base_image .
+docker-compose build server_base_image client_base_image
+```
+
+After that you can start both using the command
+
+```sh
+docker-compose up client server database_seed
+```
+
+
+**Server**
+
+The `base_image` contains all compiled dependencies to be used in `development`, `testing` and build for `production`.
+
+You can build it manually with
+
+```sh
+docker-compose build server_base_image
 ```
 
 To start's server in development mode
@@ -36,45 +49,52 @@ docker-compose up server
 To build server for production
 
 ```sh
-# before run this command you must build the base_image first
-docker build -t rust_web_server .
+docker-compose build server_build
 ```
 
 To run tests
 
 ```sh
 # in watch mode
-docker-compose run --rm test_server
+docker-compose run --rm server_test
 
 # for single execution
-docker-compose run --rm test_server ./scripts/test.sh
+docker-compose run --rm server_test ./scripts/test.sh
 
 # for single execution with coverage
-docker-compose run --rm test_server ./scripts/test_coverage.sh
+docker-compose run --rm server_test ./scripts/test_coverage.sh
 ```
 
 To debug database
 
 ```sh
 # in development environment
-docker-compose exec mongodb mongo learning
+docker-compose exec database mongo database
 
 # in test environment
-docker-compose exec mongodb mongo test_learning
+docker-compose exec database mongo test_database
 ```
 
 **Client**
 
-To install dependencies
+As the same as server the `base_image` contains all dependencies to be used in `development`, `testing` and build for `production`.
+
+You can build it manually with
 
 ```sh
-npm ci
+docker-compose build client_base_image
 ```
 
 To start's in development mode
 
 ```sh
-npm start
+docker-compose up client
+```
+
+To build client for production
+
+```sh
+docker-compose build client_build
 ```
 
 ## References
@@ -92,7 +112,6 @@ MongoDB
 - https://docs.rs/bson/0.14.1/bson/index.html
 - https://docs.rs/mongodb/1.2.1/mongodb
 - https://docs.rs/bson/1.2.2/bson
-
 
 Rust
 

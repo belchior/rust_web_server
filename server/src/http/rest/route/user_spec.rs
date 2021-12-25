@@ -55,7 +55,7 @@ async fn should_not_find_organizations_of_the_user() {
 }
 
 #[actix_rt::test]
-async fn should_not_find_organizations_of_the_unknown_user() {
+async fn should_not_find_organizations_of_a_unknown_user() {
   let db = mock::setup().await;
   let mut app = test::init_service(App::new().data(AppState { db: db.clone() }).service(user::scope())).await;
   let req = test::TestRequest::get()
@@ -98,7 +98,7 @@ async fn should_not_find_repositories_of_the_user() {
 }
 
 #[actix_rt::test]
-async fn should_not_find_repositories_of_the_unknown_user() {
+async fn should_not_find_repositories_of_a_unknown_user() {
   let db = mock::setup().await;
   let mut app = test::init_service(App::new().data(AppState { db: db.clone() }).service(user::scope())).await;
   let req = test::TestRequest::get().uri("/user/user_xxx/repositories").to_request();
@@ -143,7 +143,7 @@ async fn should_not_find_starred_repositories_of_the_user() {
 }
 
 #[actix_rt::test]
-async fn should_not_find_starred_repositories_of_the_unknown_user() {
+async fn should_not_find_starred_repositories_of_a_unknown_user() {
   let db = mock::setup().await;
   let mut app = test::init_service(App::new().data(AppState { db: db.clone() }).service(user::scope())).await;
   let req = test::TestRequest::get()
@@ -186,7 +186,7 @@ async fn should_not_find_followers_of_the_user() {
 }
 
 #[actix_rt::test]
-async fn should_not_find_followers_of_the_unknown_user() {
+async fn should_not_find_followers_of_a_unknown_user() {
   let db = mock::setup().await;
   let mut app = test::init_service(App::new().data(AppState { db: db.clone() }).service(user::scope())).await;
   let req = test::TestRequest::get().uri("/user/user_xxx/followers").to_request();
@@ -227,7 +227,7 @@ async fn should_not_find_following_of_the_user() {
 }
 
 #[actix_rt::test]
-async fn should_not_find_following_of_the_unknown_user() {
+async fn should_not_find_following_of_a_unknown_user() {
   let db = mock::setup().await;
   let mut app = test::init_service(App::new().data(AppState { db: db.clone() }).service(user::scope())).await;
   let req = test::TestRequest::get().uri("/user/user_xxx/following").to_request();

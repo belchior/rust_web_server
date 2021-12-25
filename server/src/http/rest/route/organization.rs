@@ -30,6 +30,10 @@ async fn people(
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
+  let result = find_organization_by_login(&state.db, &login).await;
+  if let Ok(None) = result {
+    return to_response(result, "Organization");
+  }
   let result = find_people_by_login(&state.db, &login, pagination_arguments).await;
 
   to_response(result, "People from organization")
@@ -40,6 +44,10 @@ async fn repositories(
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
+  let result = find_organization_by_login(&state.db, &login).await;
+  if let Ok(None) = result {
+    return to_response(result, "Organization");
+  }
   let result = find_repositories_by_login(&state.db, &login, pagination_arguments).await;
 
   to_response(result, "Repositories from organization")

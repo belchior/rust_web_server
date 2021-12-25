@@ -24,12 +24,22 @@ async fn insert_mocked_data(db: &Database) -> Result<InsertOneResult, MongodbErr
   let repository_bar_id = random_id();
   let organization_foo_id = random_id();
 
-  let repository_foo = doc! {
-    "_id": random_id(),
-    "forkCount": 9.0,
-    "name": "repository_foo",
-    "owner": { "_id": organization_foo_id, "ref": "organizations" }
+  let organization_foo = doc! {
+    "__typename": "Organization",
+    "_id": organization_foo_id,
+    "avatarUrl": "https://foo.com/avatar.jpg",
+    "login": "organization_foo",
+    "people": vec![doc!{ "_id": user_foo_id, "ref": "users" }],
+    "url": "https://github.com/foo",
   };
+  let organization_acme = doc! {
+    "__typename": "Organization",
+    "_id": random_id(),
+    "avatarUrl": "https://acme.com/avatar.jpg",
+    "login": "organization_acme",
+    "url": "https://github.com/acme",
+  };
+
   let user_foo = doc! {
     "__typename": "User",
     "_id": user_foo_id,
@@ -39,15 +49,6 @@ async fn insert_mocked_data(db: &Database) -> Result<InsertOneResult, MongodbErr
     "organizations": vec![doc! { "_id": organization_foo_id }],
     "url":"https://github.com/foo",
   };
-  let organization_foo = doc! {
-    "__typename": "Organization",
-    "_id": organization_foo_id,
-    "avatarUrl": "https://foo.com/avatar.jpg",
-    "login": "organization_foo",
-    "people": vec![doc!{ "_id": user_foo_id, "ref": "users" }],
-    "url": "https://github.com/foo",
-  };
-
   let user_dee = doc! {
     "__typename": "User",
     "_id": user_dee_id,
@@ -57,12 +58,6 @@ async fn insert_mocked_data(db: &Database) -> Result<InsertOneResult, MongodbErr
     "following": vec![doc! { "_id": user_bar_id }],
     "login": "user_dee",
     "url":"https://github.com/bar",
-  };
-  let repository_bar = doc! {
-    "_id": repository_bar_id,
-    "forkCount": 2.0,
-    "name": "repository_bar",
-    "owner": { "_id": user_bar_id, "ref": "users" }
   };
   let user_bar = doc! {
     "__typename": "User",
@@ -76,6 +71,20 @@ async fn insert_mocked_data(db: &Database) -> Result<InsertOneResult, MongodbErr
     "url":"https://github.com/bar",
   };
 
+  let repository_foo = doc! {
+    "_id": random_id(),
+    "forkCount": 9.0,
+    "name": "repository_foo",
+    "owner": { "_id": organization_foo_id, "ref": "organizations" }
+  };
+  let repository_bar = doc! {
+    "_id": repository_bar_id,
+    "forkCount": 2.0,
+    "name": "repository_bar",
+    "owner": { "_id": user_bar_id, "ref": "users" }
+  };
+
+  insert_organization(db, organization_acme).await?;
   insert_organization(db, organization_foo).await?;
   insert_repository(db, repository_foo).await?;
   insert_repository(db, repository_bar).await?;

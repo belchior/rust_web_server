@@ -51,7 +51,7 @@ pub async fn find_organizations_by_login(
   let pipeline = pipeline_paginated_organization(&login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let organizations = utils::organizations_to_cursor_connection(result);
+  let organizations = utils::to_cursor_connection(result, |item: &Organization| item._id.to_hex());
 
   Ok(Some(organizations))
 }
@@ -65,7 +65,7 @@ pub async fn find_starred_repositories_by_login(
   let pipeline = pipeline_paginated_starred_repositories(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let repositories = utils::repositories_to_cursor_connection(result);
+  let repositories = utils::to_cursor_connection(result, |item: &Repository| item._id.to_hex());
 
   Ok(Some(repositories))
 }
@@ -79,7 +79,7 @@ pub async fn find_followers_by_login(
   let pipeline = pipeline_paginated_followers(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let followers = utils::users_to_cursor_connection(result);
+  let followers = utils::to_cursor_connection(result, |item: &User| item._id.to_hex());
 
   Ok(Some(followers))
 }
@@ -93,7 +93,7 @@ pub async fn find_following_by_login(
   let pipeline = pipeline_paginated_following(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let following = utils::users_to_cursor_connection(result);
+  let following = utils::to_cursor_connection(result, |item: &User| item._id.to_hex());
 
   Ok(Some(following))
 }

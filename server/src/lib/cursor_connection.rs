@@ -27,6 +27,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 ///                                   3     CURSOR
 ///
 
+pub type ReferenceFrom<T> = fn(item: &T) -> String;
+
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Edges<T> {
   pub cursor: String,

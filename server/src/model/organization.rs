@@ -53,7 +53,7 @@ pub async fn find_people_by_login(
   let pipeline = pipeline_paginated_people(login, pagination_arguments);
   let cursor = organization_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let people = utils::users_to_cursor_connection(result);
+  let people = utils::to_cursor_connection(result, |item: &User| item._id.to_hex());
 
   Ok(Some(people))
 }
@@ -75,7 +75,7 @@ pub async fn find_repositories_by_login(
   let pipeline = pipeline_paginated_repositories(&organization._id, pagination_arguments);
   let cursor = repositories_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let repositories = utils::repositories_to_cursor_connection(result);
+  let repositories = utils::to_cursor_connection(result, |item: &Repository| item._id.to_hex());
 
   Ok(Some(repositories))
 }

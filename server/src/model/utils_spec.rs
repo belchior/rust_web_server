@@ -93,7 +93,7 @@ fn should_convert_a_list_repositories_to_cursor_connection() {
     "name": "Repo".to_string(),
     "owner": doc! { "_id": owner_id },
   })];
-  let cursor_connection = repositories_to_cursor_connection(result);
+  let cursor_connection = to_cursor_connection(result, |item: &Repository| item._id.to_hex());
 
   assert_eq!(cursor_connection, expected_cursor_connection);
 }
@@ -125,7 +125,7 @@ fn should_convert_a_list_users_to_cursor_connection() {
     "url": "https://image.com/avatar".to_string(),
     "__typename": "User".to_string(),
   })];
-  let cursor_connection = users_to_cursor_connection(result);
+  let cursor_connection = to_cursor_connection(result, |item: &User| item._id.to_hex());
 
   assert_eq!(cursor_connection, expected_cursor_connection);
 }
@@ -156,7 +156,7 @@ fn should_convert_a_list_organizations_to_cursor_connection() {
     "url": "https://image.com/avatar".to_string(),
     "__typename": "Organization".to_string(),
   })];
-  let cursor_connection = organizations_to_cursor_connection(result);
+  let cursor_connection = to_cursor_connection(result, |item: &Organization| item._id.to_hex());
 
   assert_eq!(cursor_connection, expected_cursor_connection);
 }

@@ -2,7 +2,7 @@ use crate::http::http_handler::to_response;
 use crate::http::rest::{middleware, AppState};
 use crate::lib::cursor_connection::PaginationArguments;
 use crate::model::{
-  repository::find_repositories_by_login,
+  repository::find_repositories_by_user_id,
   user::{
     find_followers_by_login, find_following_by_login, find_organizations_by_login, find_starred_repositories_by_login,
     find_user_by_login,
@@ -51,6 +51,10 @@ async fn organizations(
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
+  let result = find_user_by_login(&state.db, &login).await;
+  if let Ok(None) = result {
+    return to_response(result, "User");
+  }
   let result = find_organizations_by_login(&state.db, &login, pagination_arguments).await;
 
   to_response(result, "Organizations")
@@ -61,7 +65,13 @@ async fn repositories(
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let result = find_repositories_by_login(&state.db, &login, pagination_arguments).await;
+  let result = find_user_by_login(&state.db, &login).await;
+  if let Ok(None) = result {
+    return to_response(result, "User");
+  }
+
+  let user = result.unwrap().unwrap();
+  let result = find_repositories_by_user_id(&state.db, &user._id, pagination_arguments).await;
 
   to_response(result, "Repositories")
 }
@@ -71,6 +81,10 @@ async fn starred_repositories(
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
+  let result = find_user_by_login(&state.db, &login).await;
+  if let Ok(None) = result {
+    return to_response(result, "User");
+  }
   let result = find_starred_repositories_by_login(&state.db, &login, pagination_arguments).await;
 
   to_response(result, "Starred repositories")
@@ -81,6 +95,10 @@ async fn followers(
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
+  let result = find_user_by_login(&state.db, &login).await;
+  if let Ok(None) = result {
+    return to_response(result, "User");
+  }
   let result = find_followers_by_login(&state.db, &login, pagination_arguments).await;
 
   to_response(result, "Followers")
@@ -91,6 +109,10 @@ async fn following(
   web::Path(login): web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
+  let result = find_user_by_login(&state.db, &login).await;
+  if let Ok(None) = result {
+    return to_response(result, "User");
+  }
   let result = find_following_by_login(&state.db, &login, pagination_arguments).await;
 
   to_response(result, "Following")

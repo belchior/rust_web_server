@@ -1,4 +1,4 @@
-use super::{user::User, utils};
+use super::utils;
 use crate::lib::cursor_connection::{CursorConnection, PaginationArguments};
 use mongodb::{
   bson::{self, doc, Document},
@@ -38,31 +38,13 @@ pub struct Repository {
   pub primary_language: Option<Language>,
 }
 
-pub async fn find_repositories_by_login(
+pub async fn find_repositories_by_user_id(
   db: &mongodb::Database,
-  login: &String,
-  pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
-  let result = find_user(db, login).await?;
-
-  match result {
-    Some(user) => find_repositories(db, &user._id, pagination_arguments).await,
-    None => Ok(None),
-  }
-}
-
-async fn find_user(db: &mongodb::Database, login: &String) -> Result<Option<User>, MongodbError> {
-  let user_collection = db.collection::<User>("users");
-  user_collection.find_one(doc! { "login": login }, None).await
-}
-
-async fn find_repositories(
-  db: &mongodb::Database,
-  user_id: &bson::oid::ObjectId,
+  id: &bson::oid::ObjectId,
   pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
   let repo_collection = db.collection::<Repository>("repositories");
-  let pipeline = pipeline_paginated_repositories(pagination_arguments, &user_id);
+  let pipeline = pipeline_paginated_repositories(pagination_arguments, id);
   let cursor = repo_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
 

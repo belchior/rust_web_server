@@ -5,7 +5,7 @@ use super::{
   utils::*,
 };
 use crate::lib::cursor_connection::{CursorConnection, Direction};
-use mongodb::bson;
+use mongodb::bson::{self, doc};
 use pretty_assertions::assert_eq;
 
 #[cfg(test)]
@@ -87,15 +87,13 @@ fn should_convert_a_list_repositories_to_cursor_connection() {
     }],
     reference_from,
   );
-  let cursor_connection = repositories_to_cursor_connection(vec![Repository {
-    _id: repo_id,
-    description: None,
-    fork_count: 0_f64,
-    license_info: None,
-    name: "Repo".to_string(),
-    owner: Owner { _id: owner_id },
-    primary_language: None,
-  }]);
+  let result = vec![Ok(doc! {
+    "_id": repo_id,
+    "forkCount": 0_f64,
+    "name": "Repo".to_string(),
+    "owner": doc! { "_id": owner_id },
+  })];
+  let cursor_connection = repositories_to_cursor_connection(result);
 
   assert_eq!(cursor_connection, expected_cursor_connection);
 }
@@ -119,18 +117,15 @@ fn should_convert_a_list_users_to_cursor_connection() {
     }],
     reference_from,
   );
-  let cursor_connection = users_to_cursor_connection(vec![User {
-    _id: user_id,
-    avatar_url: "https://image.com/avatar".to_string(),
-    bio: None,
-    email: "email@email.com".to_string(),
-    login: "login".to_string(),
-    name: None,
-    organizations: None,
-    url: "https://image.com/avatar".to_string(),
-    website_url: None,
-    typename: "User".to_string(),
-  }]);
+  let result = vec![Ok(doc! {
+    "_id": user_id,
+    "avatarUrl": "https://image.com/avatar".to_string(),
+    "email": "email@email.com".to_string(),
+    "login": "login".to_string(),
+    "url": "https://image.com/avatar".to_string(),
+    "__typename": "User".to_string(),
+  })];
+  let cursor_connection = users_to_cursor_connection(result);
 
   assert_eq!(cursor_connection, expected_cursor_connection);
 }
@@ -154,18 +149,14 @@ fn should_convert_a_list_organizations_to_cursor_connection() {
     }],
     reference_from,
   );
-  let cursor_connection = organizations_to_cursor_connection(vec![Organization {
-    _id: organization_id,
-    avatar_url: "https://image.com/avatar".to_string(),
-    description: None,
-    location: None,
-    login: "login".to_string(),
-    name: None,
-    people: None,
-    url: "https://image.com/avatar".to_string(),
-    website_url: None,
-    typename: "Organization".to_string(),
-  }]);
+  let result = vec![Ok(doc! {
+    "_id": organization_id,
+    "avatarUrl": "https://image.com/avatar".to_string(),
+    "login": "login".to_string(),
+    "url": "https://image.com/avatar".to_string(),
+    "__typename": "Organization".to_string(),
+  })];
+  let cursor_connection = organizations_to_cursor_connection(result);
 
   assert_eq!(cursor_connection, expected_cursor_connection);
 }

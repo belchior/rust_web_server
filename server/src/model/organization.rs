@@ -1,7 +1,7 @@
 use super::{repository::Repository, user::User, utils};
 use crate::lib::cursor_connection::{CursorConnection, PaginationArguments};
 use mongodb::{
-  bson::{self, doc},
+  bson::{self, doc, Document},
   error::Error as MongodbError,
   options::FindOneOptions,
 };
@@ -51,15 +51,9 @@ pub async fn find_people_by_login(
   let organization_collection = db.collection::<Organization>("organizations");
 
   let pipeline = pipeline_paginated_people(login, pagination_arguments);
-  let mut cursor = organization_collection.aggregate(pipeline, None).await?;
-
-  let mut people: Vec<User> = vec![];
-  while let Some(result) = cursor.next().await {
-    let user: User = bson::from_document(result?)?;
-    people.push(user);
-  }
-
-  let people = utils::users_to_cursor_connection(people);
+  let cursor = organization_collection.aggregate(pipeline, None).await?;
+  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
+  let people = utils::users_to_cursor_connection(result);
 
   Ok(Some(people))
 }
@@ -79,15 +73,9 @@ pub async fn find_repositories_by_login(
   let organization = organization.unwrap();
 
   let pipeline = pipeline_paginated_repositories(&organization._id, pagination_arguments);
-  let mut cursor = repositories_collection.aggregate(pipeline, None).await?;
-
-  let mut repositories: Vec<Repository> = vec![];
-  while let Some(result) = cursor.next().await {
-    let repo: Repository = bson::from_document(result?)?;
-    repositories.push(repo);
-  }
-
-  let repositories = utils::repositories_to_cursor_connection(repositories);
+  let cursor = repositories_collection.aggregate(pipeline, None).await?;
+  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
+  let repositories = utils::repositories_to_cursor_connection(result);
 
   Ok(Some(repositories))
 }

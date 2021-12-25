@@ -1,6 +1,9 @@
 use super::{organization::Organization, repository::Repository, user::User};
 use crate::lib::cursor_connection::{cursor_to_reference, CursorConnection, Direction};
-use mongodb::bson;
+use mongodb::{
+  bson::{self, Document},
+  error::Error as MongodbError,
+};
 
 pub fn to_object_id(cursor: Option<String>) -> Option<bson::oid::ObjectId> {
   if cursor.is_none() {
@@ -35,18 +38,34 @@ pub fn to_operator(direction: &Direction) -> &'static str {
   }
 }
 
-// TODO abtract all fn *_to_cursor_connection to one generic function
-pub fn repositories_to_cursor_connection(models_list: Vec<Repository>) -> CursorConnection<Repository> {
+pub fn repositories_to_cursor_connection(result: Vec<Result<Document, MongodbError>>) -> CursorConnection<Repository> {
   let reference_from = |item: &Repository| item._id.to_hex();
-  CursorConnection::new(models_list, reference_from)
+  let repositories = result
+    .into_iter()
+    .map(|document| bson::from_document(document.unwrap()).unwrap())
+    .collect::<Vec<Repository>>();
+
+  CursorConnection::new(repositories, reference_from)
 }
 
-pub fn users_to_cursor_connection(models_list: Vec<User>) -> CursorConnection<User> {
+pub fn users_to_cursor_connection(result: Vec<Result<Document, MongodbError>>) -> CursorConnection<User> {
   let reference_from = |item: &User| item._id.to_hex();
-  CursorConnection::new(models_list, reference_from)
+  let users = result
+    .into_iter()
+    .map(|document| bson::from_document(document.unwrap()).unwrap())
+    .collect::<Vec<User>>();
+
+  CursorConnection::new(users, reference_from)
 }
 
-pub fn organizations_to_cursor_connection(models_list: Vec<Organization>) -> CursorConnection<Organization> {
+pub fn organizations_to_cursor_connection(
+  result: Vec<Result<Document, MongodbError>>,
+) -> CursorConnection<Organization> {
   let reference_from = |item: &Organization| item._id.to_hex();
-  CursorConnection::new(models_list, reference_from)
+  let organizations = result
+    .into_iter()
+    .map(|document| bson::from_document(document.unwrap()).unwrap())
+    .collect::<Vec<Organization>>();
+
+  CursorConnection::new(organizations, reference_from)
 }

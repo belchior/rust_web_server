@@ -49,15 +49,9 @@ pub async fn find_organizations_by_login(
 ) -> Result<Option<CursorConnection<Organization>>, MongodbError> {
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_organization(&login, pagination_arguments);
-  let mut cursor = user_collection.aggregate(pipeline, None).await?;
-
-  let mut organizations: Vec<Organization> = vec![];
-  while let Some(result) = cursor.next().await {
-    let org: Organization = bson::from_document(result?)?;
-    organizations.push(org);
-  }
-
-  let organizations = utils::organizations_to_cursor_connection(organizations);
+  let cursor = user_collection.aggregate(pipeline, None).await?;
+  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
+  let organizations = utils::organizations_to_cursor_connection(result);
 
   Ok(Some(organizations))
 }
@@ -71,13 +65,7 @@ pub async fn find_starred_repositories_by_login(
   let pipeline = pipeline_paginated_starred_repositories(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-
-  let repositories = result
-    .into_iter()
-    .map(|document| bson::from_document(document.unwrap()).unwrap())
-    .collect::<Vec<Repository>>();
-
-  let repositories = utils::repositories_to_cursor_connection(repositories);
+  let repositories = utils::repositories_to_cursor_connection(result);
 
   Ok(Some(repositories))
 }
@@ -91,13 +79,7 @@ pub async fn find_followers_by_login(
   let pipeline = pipeline_paginated_followers(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-
-  let followers = result
-    .into_iter()
-    .map(|document| bson::from_document(document.unwrap()).unwrap())
-    .collect::<Vec<User>>();
-
-  let followers = utils::users_to_cursor_connection(followers);
+  let followers = utils::users_to_cursor_connection(result);
 
   Ok(Some(followers))
 }
@@ -111,13 +93,7 @@ pub async fn find_following_by_login(
   let pipeline = pipeline_paginated_following(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-
-  let following = result
-    .into_iter()
-    .map(|document| bson::from_document(document.unwrap()).unwrap())
-    .collect::<Vec<User>>();
-
-  let following = utils::users_to_cursor_connection(following);
+  let following = utils::users_to_cursor_connection(result);
 
   Ok(Some(following))
 }

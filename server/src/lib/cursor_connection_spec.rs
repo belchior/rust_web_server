@@ -18,9 +18,11 @@ mod describe_cursor_connection_new {
   fn should_produce_an_cursor_connection_instance_with_edges() {
     let items = vec!["test 00".to_string(), "test 01".to_string()];
     let reference_from = |item: &String| item.clone();
-    let cursor_connection = CursorConnection::new(items, reference_from);
+    let cursor_connection = CursorConnection::new(items, false, false, reference_from);
     let expected_cursor_connection = CursorConnection {
       page_info: PageInfo {
+        has_next_page: false,
+        has_previous_page: false,
         start_cursor: Some("dGVzdCAwMA==".to_string()),
         end_cursor: Some("dGVzdCAwMQ==".to_string()),
       },
@@ -43,9 +45,11 @@ mod describe_cursor_connection_new {
   fn should_produce_an_cursor_connection_instance_without_edges() {
     let items: Vec<String> = vec![];
     let reference_from = |item: &String| item.clone();
-    let cursor_connection = CursorConnection::new(items, reference_from);
+    let cursor_connection = CursorConnection::new(items, false, false, reference_from);
     let expected_cursor_connection = CursorConnection {
       page_info: PageInfo {
+        has_next_page: false,
+        has_previous_page: false,
         start_cursor: None,
         end_cursor: None,
       },
@@ -61,7 +65,7 @@ mod describe_pagination_arguments_is_valid {
   use super::*;
 
   #[test]
-  fn should_be_valid_not_to_pass_attributes() {
+  fn should_be_valid_not_pass_attributes() {
     let arg = PaginationArguments {
       first: None,
       after: None,

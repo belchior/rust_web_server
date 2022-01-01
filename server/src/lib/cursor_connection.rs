@@ -49,14 +49,17 @@ impl<T> Edges<T> {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PageInfo {
-  // TODO implement hasNextPage and hasPreviousPage
+  pub has_previous_page: bool,
+  pub has_next_page: bool,
   pub start_cursor: Option<String>,
   pub end_cursor: Option<String>,
 }
 impl PageInfo {
-  fn new<T>(items: &Vec<T>, reference_from: ReferenceFrom<T>) -> Self {
+  fn new<T>(items: &Vec<T>, has_next_page: bool, has_previous_page: bool, reference_from: ReferenceFrom<T>) -> Self {
     if items.len() == 0 {
       return Self {
+        has_previous_page: false,
+        has_next_page: false,
         start_cursor: None,
         end_cursor: None,
       };
@@ -66,6 +69,8 @@ impl PageInfo {
     let last_item = items.last().unwrap();
 
     Self {
+      has_previous_page,
+      has_next_page,
       start_cursor: Some(reference_to_cursor(reference_from(first_item))),
       end_cursor: Some(reference_to_cursor(reference_from(last_item))),
     }
@@ -79,9 +84,9 @@ pub struct CursorConnection<T> {
   pub edges: Vec<Edges<T>>,
 }
 impl<T> CursorConnection<T> {
-  pub fn new(items: Vec<T>, reference_from: ReferenceFrom<T>) -> Self {
+  pub fn new(items: Vec<T>, has_next_page: bool, has_previous_page: bool, reference_from: ReferenceFrom<T>) -> Self {
     Self {
-      page_info: PageInfo::new(&items, reference_from),
+      page_info: PageInfo::new(&items, has_next_page, has_previous_page, reference_from),
       edges: Edges::into_edges(items, reference_from),
     }
   }
@@ -194,8 +199,6 @@ pub fn cursor_to_reference(cursor: String) -> Result<String, Error> {
   let result = std::str::from_utf8(&result)?;
   Ok(result.to_string())
 }
-
-type ReferenceFrom<T> = fn(item: &T) -> String;
 
 fn reference_to_cursor(reference: String) -> String {
   base64::encode(reference)

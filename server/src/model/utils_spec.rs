@@ -85,6 +85,8 @@ fn should_convert_a_list_repositories_to_cursor_connection() {
       owner: Owner { _id: owner_id },
       primary_language: None,
     }],
+    false,
+    false,
     reference_from,
   );
   let result = vec![Ok(doc! {
@@ -93,7 +95,7 @@ fn should_convert_a_list_repositories_to_cursor_connection() {
     "name": "Repo".to_string(),
     "owner": doc! { "_id": owner_id },
   })];
-  let cursor_connection = to_cursor_connection(result, |item: &Repository| item._id.to_hex());
+  let cursor_connection = to_cursor_connection(result, false, false, |item: &Repository| item._id.to_hex());
 
   assert_eq!(cursor_connection, expected_cursor_connection);
 }
@@ -115,6 +117,8 @@ fn should_convert_a_list_users_to_cursor_connection() {
       website_url: None,
       typename: "User".to_string(),
     }],
+    false,
+    false,
     reference_from,
   );
   let result = vec![Ok(doc! {
@@ -125,7 +129,7 @@ fn should_convert_a_list_users_to_cursor_connection() {
     "url": "https://image.com/avatar".to_string(),
     "__typename": "User".to_string(),
   })];
-  let cursor_connection = to_cursor_connection(result, |item: &User| item._id.to_hex());
+  let cursor_connection = to_cursor_connection(result, false, false, |item: &User| item._id.to_hex());
 
   assert_eq!(cursor_connection, expected_cursor_connection);
 }
@@ -147,6 +151,8 @@ fn should_convert_a_list_organizations_to_cursor_connection() {
       website_url: None,
       typename: "Organization".to_string(),
     }],
+    false,
+    false,
     reference_from,
   );
   let result = vec![Ok(doc! {
@@ -156,7 +162,7 @@ fn should_convert_a_list_organizations_to_cursor_connection() {
     "url": "https://image.com/avatar".to_string(),
     "__typename": "Organization".to_string(),
   })];
-  let cursor_connection = to_cursor_connection(result, |item: &Organization| item._id.to_hex());
+  let cursor_connection = to_cursor_connection(result, false, false, |item: &Organization| item._id.to_hex());
 
   assert_eq!(cursor_connection, expected_cursor_connection);
 }

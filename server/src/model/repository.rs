@@ -47,7 +47,7 @@ pub async fn find_repositories_by_user_id(
   let pipeline = pipeline_paginated_repositories(pagination_arguments, id);
   let cursor = repo_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let repositories = utils::to_cursor_connection(result, |item: &Repository| item._id.to_hex());
+  let repositories = utils::to_cursor_connection(result, false, false, |item: &Repository| item._id.to_hex());
 
   Ok(Some(repositories))
 }

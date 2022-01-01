@@ -40,12 +40,14 @@ pub fn to_operator(direction: &Direction) -> &'static str {
 
 pub fn to_cursor_connection<T: DeserializeOwned>(
   result: Vec<Result<Document, MongodbError>>,
+  has_next_page: bool,
+  has_previous_page: bool,
   reference_from: ReferenceFrom<T>,
 ) -> CursorConnection<T> {
-  let repositories = result
+  let items = result
     .into_iter()
     .map(|document| bson::from_document(document.unwrap()).unwrap())
     .collect::<Vec<T>>();
 
-  CursorConnection::new(repositories, reference_from)
+  CursorConnection::new(items, has_next_page, has_previous_page, reference_from)
 }

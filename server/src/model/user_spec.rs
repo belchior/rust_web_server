@@ -3,6 +3,97 @@ use crate::{lib::cursor_connection::PaginationArguments, mock};
 use base64;
 use pretty_assertions::assert_eq;
 
+#[actix_rt::test]
+async fn should_find_an_existing_user() {
+  let db = mock::setup().await;
+  let login = "user_foo".to_owned();
+
+  let user = find_user_by_login(&db, &login).await.unwrap().unwrap();
+
+  assert_eq!(user.email, "foo@email.com".to_owned());
+}
+
+#[actix_rt::test]
+async fn should_find_users_organizations() {
+  let db = mock::setup().await;
+  let login = "user_foo".to_owned();
+  let pagination_argument = PaginationArguments {
+    first: Some(1),
+    after: None,
+    last: None,
+    before: None,
+  };
+
+  let organizations = find_organizations_by_login(&db, &login, pagination_argument)
+    .await
+    .unwrap()
+    .unwrap();
+
+  assert_eq!(organizations.edges.len(), 1);
+  assert_eq!(organizations.edges[0].node.login, "organization_foo");
+}
+
+#[actix_rt::test]
+async fn should_find_users_starred_repositories() {
+  let db = mock::setup().await;
+  let login = "user_bar".to_owned();
+  let pagination_argument = PaginationArguments {
+    first: Some(1),
+    after: None,
+    last: None,
+    before: None,
+  };
+
+  let repositories = find_starred_repositories_by_login(&db, &login, pagination_argument)
+    .await
+    .unwrap()
+    .unwrap();
+
+  assert_eq!(repositories.edges.len(), 1);
+  assert_eq!(repositories.edges[0].node.name, "repository_foo");
+}
+
+#[actix_rt::test]
+async fn should_find_users_followers() {
+  let db = mock::setup().await;
+  let login = "user_foo".to_owned();
+  let pagination_argument = PaginationArguments {
+    first: Some(2),
+    after: None,
+    last: None,
+    before: None,
+  };
+
+  let users = find_followers_by_login(&db, &login, pagination_argument)
+    .await
+    .unwrap()
+    .unwrap();
+
+  assert_eq!(users.edges.len(), 2);
+  assert_eq!(users.edges[0].node.login, "user_bar");
+  assert_eq!(users.edges[1].node.login, "user_dee");
+}
+
+#[actix_rt::test]
+async fn should_find_users_following() {
+  let db = mock::setup().await;
+  let login = "user_dee".to_owned();
+  let pagination_argument = PaginationArguments {
+    first: Some(2),
+    after: None,
+    last: None,
+    before: None,
+  };
+
+  let users = find_following_by_login(&db, &login, pagination_argument)
+    .await
+    .unwrap()
+    .unwrap();
+
+  assert_eq!(users.edges.len(), 2);
+  assert_eq!(users.edges[0].node.login, "user_foo");
+  assert_eq!(users.edges[1].node.login, "user_bar");
+}
 
 /*
   Paginating Organizations

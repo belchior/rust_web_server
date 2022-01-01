@@ -2,6 +2,7 @@ version: '3.8'
 
 networks:
   my_network:
+    # TODO validate if is really necessary the driver be bridge
     driver: bridge
 
 services:
@@ -59,8 +60,11 @@ services:
       - my_network
 
   database:
+    # TODO upgrade to version 5
     image: mongo:4.2
     container_name: database
+    ports:
+      - 27017:27017
     networks:
       - my_network
 

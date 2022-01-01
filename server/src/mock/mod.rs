@@ -17,12 +17,15 @@ fn random_id() -> bson::oid::ObjectId {
   bson::oid::ObjectId::new()
 }
 
-async fn insert_mocked_data(db: &Database) -> Result<InsertOneResult, MongodbError> {
+async fn insert_mocked_data(db: &Database) -> Result<(), MongodbError> {
+  let organization_foo_id = random_id();
+  let organization_acme_id = random_id();
   let user_foo_id = random_id();
   let user_bar_id = random_id();
   let user_dee_id = random_id();
+  let repository_foo_id = random_id();
   let repository_bar_id = random_id();
-  let organization_foo_id = random_id();
+  let repository_dee_id = random_id();
 
   let organization_foo = doc! {
     "__typename": "Organization",
@@ -34,10 +37,23 @@ async fn insert_mocked_data(db: &Database) -> Result<InsertOneResult, MongodbErr
   };
   let organization_acme = doc! {
     "__typename": "Organization",
-    "_id": random_id(),
+    "_id": organization_acme_id,
     "avatarUrl": "https://acme.com/avatar.jpg",
     "login": "organization_acme",
+    "people": vec![
+      doc!{ "_id": user_foo_id, "ref": "users" },
+      doc!{ "_id": user_dee_id, "ref": "users" },
+      doc!{ "_id": user_bar_id, "ref": "users" },
+    ],
     "url": "https://github.com/acme",
+  };
+  let organization_empty_org = doc! {
+    "__typename": "Organization",
+    "_id": random_id(),
+    "avatarUrl": "https://empty_org.com/avatar.jpg",
+    "login": "empty_org",
+    "people": vec![] as Vec<bson::Document>,
+    "url": "https://github.com/empty_org",
   };
 
   let user_foo = doc! {
@@ -45,34 +61,60 @@ async fn insert_mocked_data(db: &Database) -> Result<InsertOneResult, MongodbErr
     "_id": user_foo_id,
     "avatarUrl": "https://foo.com/avatar.jpg",
     "email": "foo@email.com",
+    "followers": vec![
+      doc! { "_id": user_bar_id },
+      doc! { "_id": user_dee_id },
+    ],
     "login": "user_foo",
-    "organizations": vec![doc! { "_id": organization_foo_id }],
+    "organizations": vec![
+      doc! { "_id": organization_foo_id },
+      doc! { "_id": organization_acme_id },
+    ],
     "url":"https://github.com/foo",
-  };
-  let user_dee = doc! {
-    "__typename": "User",
-    "_id": user_dee_id,
-    "avatarUrl": "https://dee.com/avatar.jpg",
-    "email": "dee@email.com",
-    "followers": vec![doc! { "_id": user_bar_id }],
-    "following": vec![doc! { "_id": user_bar_id }],
-    "login": "user_dee",
-    "url":"https://github.com/bar",
   };
   let user_bar = doc! {
     "__typename": "User",
     "_id": user_bar_id,
     "avatarUrl": "https://bar.com/avatar.jpg",
     "email": "bar@email.com",
-    "followers": vec![doc! { "_id": user_dee_id }],
-    "following": vec![doc! { "_id": user_dee_id }],
+    "following": vec![
+      doc! { "_id": user_foo_id }
+    ],
+    "followers": vec![
+      doc! { "_id": user_dee_id },
+    ],
     "login": "user_bar",
-    "starredRepositories": vec![doc! { "_id": repository_bar_id }],
+    "organizations": vec![doc! { "_id": organization_acme_id }],
+    "starredRepositories": vec![
+      doc! { "_id": repository_foo_id },
+      doc! { "_id": repository_dee_id },
+    ],
     "url":"https://github.com/bar",
+  };
+  let user_dee = doc! {
+    "__typename": "User",
+    "_id": user_dee_id,
+    "avatarUrl": "https://dee.com/avatar.jpg",
+    "email": "dee@email.com",
+    "following": vec![
+      doc! { "_id": user_foo_id },
+      doc! { "_id": user_bar_id },
+    ],
+    "login": "user_dee",
+    "organizations": vec![doc! { "_id": organization_acme_id }],
+    "url":"https://github.com/bar",
+  };
+  let user_empty_user = doc! {
+    "__typename": "User",
+    "_id": random_id(),
+    "avatarUrl": "https://empty_user.com/avatar.jpg",
+    "email": "empty_user@email.com",
+    "login": "empty_user",
+    "url":"https://github.com/empty_user",
   };
 
   let repository_foo = doc! {
-    "_id": random_id(),
+    "_id": repository_foo_id,
     "forkCount": 9.0,
     "name": "repository_foo",
     "owner": { "_id": organization_foo_id, "ref": "organizations" }
@@ -83,14 +125,25 @@ async fn insert_mocked_data(db: &Database) -> Result<InsertOneResult, MongodbErr
     "name": "repository_bar",
     "owner": { "_id": user_bar_id, "ref": "users" }
   };
+  let repository_dee = doc! {
+    "_id": repository_dee_id,
+    "forkCount": 2.0,
+    "name": "repository_dee",
+    "owner": { "_id": user_dee_id, "ref": "users" }
+  };
 
   insert_organization(db, organization_acme).await?;
   insert_organization(db, organization_foo).await?;
-  insert_repository(db, repository_foo).await?;
-  insert_repository(db, repository_bar).await?;
+  insert_organization(db, organization_empty_org).await?;
+  insert_user(db, user_foo).await?;
   insert_user(db, user_bar).await?;
   insert_user(db, user_dee).await?;
-  insert_user(db, user_foo).await
+  insert_user(db, user_empty_user).await?;
+  insert_repository(db, repository_foo).await?;
+  insert_repository(db, repository_bar).await?;
+  insert_repository(db, repository_dee).await?;
+
+  Ok(())
 }
 
 async fn drop_collections(db: &Database) {

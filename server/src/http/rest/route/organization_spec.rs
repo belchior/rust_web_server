@@ -58,7 +58,7 @@ async fn should_not_find_people_of_the_organization() {
   )
   .await;
   let req = test::TestRequest::get()
-    .uri("/organization/organization_acme/people")
+    .uri("/organization/empty_org/people")
     .to_request();
   let res = test::call_service(&mut app, req).await;
   let status = res.status();

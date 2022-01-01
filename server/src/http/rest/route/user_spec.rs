@@ -44,7 +44,7 @@ async fn should_not_find_organizations_of_the_user() {
   let db = mock::setup().await;
   let mut app = test::init_service(App::new().data(AppState { db: db.clone() }).service(user::scope())).await;
   let req = test::TestRequest::get()
-    .uri("/user/user_dee/organizations")
+    .uri("/user/empty_user/organizations")
     .to_request();
   let res = test::call_service(&mut app, req).await;
   let status = res.status();
@@ -88,7 +88,9 @@ async fn should_find_repositories_of_the_user() {
 async fn should_not_find_repositories_of_the_user() {
   let db = mock::setup().await;
   let mut app = test::init_service(App::new().data(AppState { db: db.clone() }).service(user::scope())).await;
-  let req = test::TestRequest::get().uri("/user/user_dee/repositories").to_request();
+  let req = test::TestRequest::get()
+    .uri("/user/empty_user/repositories")
+    .to_request();
   let res = test::call_service(&mut app, req).await;
   let status = res.status();
   let body: CursorConnection<Repository> = test::read_body_json(res).await;
@@ -124,7 +126,7 @@ async fn should_find_starred_repositories_of_the_user() {
   let body: CursorConnection<Repository> = test::read_body_json(res).await;
 
   assert_eq!(status, StatusCode::OK);
-  assert_eq!(body.edges[0].node.name, "repository_bar");
+  assert_eq!(body.edges[0].node.name, "repository_foo");
 }
 
 #[actix_rt::test]
@@ -176,7 +178,7 @@ async fn should_find_followers_of_the_user() {
 async fn should_not_find_followers_of_the_user() {
   let db = mock::setup().await;
   let mut app = test::init_service(App::new().data(AppState { db: db.clone() }).service(user::scope())).await;
-  let req = test::TestRequest::get().uri("/user/user_foo/followers").to_request();
+  let req = test::TestRequest::get().uri("/user/empty_user/followers").to_request();
   let res = test::call_service(&mut app, req).await;
   let status = res.status();
   let body: CursorConnection<User> = test::read_body_json(res).await;
@@ -210,7 +212,7 @@ async fn should_find_following_of_the_user() {
   let body: CursorConnection<User> = test::read_body_json(res).await;
 
   assert_eq!(status, StatusCode::OK);
-  assert_eq!(body.edges[0].node.login, "user_dee");
+  assert_eq!(body.edges[0].node.login, "user_foo");
 }
 
 #[actix_rt::test]

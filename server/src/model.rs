@@ -10,4 +10,7 @@ mod organization_spec;
 mod repository_spec;
 
 #[cfg(test)]
+mod user_spec;
+
+#[cfg(test)]
 mod utils_spec;

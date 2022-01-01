@@ -209,48 +209,51 @@ fn pipeline_paginated_organization(login: &String, pagination_arguments: Paginat
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 
+  let keep_only_organizations = vec![
+    doc! { "$project": { "_id": 0, "organizations": 1 } },
+    doc! { "$unwind": "$organizations" },
+  ];
+
   let lookup_with_organizations = vec![
     doc! { "$lookup": {
       "from": "organizations",
       "localField": "organizations._id",
       "foreignField": "_id",
       "as": "organizations",
+    }},
+    doc! { "$replaceRoot": {
+      "newRoot": {
+        "$arrayElemAt": [ "$organizations", 0 ]
+      }
     } },
-    doc! { "$unwind": "$organizations" },
   ];
 
-  let paginate_organizations = match organization_id {
-    Some(_id) => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$match": { "organizations._id": { operator: _id } } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
-    None => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
+  let filter_by_organization_id = match organization_id {
+    None => vec![],
+    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
   };
 
-  let project_organizations = vec![
-    doc! { "$replaceRoot": {
-      "newRoot": "$organizations"
-    } },
-    doc! { "$project": {
-      "login": 1,
-      "name": 1,
-      "avatarUrl": 1,
-      "url": 1,
-      "__typename": 1,
-    } },
+  let paginate_items = vec![
+    doc! { "$sort": { "_id": order } },
+    doc! { "$limit": limit },
+    doc! { "$sort": { "_id": 1 } },
   ];
+
+  let project_organizations = vec![doc! { "$project": {
+    "login": 1,
+    "name": 1,
+    "avatarUrl": 1,
+    "url": 1,
+    "__typename": 1,
+  } }];
 
   vec![]
     .into_iter()
     .chain(filter_by_login)
+    .chain(keep_only_organizations)
     .chain(lookup_with_organizations)
-    .chain(paginate_organizations)
+    .chain(filter_by_organization_id)
+    .chain(paginate_items)
     .chain(project_organizations)
     .collect()
 }
@@ -266,29 +269,15 @@ fn pipeline_paginated_starred_repositories(
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 
-  let project_starred_repositories = vec![
+  let keep_only_starred_repositories = vec![
+    doc! { "$project": { "_id": 0, "starredRepositories": 1 } },
     doc! { "$unwind": "$starredRepositories" },
-    doc! { "$project": { "_id": "$starredRepositories._id" } },
   ];
-
-  let paginate_repositories = match repository_id {
-    Some(repository_id) => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$match": { "_id": { operator: repository_id } } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
-    None => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
-  };
 
   let lookup_with_repositories = vec![
     doc! { "$lookup": {
       "from": "repositories",
-      "localField": "_id",
+      "localField": "starredRepositories._id",
       "foreignField": "_id",
       "as": "item"
     } },
@@ -299,12 +288,24 @@ fn pipeline_paginated_starred_repositories(
     } },
   ];
 
+  let filter_by_repository_id = match repository_id {
+    None => vec![],
+    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
+  };
+
+  let paginate_items = vec![
+    doc! { "$sort": { "_id": order } },
+    doc! { "$limit": limit },
+    doc! { "$sort": { "_id": 1 } },
+  ];
+
   vec![]
     .into_iter()
     .chain(filter_by_login)
-    .chain(project_starred_repositories)
-    .chain(paginate_repositories)
+    .chain(keep_only_starred_repositories)
     .chain(lookup_with_repositories)
+    .chain(filter_by_repository_id)
+    .chain(paginate_items)
     .collect()
 }
 
@@ -316,29 +317,15 @@ fn pipeline_paginated_followers(login: &String, pagination_arguments: Pagination
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 
-  let project_followers = vec![
+  let keep_only_followers = vec![
+    doc! { "$project": { "_id": 0, "followers": 1 } },
     doc! { "$unwind": "$followers" },
-    doc! { "$project": { "_id": "$followers._id" } },
   ];
-
-  let paginate_folowers = match user_id {
-    Some(user_id) => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$match": { "_id": { operator: user_id } } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
-    None => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
-  };
 
   let lookup_with_users = vec![
     doc! { "$lookup": {
       "from": "users",
-      "localField": "_id",
+      "localField": "followers._id",
       "foreignField": "_id",
       "as": "item"
     } },
@@ -349,12 +336,24 @@ fn pipeline_paginated_followers(login: &String, pagination_arguments: Pagination
     } },
   ];
 
+  let filter_by_user_id = match user_id {
+    None => vec![],
+    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
+  };
+
+  let paginate_items = vec![
+    doc! { "$sort": { "_id": order } },
+    doc! { "$limit": limit },
+    doc! { "$sort": { "_id": 1 } },
+  ];
+
   vec![]
     .into_iter()
     .chain(filter_by_login)
-    .chain(project_followers)
-    .chain(paginate_folowers)
+    .chain(keep_only_followers)
     .chain(lookup_with_users)
+    .chain(filter_by_user_id)
+    .chain(paginate_items)
     .collect()
 }
 
@@ -366,29 +365,15 @@ fn pipeline_paginated_following(login: &String, pagination_arguments: Pagination
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 
-  let project_following = vec![
+  let keep_only_following = vec![
+    doc! { "$project": { "_id": 0, "following": 1 } },
     doc! { "$unwind": "$following" },
-    doc! { "$project": { "_id": "$following._id" } },
   ];
 
-  let paginate_folowing = match user_id {
-    Some(user_id) => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$match": { "_id": { operator: user_id } } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
-    None => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
-  };
-
-  let lookup_with_using = vec![
+  let lookup_with_users = vec![
     doc! { "$lookup": {
       "from": "users",
-      "localField": "_id",
+      "localField": "following._id",
       "foreignField": "_id",
       "as": "item"
     } },
@@ -399,11 +384,23 @@ fn pipeline_paginated_following(login: &String, pagination_arguments: Pagination
     } },
   ];
 
+  let filter_by_user_id = match user_id {
+    None => vec![],
+    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
+  };
+
+  let paginate_items = vec![
+    doc! { "$sort": { "_id": order } },
+    doc! { "$limit": limit },
+    doc! { "$sort": { "_id": 1 } },
+  ];
+
   vec![]
     .into_iter()
     .chain(filter_by_login)
-    .chain(project_following)
-    .chain(paginate_folowing)
-    .chain(lookup_with_using)
+    .chain(keep_only_following)
+    .chain(lookup_with_users)
+    .chain(filter_by_user_id)
+    .chain(paginate_items)
     .collect()
 }

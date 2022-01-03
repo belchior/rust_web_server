@@ -82,35 +82,21 @@ pub async fn find_repositories_by_login(
 
 fn pipeline_paginated_people(login: &String, pagination_arguments: PaginationArguments) -> Vec<bson::Document> {
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let organization_id = utils::to_object_id(cursor);
+  let user_id = utils::to_object_id(cursor);
   let order = utils::to_order(&direction);
   let operator = utils::to_operator(&direction);
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 
-  let project_people = vec![
+  let keep_only_people = vec![
+    doc! { "$project": { "_id": 0, "people": 1 } },
     doc! { "$unwind": "$people" },
-    doc! { "$project": { "_id": "$people._id" } },
   ];
-
-  let paginate_people = match organization_id {
-    Some(_id) => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$match": { "_id": { operator: _id } } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
-    None => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
-  };
 
   let lookup_with_users = vec![
     doc! { "$lookup": {
       "from": "users",
-      "localField": "_id",
+      "localField": "people._id",
       "foreignField": "_id",
       "as": "item"
     } },
@@ -121,12 +107,24 @@ fn pipeline_paginated_people(login: &String, pagination_arguments: PaginationArg
     } },
   ];
 
+  let filter_by_user_id = match user_id {
+    None => vec![],
+    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
+  };
+
+  let paginate_items = vec![
+    doc! { "$sort": { "_id": order } },
+    doc! { "$limit": limit },
+    doc! { "$sort": { "_id": 1 } },
+  ];
+
   vec![]
     .into_iter()
     .chain(filter_by_login)
-    .chain(project_people)
-    .chain(paginate_people)
+    .chain(keep_only_people)
     .chain(lookup_with_users)
+    .chain(filter_by_user_id)
+    .chain(paginate_items)
     .collect()
 }
 
@@ -141,23 +139,21 @@ fn pipeline_paginated_repositories(
 
   let filter_by_owner_id = vec![doc! { "$match": { "owner._id": owner_id } }];
 
-  let paginate_repositories = match repository_id {
-    Some(_id) => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$match": { "_id": { operator: _id } } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
-    None => vec![
-      doc! { "$sort": { "_id": order } },
-      doc! { "$limit": limit },
-      doc! { "$sort": { "_id": 1 } },
-    ],
+  let filter_by_repository_id = match repository_id {
+    None => vec![],
+    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
   };
+
+  let paginate_items = vec![
+    doc! { "$sort": { "_id": order } },
+    doc! { "$limit": limit },
+    doc! { "$sort": { "_id": 1 } },
+  ];
 
   vec![]
     .into_iter()
     .chain(filter_by_owner_id)
-    .chain(paginate_repositories)
+    .chain(filter_by_repository_id)
+    .chain(paginate_items)
     .collect()
 }

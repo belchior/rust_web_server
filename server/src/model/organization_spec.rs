@@ -1,5 +1,4 @@
-use super::organization::*;
-use crate::{lib::cursor_connection::PaginationArguments, mock};
+use crate::{lib::cursor_connection::PaginationArguments, mock, model::organization::*};
 use pretty_assertions::assert_eq;
 
 #[actix_rt::test]

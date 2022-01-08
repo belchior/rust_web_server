@@ -55,7 +55,7 @@ pub struct PageInfo {
   pub end_cursor: Option<String>,
 }
 impl PageInfo {
-  fn new<T>(items: &Vec<T>, has_next_page: bool, has_previous_page: bool, reference_from: ReferenceFrom<T>) -> Self {
+  fn new<T>(items: &Vec<T>, has_previous_page: bool, has_next_page: bool, reference_from: ReferenceFrom<T>) -> Self {
     if items.len() == 0 {
       return Self {
         has_previous_page: false,
@@ -84,9 +84,9 @@ pub struct CursorConnection<T> {
   pub edges: Vec<Edges<T>>,
 }
 impl<T> CursorConnection<T> {
-  pub fn new(items: Vec<T>, has_next_page: bool, has_previous_page: bool, reference_from: ReferenceFrom<T>) -> Self {
+  pub fn new(items: Vec<T>, has_previous_page: bool, has_next_page: bool, reference_from: ReferenceFrom<T>) -> Self {
     Self {
-      page_info: PageInfo::new(&items, has_next_page, has_previous_page, reference_from),
+      page_info: PageInfo::new(&items, has_previous_page, has_next_page, reference_from),
       edges: Edges::into_edges(items, reference_from),
     }
   }

@@ -2,7 +2,7 @@ use crate::http::http_handler::to_response;
 use crate::http::rest::{middleware, AppState};
 use crate::lib::cursor_connection::PaginationArguments;
 use crate::model::{
-  repository::find_repositories_by_user_id,
+  repository::find_repositories_by_owner_id,
   user::{
     find_followers_by_login, find_following_by_login, find_organizations_by_login, find_starred_repositories_by_login,
     find_user_by_login,
@@ -71,7 +71,7 @@ async fn repositories(
   }
 
   let user = result.unwrap().unwrap();
-  let result = find_repositories_by_user_id(&state.db, &user._id, pagination_arguments).await;
+  let result = find_repositories_by_owner_id(&state.db, &user._id, pagination_arguments).await;
 
   to_response(result, "Repositories")
 }

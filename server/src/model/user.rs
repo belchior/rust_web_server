@@ -1,7 +1,7 @@
-use super::{organization::Organization, repository::Repository, utils};
+use super::{organization::Organization, repository::Repository, utils, Pipeline};
 use crate::lib::cursor_connection::{CursorConnection, PaginationArguments};
 use mongodb::{
-  bson::{self, doc, oid::ObjectId, Document},
+  bson::{doc, oid::ObjectId, Document},
   error::Error as MongodbError,
   options::FindOneOptions,
 };
@@ -258,10 +258,7 @@ fn pipeline_paginated_organization(login: &String, pagination_arguments: Paginat
     .collect()
 }
 
-fn pipeline_paginated_starred_repositories(
-  login: &String,
-  pagination_arguments: PaginationArguments,
-) -> Vec<bson::Document> {
+fn pipeline_paginated_starred_repositories(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let repository_id = utils::to_object_id(cursor);
   let order = utils::to_order(&direction);
@@ -309,7 +306,7 @@ fn pipeline_paginated_starred_repositories(
     .collect()
 }
 
-fn pipeline_paginated_followers(login: &String, pagination_arguments: PaginationArguments) -> Vec<bson::Document> {
+fn pipeline_paginated_followers(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let user_id = utils::to_object_id(cursor);
   let order = utils::to_order(&direction);
@@ -357,7 +354,7 @@ fn pipeline_paginated_followers(login: &String, pagination_arguments: Pagination
     .collect()
 }
 
-fn pipeline_paginated_following(login: &String, pagination_arguments: PaginationArguments) -> Vec<bson::Document> {
+fn pipeline_paginated_following(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let user_id = utils::to_object_id(cursor);
   let order = utils::to_order(&direction);

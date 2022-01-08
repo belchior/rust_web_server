@@ -1,7 +1,9 @@
-use super::{repository::Repository, user::User, utils};
-use crate::lib::cursor_connection::{CursorConnection, PaginationArguments};
+use crate::{
+  lib::cursor_connection::{CursorConnection, PaginationArguments},
+  model::{self, repository::Repository, user::User},
+};
 use mongodb::{
-  bson::{self, doc, Document},
+  bson::{doc, oid::ObjectId, Document},
   error::Error as MongodbError,
   options::FindOneOptions,
 };
@@ -12,7 +14,7 @@ use tokio_stream::StreamExt;
 #[serde(rename_all = "camelCase")]
 pub struct Organization {
   #[serde(rename = "_id")]
-  pub _id: bson::oid::ObjectId,
+  pub _id: ObjectId,
   pub avatar_url: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub description: Option<String>,
@@ -80,11 +82,11 @@ pub async fn find_repositories_by_login(
   Ok(Some(repositories))
 }
 
-fn pipeline_paginated_people(login: &String, pagination_arguments: PaginationArguments) -> Vec<bson::Document> {
+fn pipeline_paginated_people(login: &String, pagination_arguments: PaginationArguments) -> model::Pipeline {
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let user_id = utils::to_object_id(cursor);
-  let order = utils::to_order(&direction);
-  let operator = utils::to_operator(&direction);
+  let user_id = model::utils::to_object_id(cursor);
+  let order = model::utils::to_order(&direction);
+  let operator = model::utils::to_operator(&direction);
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 

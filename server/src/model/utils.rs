@@ -1,11 +1,14 @@
-use crate::lib::cursor_connection::{cursor_to_reference, CursorConnection, Direction, ReferenceFrom};
+use crate::{
+  lib::cursor_connection::{cursor_to_reference, CursorConnection, Direction, ReferenceFrom},
+  model,
+};
 use mongodb::{
-  bson::{self, Document},
+  bson::{self, doc, oid::ObjectId, Document},
   error::Error as MongodbError,
 };
 use serde::de::DeserializeOwned;
 
-pub fn to_object_id(cursor: Option<String>) -> Option<bson::oid::ObjectId> {
+pub fn to_object_id(cursor: Option<String>) -> Option<ObjectId> {
   if cursor.is_none() {
     return None;
   }
@@ -15,7 +18,7 @@ pub fn to_object_id(cursor: Option<String>) -> Option<bson::oid::ObjectId> {
     return None;
   }
 
-  let id = bson::oid::ObjectId::parse_str(&reference.unwrap());
+  let id = ObjectId::parse_str(&reference.unwrap());
   if id.is_err() {
     return None;
   }
@@ -40,8 +43,8 @@ pub fn to_operator(direction: &Direction) -> &'static str {
 
 pub fn to_cursor_connection<T: DeserializeOwned>(
   result: Vec<Result<Document, MongodbError>>,
-  has_next_page: bool,
   has_previous_page: bool,
+  has_next_page: bool,
   reference_from: ReferenceFrom<T>,
 ) -> CursorConnection<T> {
   let items = result
@@ -49,5 +52,5 @@ pub fn to_cursor_connection<T: DeserializeOwned>(
     .map(|document| bson::from_document(document.unwrap()).unwrap())
     .collect::<Vec<T>>();
 
-  CursorConnection::new(items, has_next_page, has_previous_page, reference_from)
+  CursorConnection::new(items, has_previous_page, has_next_page, reference_from)
 }

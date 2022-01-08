@@ -5,7 +5,7 @@ use super::{
   utils::*,
 };
 use crate::lib::cursor_connection::{CursorConnection, Direction};
-use mongodb::bson::{self, doc};
+use mongodb::bson::{doc, oid::ObjectId};
 use pretty_assertions::assert_eq;
 
 #[cfg(test)]
@@ -18,7 +18,7 @@ mod describe_to_object_id {
   fn should_convert_cursor_to_object_id() {
     let cursor = Some("NWU4MGVjN2Q1MmYxNTcyMGJlMmJiYTc5".to_string());
     let object_id = to_object_id(cursor);
-    let expected_object_id = bson::oid::ObjectId::parse_str("5e80ec7d52f15720be2bba79").unwrap();
+    let expected_object_id = ObjectId::parse_str("5e80ec7d52f15720be2bba79").unwrap();
 
     assert_eq!(object_id, Some(expected_object_id));
   }
@@ -72,8 +72,8 @@ fn should_convert_direction_to_operator() {
 
 #[test]
 fn should_convert_a_list_repositories_to_cursor_connection() {
-  let repo_id = bson::oid::ObjectId::new();
-  let owner_id = bson::oid::ObjectId::new();
+  let repo_id = ObjectId::new();
+  let owner_id = ObjectId::new();
   let reference_from = |item: &Repository| item._id.to_hex();
   let expected_cursor_connection = CursorConnection::new(
     vec![Repository {
@@ -102,7 +102,7 @@ fn should_convert_a_list_repositories_to_cursor_connection() {
 
 #[test]
 fn should_convert_a_list_users_to_cursor_connection() {
-  let user_id = bson::oid::ObjectId::new();
+  let user_id = ObjectId::new();
   let reference_from = |item: &User| item._id.to_hex();
   let expected_cursor_connection = CursorConnection::new(
     vec![User {
@@ -136,7 +136,7 @@ fn should_convert_a_list_users_to_cursor_connection() {
 
 #[test]
 fn should_convert_a_list_organizations_to_cursor_connection() {
-  let organization_id = bson::oid::ObjectId::new();
+  let organization_id = ObjectId::new();
   let reference_from = |item: &Organization| item._id.to_hex();
   let expected_cursor_connection = CursorConnection::new(
     vec![Organization {

@@ -1,5 +1,4 @@
-use super::user::*;
-use crate::{lib::cursor_connection::PaginationArguments, mock};
+use crate::{lib::cursor_connection::PaginationArguments, mock, model::user::*};
 use base64;
 use pretty_assertions::assert_eq;
 
@@ -95,9 +94,7 @@ async fn should_find_users_following() {
   assert_eq!(users.edges[1].node.login, "user_bar");
 }
 
-/*
-  Paginating Organizations
-*/
+/// Paginating Organizations
 
 #[actix_rt::test]
 async fn should_paginating_organizations_from_start_to_end() {
@@ -233,9 +230,7 @@ async fn should_paginating_organizations_from_end_to_start() {
   assert_eq!(organizations.page_info.has_previous_page, false);
 }
 
-/*
-  Paginating Starred Repositories
-*/
+/// Paginating Starred Repositories
 
 #[actix_rt::test]
 async fn should_paginating_starred_repositories_from_start_to_end() {
@@ -371,9 +366,7 @@ async fn should_paginating_starred_repositories_from_end_to_start() {
   assert_eq!(repositories.page_info.has_previous_page, false);
 }
 
-/*
-  Paginating Followers
-*/
+/// Paginating Followers
 
 #[actix_rt::test]
 async fn should_paginating_followers_from_start_to_end() {
@@ -509,9 +502,7 @@ async fn should_paginating_followers_from_end_to_start() {
   assert_eq!(users.page_info.has_previous_page, false);
 }
 
-/*
-  Paginating Following
-*/
+/// Paginating Following
 
 #[actix_rt::test]
 async fn should_paginating_following_from_start_to_end() {

@@ -2,6 +2,7 @@
   "recommendations": [
     "bungcip.better-toml",
     "vadimcn.vscode-lldb",
-    "matklad.rust-analyzer"
+    "matklad.rust-analyzer",
+    "dbaeumer.vscode-eslint"
   ]
 }

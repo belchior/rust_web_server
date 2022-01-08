@@ -1,5 +1,7 @@
 {
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
-  "editor.wordWrapColumn": 120
+  "editor.wordWrapColumn": 120,
+  "rust-analyzer.inlayHints.enable": false,
+  "editor.tabSize": 2
 }

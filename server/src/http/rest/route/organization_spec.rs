@@ -98,14 +98,14 @@ async fn should_find_repositories_of_the_organization() {
   )
   .await;
   let req = test::TestRequest::get()
-    .uri("/organization/organization_foo/repositories")
+    .uri("/organization/organization_acme/repositories")
     .to_request();
   let res = test::call_service(&mut app, req).await;
   let status = res.status();
   let body: CursorConnection<Repository> = test::read_body_json(res).await;
 
   assert_eq!(status, StatusCode::OK);
-  assert_eq!(body.edges[0].node.name, "repository_foo");
+  assert_eq!(body.edges[0].node.name, "repository_tux");
 }
 
 #[actix_rt::test]
@@ -118,7 +118,7 @@ async fn should_not_find_repositories_of_the_organization() {
   )
   .await;
   let req = test::TestRequest::get()
-    .uri("/organization/organization_acme/repositories")
+    .uri("/organization/empty_org/repositories")
     .to_request();
   let res = test::call_service(&mut app, req).await;
   let status = res.status();

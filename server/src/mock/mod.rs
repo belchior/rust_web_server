@@ -1,6 +1,6 @@
 use crate::db::db_client_connection;
 use mongodb::{
-  bson::{self, doc},
+  bson::{self, doc, oid::ObjectId},
   error::Error as MongodbError,
   results::InsertOneResult,
   Database,
@@ -13,8 +13,8 @@ pub async fn setup() -> Database {
   db
 }
 
-fn random_id() -> bson::oid::ObjectId {
-  bson::oid::ObjectId::new()
+fn random_id() -> ObjectId {
+  ObjectId::new()
 }
 
 async fn insert_mocked_data(db: &Database) -> Result<(), MongodbError> {
@@ -23,7 +23,8 @@ async fn insert_mocked_data(db: &Database) -> Result<(), MongodbError> {
   let user_foo_id = random_id();
   let user_bar_id = random_id();
   let user_dee_id = random_id();
-  let repository_foo_id = random_id();
+  let repository_tux_id = random_id();
+  let repository_mar_id = random_id();
   let repository_bar_id = random_id();
   let repository_dee_id = random_id();
 
@@ -43,7 +44,6 @@ async fn insert_mocked_data(db: &Database) -> Result<(), MongodbError> {
     "people": vec![
       doc!{ "_id": user_foo_id, "ref": "users" },
       doc!{ "_id": user_dee_id, "ref": "users" },
-      doc!{ "_id": user_bar_id, "ref": "users" },
     ],
     "url": "https://github.com/acme",
   };
@@ -84,9 +84,8 @@ async fn insert_mocked_data(db: &Database) -> Result<(), MongodbError> {
       doc! { "_id": user_dee_id },
     ],
     "login": "user_bar",
-    "organizations": vec![doc! { "_id": organization_acme_id }],
     "starredRepositories": vec![
-      doc! { "_id": repository_foo_id },
+      doc! { "_id": repository_tux_id },
       doc! { "_id": repository_dee_id },
     ],
     "url":"https://github.com/bar",
@@ -113,11 +112,17 @@ async fn insert_mocked_data(db: &Database) -> Result<(), MongodbError> {
     "url":"https://github.com/empty_user",
   };
 
-  let repository_foo = doc! {
-    "_id": repository_foo_id,
+  let repository_tux = doc! {
+    "_id": repository_tux_id,
     "forkCount": 9.0,
-    "name": "repository_foo",
-    "owner": { "_id": organization_foo_id, "ref": "organizations" }
+    "name": "repository_tux",
+    "owner": { "_id": organization_acme_id, "ref": "organizations" }
+  };
+  let repository_mar = doc! {
+    "_id": repository_mar_id,
+    "forkCount": 12.0,
+    "name": "repository_mar",
+    "owner": { "_id": organization_acme_id, "ref": "organizations" }
   };
   let repository_bar = doc! {
     "_id": repository_bar_id,
@@ -139,7 +144,8 @@ async fn insert_mocked_data(db: &Database) -> Result<(), MongodbError> {
   insert_user(db, user_bar).await?;
   insert_user(db, user_dee).await?;
   insert_user(db, user_empty_user).await?;
-  insert_repository(db, repository_foo).await?;
+  insert_repository(db, repository_tux).await?;
+  insert_repository(db, repository_mar).await?;
   insert_repository(db, repository_bar).await?;
   insert_repository(db, repository_dee).await?;
 

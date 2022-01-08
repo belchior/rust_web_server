@@ -126,7 +126,7 @@ async fn should_find_starred_repositories_of_the_user() {
   let body: CursorConnection<Repository> = test::read_body_json(res).await;
 
   assert_eq!(status, StatusCode::OK);
-  assert_eq!(body.edges[0].node.name, "repository_foo");
+  assert_eq!(body.edges[0].node.name, "repository_tux");
 }
 
 #[actix_rt::test]

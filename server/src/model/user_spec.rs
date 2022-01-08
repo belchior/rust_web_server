@@ -50,7 +50,7 @@ async fn should_find_users_starred_repositories() {
     .unwrap();
 
   assert_eq!(repositories.edges.len(), 1);
-  assert_eq!(repositories.edges[0].node.name, "repository_foo");
+  assert_eq!(repositories.edges[0].node.name, "repository_tux");
 }
 
 #[actix_rt::test]
@@ -257,7 +257,7 @@ async fn should_paginating_starred_repositories_from_start_to_end() {
     .unwrap();
 
   assert_eq!(repositories.edges.len(), 1);
-  assert_eq!(repositories.edges[0].node.name, "repository_foo");
+  assert_eq!(repositories.edges[0].node.name, "repository_tux");
 
   let end_cursor = Some(base64::encode(repositories.edges[0].node._id.to_hex()));
 
@@ -346,7 +346,7 @@ async fn should_paginating_starred_repositories_from_end_to_start() {
     .unwrap();
 
   assert_eq!(repositories.edges.len(), 1);
-  assert_eq!(repositories.edges[0].node.name, "repository_foo");
+  assert_eq!(repositories.edges[0].node.name, "repository_tux");
 
   let start_cursor = Some(base64::encode(repositories.edges[0].node._id.to_hex()));
 

@@ -17,6 +17,8 @@ const List = (props: Props) => {
     ctx.loadMore();
   };
 
+  const hasNextPage = ctx.data?.pageInfo?.hasNextPage;
+
   return (
     <div className={classes.list}>
       {Array.isArray(children) && children.length === 0
@@ -25,8 +27,8 @@ const List = (props: Props) => {
           <Fragment>
             {children}
             <div className={classes.actionContainer}>
-              <Button onClick={handleLoadMore}>
-                Load more
+              <Button onClick={handleLoadMore} disabled={hasNextPage === false}>
+                {hasNextPage ? 'Load more' : 'nothing more to show'}
               </Button>
             </div>
           </Fragment>

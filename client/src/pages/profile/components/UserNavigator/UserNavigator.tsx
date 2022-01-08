@@ -18,7 +18,6 @@ import { useParams } from 'react-router-dom';
 import { useSearchParams } from 'utils/hooks';
 import { useStyles } from './UserNavigator.styles';
 
-
 type TabPanelProps = {
   children?: ReactNode
   index: number
@@ -149,7 +148,7 @@ const UserNavigator = (props: UserNavigatorProps) => {
     const searchString = search.get('after') ? `?after${search.get('after')}` : '';
     fetch(`${baseUrl}${searchString}`)
       .then(res => res.json())
-      .catch(err => console.log(err))
+      .catch(err => console.error(err))
       .then(data => setRequest({ isLoading: false, data }));
   }, [baseUrl, search]);
 
@@ -165,6 +164,7 @@ const UserNavigator = (props: UserNavigatorProps) => {
       const searchString = `?after=${this.data.pageInfo.endCursor}`;
       fetch(`${baseUrl}${searchString}`)
         .then(res => res.json())
+        .catch(err => console.error(err))
         .then(data => setRequest(state => ({
           isLoading: false,
           data: {

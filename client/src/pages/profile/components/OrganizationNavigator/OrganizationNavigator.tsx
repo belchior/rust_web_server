@@ -17,7 +17,6 @@ import { useStyles } from './OrganizationNavigator.styles';
 import { useParams } from 'react-router-dom';
 import { endpoint } from 'utils/environment';
 
-
 type TabPanelProps = {
   children: ReactNode
   value: number
@@ -55,7 +54,6 @@ const TabPanel = (props: TabPanelProps) => {
   );
 };
 
-
 const OrganizationTabs = (props: OrganizationTabsProps) => {
   const { tabIndex, handleTabChange } = props;
   const classes = useStyles();
@@ -70,7 +68,6 @@ const OrganizationTabs = (props: OrganizationTabsProps) => {
     </Tabs>
   );
 };
-
 
 const OrganizationTabPanels = (props: OrganizationTabPanelsProps) => {
   const { profile, tabIndex, tabName } = props;
@@ -138,7 +135,7 @@ const OrganizationNavigator = (props: OrganizationNavigatorProps) => {
     const searchString = search.get('after') ? `?after${search.get('after')}` : '';
     fetch(`${baseUrl}${searchString}`)
       .then(res => res.json())
-      .catch(err => console.log(err))
+      .catch(err => console.error(err))
       .then(data => setRequest({ isLoading: false, data }));
   }, [baseUrl, search]);
 
@@ -154,6 +151,7 @@ const OrganizationNavigator = (props: OrganizationNavigatorProps) => {
       const searchString = `?after=${this.data.pageInfo.endCursor}`;
       fetch(`${baseUrl}${searchString}`)
         .then(res => res.json())
+        .catch(err => console.error(err))
         .then(data => setRequest(state => ({
           isLoading: false,
           data: {

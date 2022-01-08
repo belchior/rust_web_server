@@ -55,7 +55,10 @@ pub async fn find_people_by_login(
   let pipeline = pipeline_paginated_people(login, pagination_arguments);
   let cursor = organization_collection.aggregate(pipeline, None).await?;
   let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let people = utils::to_cursor_connection(result, false, false, |item: &User| item._id.to_hex());
+  let (has_previous_page, has_next_page) =
+    model::utils::pages_previous_and_next(db, login, &result, "organizations", "people").await;
+  let reference_from = |item: &User| item._id.to_hex();
+  let people = model::utils::to_cursor_connection(result, has_previous_page, has_next_page, reference_from);
 
   Ok(Some(people))
 }
@@ -65,7 +68,6 @@ pub async fn find_repositories_by_login(
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
-  let repositories_collection = db.collection::<Repository>("repositories");
   let organization = find_organization_by_login(db, login).await?;
 
   if let None = organization {
@@ -74,12 +76,7 @@ pub async fn find_repositories_by_login(
 
   let organization = organization.unwrap();
 
-  let pipeline = pipeline_paginated_repositories(&organization._id, pagination_arguments);
-  let cursor = repositories_collection.aggregate(pipeline, None).await?;
-  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let repositories = utils::to_cursor_connection(result, false, false, |item: &Repository| item._id.to_hex());
-
-  Ok(Some(repositories))
+  model::repository::find_repositories_by_owner_id(db, &organization._id, pagination_arguments).await
 }
 
 fn pipeline_paginated_people(login: &String, pagination_arguments: PaginationArguments) -> model::Pipeline {
@@ -126,36 +123,6 @@ fn pipeline_paginated_people(login: &String, pagination_arguments: PaginationArg
     .chain(keep_only_people)
     .chain(lookup_with_users)
     .chain(filter_by_user_id)
-    .chain(paginate_items)
-    .collect()
-}
-
-fn pipeline_paginated_repositories(
-  owner_id: &bson::oid::ObjectId,
-  pagination_arguments: PaginationArguments,
-) -> Vec<bson::Document> {
-  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let repository_id = utils::to_object_id(cursor);
-  let order = utils::to_order(&direction);
-  let operator = utils::to_operator(&direction);
-
-  let filter_by_owner_id = vec![doc! { "$match": { "owner._id": owner_id } }];
-
-  let filter_by_repository_id = match repository_id {
-    None => vec![],
-    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
-  };
-
-  let paginate_items = vec![
-    doc! { "$sort": { "_id": order } },
-    doc! { "$limit": limit },
-    doc! { "$sort": { "_id": 1 } },
-  ];
-
-  vec![]
-    .into_iter()
-    .chain(filter_by_owner_id)
-    .chain(filter_by_repository_id)
     .chain(paginate_items)
     .collect()
 }

@@ -6,7 +6,6 @@ import Title from 'components/Title/Title';
 import { ProfileOwner } from 'utils/interfaces';
 import { useStyles } from './ProfileOwnerList.styles';
 
-
 type OwnerLisProps = {
   owners: ProfileOwner[]
   title: ReactNode

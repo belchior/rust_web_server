@@ -6,7 +6,6 @@ import Title from 'components/Title/Title';
 import { useStyles } from './RepositoryItem.styles';
 import { Repository } from 'utils/interfaces';
 
-
 type Props = {
   repository: Repository
 }

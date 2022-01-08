@@ -3,7 +3,6 @@ import { MemoryRouter } from 'react-router';
 import UserSidebar from './UserSidebar';
 import { user } from 'utils/mockData';
 
-
 describe('UserSidebar', () => {
   it('should render the avatar of the user', () => {
     const { getByAltText } = render(

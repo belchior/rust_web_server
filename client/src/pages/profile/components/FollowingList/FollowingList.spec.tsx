@@ -3,7 +3,6 @@ import { MemoryRouter } from 'react-router';
 import { user } from 'utils/mockData';
 import FollowingListDefault from './FollowingList';
 
-
 describe('FollowingList default', () => {
   it('should render the default component without crashing', () => {
     const Component = () => (

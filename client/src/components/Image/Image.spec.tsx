@@ -2,7 +2,6 @@ import { render } from '@testing-library/react';
 
 import Image, { Fallback } from './Image';
 
-
 describe('Image', () => {
   it('should render without crashing', () => {
     const { getByAltText } = render(<Image src="/path/to/file" alt="Alternative text" />);

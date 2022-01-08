@@ -4,7 +4,6 @@ import Typography from '@material-ui/core/Typography';
 import Anchor from 'components/Anchor/Anchor';
 import { useStyles } from './Footer.styles';
 
-
 const Footer = () => {
   const classes = useStyles();
   return (

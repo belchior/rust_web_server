@@ -3,7 +3,6 @@ import { MemoryRouter } from 'react-router';
 import PeopleListDefault from './PeopleList';
 import { organization } from 'utils/mockData';
 
-
 describe('PeopleList default', () => {
   it('should render the default component without crashing', () => {
     const Component = () => (

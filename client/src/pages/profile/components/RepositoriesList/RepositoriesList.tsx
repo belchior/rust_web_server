@@ -1,8 +1,7 @@
 import List from '../List/List';
 import RepositoryItem from '../RepositoryItem/RepositoryItem';
 import { RepositoryOwner } from 'utils/interfaces';
-import { edgesToArray } from 'utils/array';
-
+import { edgesToArray, emptyCursorConnection } from 'utils/cursorConnection';
 
 interface IProps {
   owner: RepositoryOwner
@@ -10,7 +9,7 @@ interface IProps {
 
 const RepositoriesList = (props: IProps) => {
   const { owner } = props;
-  const repositories = edgesToArray(owner.repositories || { edges: [] });
+  const repositories = edgesToArray(owner.repositories || emptyCursorConnection());
 
   return (
     <List>

@@ -2,7 +2,6 @@ import { render } from '@testing-library/react';
 import RepositoryItem from './RepositoryItem';
 import { repository } from 'utils/mockData';
 
-
 describe('RepositoryItem', () => {
   it('should render the name of repository', () => {
     const { getByText } = render(<RepositoryItem repository={repository} />);

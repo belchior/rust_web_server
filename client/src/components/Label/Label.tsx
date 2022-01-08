@@ -3,7 +3,6 @@ import Typography from '@material-ui/core/Typography';
 
 import { useStyles } from './Label.styles';
 
-
 type Props = ComponentProps<typeof Typography> & {
   children: ReactNode
   className?: string

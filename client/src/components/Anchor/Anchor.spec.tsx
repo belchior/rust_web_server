@@ -2,7 +2,6 @@ import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import Anchor from './Anchor';
 
-
 describe('Anchor', () => {
   it('should render the text provided as children prop', () => {
     const { getByText } = render(

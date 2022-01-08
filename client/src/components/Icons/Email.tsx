@@ -1,6 +1,5 @@
 import { SVGProps } from 'react';
 
-
 const Email = (props: SVGProps<SVGSVGElement>) => {
   return (
     <svg viewBox="0 0 14 16" width="14" height="16" fill="#6a737d" data-testid="email-icon" {...props}>

@@ -1,7 +1,7 @@
 import List from '../List/List';
 import UserItem from 'pages/profile/components/UserItem/UserItem';
 import { User } from 'utils/interfaces';
-import { edgesToArray } from 'utils/array';
+import { edgesToArray, emptyCursorConnection } from 'utils/cursorConnection';
 
 type Props = {
   user: User
@@ -9,7 +9,7 @@ type Props = {
 
 const FollowersList = (props: Props) => {
   const { user } = props;
-  const followers = edgesToArray(user.followers || { edges: [] });
+  const followers = edgesToArray(user.followers || emptyCursorConnection());
 
   return (
     <List>

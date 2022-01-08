@@ -6,7 +6,6 @@ import Home from 'pages/home/Home';
 import NotFound from 'pages/notfound/NotFound';
 import Profile from 'pages/profile/Profile';
 
-
 type TAppRouteProps = {
   children?: ReactNode
   path: string

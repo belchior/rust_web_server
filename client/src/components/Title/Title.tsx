@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import Typography from '@material-ui/core/Typography';
 
-
 type Props = {
   children: ReactNode
   className?: string

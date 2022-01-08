@@ -1,7 +1,7 @@
 import List from '../List/List';
 import RepositoryItem from '../RepositoryItem/RepositoryItem';
 import { User } from 'utils/interfaces';
-import { edgesToArray } from 'utils/array';
+import { edgesToArray, emptyCursorConnection } from 'utils/cursorConnection';
 
 type Props = {
   user: User
@@ -9,7 +9,7 @@ type Props = {
 
 const StarredRepositoriesList = (props: Props) => {
   const { user } = props;
-  const repositories = edgesToArray(user.starredRepositories || { edges: [] });
+  const repositories = edgesToArray(user.starredRepositories || emptyCursorConnection());
 
   return (
     <List>

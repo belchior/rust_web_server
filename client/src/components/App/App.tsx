@@ -6,7 +6,6 @@ import Footer from 'components/Footer/Footer';
 import Header from 'components/Header/Header';
 import { useStyles } from './App.styles';
 
-
 type Props = {
   children: ReactNode
 }

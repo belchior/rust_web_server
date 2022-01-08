@@ -12,3 +12,13 @@ export const edgesToArray = (cursor: CursorConnection) => cursor.edges.map(item 
   delete newItem._id;
   return newItem;
 });
+
+export const emptyCursorConnection = (): CursorConnection => ({
+  edges: [],
+  pageInfo: {
+    endCursor: '',
+    hasNextPage: false,
+    hasPreviousPage: false,
+    startCursor: '',
+  }
+});

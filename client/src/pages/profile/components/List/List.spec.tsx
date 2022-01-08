@@ -2,7 +2,6 @@ import { fireEvent, render } from '@testing-library/react';
 import List from './List';
 import { RequestPaginatedContext, TContext } from '../RequestPaginated/RequestPaginated';
 
-
 describe('List', () => {
   it('should render a message when the list is empty', () => {
     const props = {

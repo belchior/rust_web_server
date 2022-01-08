@@ -6,7 +6,7 @@ import LinkIcon from 'components/Icons/Link';
 import OwnerList from 'pages/profile/components/ProfileOwnerList/ProfileOwnerList';
 import Title from 'components/Title/Title';
 import { User } from 'utils/interfaces';
-import { edgesToArray } from 'utils/array';
+import { edgesToArray, emptyCursorConnection } from 'utils/cursorConnection';
 import { useStyles } from './UserSidebar.styles';
 
 type Props = {
@@ -16,7 +16,7 @@ type Props = {
 const UserSidebar = (props: Props) => {
   const { profile } = props;
   const classes = useStyles();
-  const organizations = edgesToArray(profile.organizations || { edges: [] });
+  const organizations = edgesToArray(profile.organizations || emptyCursorConnection());
 
   return (
     <div className={classes.root}>

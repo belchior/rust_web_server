@@ -3,7 +3,6 @@ import { MemoryRouter } from 'react-router';
 
 import Header from './Header';
 
-
 describe('Header', () => {
   it('should render an anchor representing the home route', () => {
     const { getByTitle } = render(

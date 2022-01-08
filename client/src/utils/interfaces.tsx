@@ -7,10 +7,16 @@ export type UrlParams = {
 type Edge = {
   node: any
 }
-export type CursorConnection = {
-  edges: Edge[]
+type PageInfo = {
+  hasPreviousPage: boolean,
+  hasNextPage: boolean,
+  startCursor: string,
+  endCursor: string
 }
-
+export type CursorConnection = {
+  edges: Edge[],
+  pageInfo: PageInfo,
+}
 
 type License = {
   name: string
@@ -87,7 +93,6 @@ export type Organization = ProfileOwner & RepositoryOwner & {
 export type EventFn = (event: ChangeEvent<{}>, value: any) => void
 
 export type HookTuple = [any, Function]
-
 
 export type TUserTabs = 'repositories' | 'starredRepositories' | 'followers' | 'following'
 export type TOrganizationTabs = 'repositories' | 'people'

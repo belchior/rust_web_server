@@ -2,7 +2,6 @@ import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import ProfileOwnerList from './ProfileOwnerList';
 
-
 describe('ProfileOwnerList', () => {
   it('should render a title', () => {
     const props = {

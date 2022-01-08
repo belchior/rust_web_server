@@ -2,7 +2,6 @@ import { render } from '@testing-library/react';
 import OrganizationHeader from './OrganizationHeader';
 import { organization } from 'utils/mockData';
 
-
 describe('OrganizationHeader', () => {
   it('should render the avatar of the organization', () => {
     const profile = organization;

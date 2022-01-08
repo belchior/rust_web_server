@@ -1,7 +1,6 @@
 import { render } from '@testing-library/react';
 import Language from './Language';
 
-
 describe('Language', () => {
   it('should render the props provided', () => {
     const data = {

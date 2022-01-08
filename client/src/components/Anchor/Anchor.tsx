@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 
 import { useStyles } from './Anchor.styles';
 
-
 type Props = {
   children: ReactNode
   className?: string

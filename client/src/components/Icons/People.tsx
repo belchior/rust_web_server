@@ -1,6 +1,5 @@
 import { SVGProps } from 'react';
 
-
 const People = (props: SVGProps<SVGSVGElement>) => {
   return (
     <svg viewBox="0 0 12 16" width="12" height="16" fill="currentColor" data-testid="people-icon" {...props}>

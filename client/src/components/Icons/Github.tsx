@@ -1,7 +1,5 @@
 import { SVGProps } from 'react';
 
-
-
 const Github = (props: SVGProps<SVGSVGElement>) => {
   return (
     <svg height="32" width="32" viewBox="0 0 16 16" fill="#fff" data-testid="github-icon" {...props}>

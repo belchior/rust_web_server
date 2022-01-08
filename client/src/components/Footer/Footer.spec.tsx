@@ -3,7 +3,6 @@ import { MemoryRouter } from 'react-router';
 
 import Footer from './Footer';
 
-
 describe('Footer', () => {
   it('should render info about project', () => {
     const { getByText } = render(

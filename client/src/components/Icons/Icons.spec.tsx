@@ -11,7 +11,6 @@ import Organization from './Organization';
 import People from './People';
 import Repository from './Repository';
 
-
 describe('Icons', () => {
   it('should render without crashing', () => {
     const { getByTestId } = render(

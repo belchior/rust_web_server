@@ -32,7 +32,7 @@ const Router = () => {
       <Switch>
         <AppRoute path="/" exact component={Home} />
         <AppRoute path="/404" exact component={NotFound} />
-        <AppRoute path="/:login([a-zA-Z]+[\w]+)" component={Profile} />
+        <AppRoute path="/:login([a-zA-Z]+[\w-]+)" component={Profile} />
         <AppRoute path="*" component={NotFound} />
       </Switch>
     </BrowserRouter>

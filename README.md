@@ -113,9 +113,15 @@ MongoDB
 - https://docs.rs/mongodb/1.2.1/mongodb
 - https://docs.rs/bson/1.2.2/bson
 
-Rust
+Testing Rust Code
 
-- https://blog.rust-lang.org/inside-rust/2020/02/25/intro-rustc-self-profile.html
+- https://doc.rust-lang.org/rust-by-example/testing/integration_testing.html
 - https://doc.rust-lang.org/book/ch11-02-running-tests.html#controlling-how-tests-are-run
-- https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/instrument-coverage.html
+- https://cloudmaker.dev/actix-integration-tests/
+- https://matklad.github.io/2021/02/27/delete-cargo-integration-tests.html
+- https://www.infinyon.com/blog/2021/04/rust-custom-test-harness/
 
+Generate Code Coverage
+
+- https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/instrument-coverage.html
+- https://blog.rust-lang.org/inside-rust/2020/02/25/intro-rustc-self-profile.html

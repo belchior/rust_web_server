@@ -53,6 +53,8 @@ services:
       - ./server/scripts:/server/scripts
       - ./server/src:/server/src
       - ./server/.env:/server/.env
+      - ./server/Cargo.toml:/server/Cargo.toml
+      - ./server/Cargo.lock:/server/Cargo.lock
     depends_on:
       - server_base_image
       - database

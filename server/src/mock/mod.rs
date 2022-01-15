@@ -163,22 +163,19 @@ async fn drop_collections(db: &Database) {
 }
 
 async fn insert_organization(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {
-  insert_one(db, document, "organizations").await
+  db.collection::<bson::Document>("organizations")
+    .insert_one(document, None)
+    .await
 }
 
 async fn insert_repository(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {
-  insert_one(db, document, "repositories").await
+  db.collection::<bson::Document>("repositories")
+    .insert_one(document, None)
+    .await
 }
 
 async fn insert_user(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {
-  insert_one(db, document, "users").await
-}
-
-async fn insert_one(
-  db: &Database,
-  document: bson::Document,
-  collection_name: &str,
-) -> Result<InsertOneResult, MongodbError> {
-  let collection = db.collection::<bson::Document>(collection_name);
-  collection.insert_one(document, None).await
+  db.collection::<bson::Document>("users")
+    .insert_one(document, None)
+    .await
 }

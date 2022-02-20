@@ -126,6 +126,7 @@ async fn should_find_starred_repositories_of_the_user() {
   let body: CursorConnection<Repository> = test::read_body_json(res).await;
 
   assert_eq!(status, StatusCode::OK);
+  assert_eq!(body.edges.len(), 2);
   assert_eq!(body.edges[0].node.name, "repository_tux");
 }
 
@@ -171,6 +172,7 @@ async fn should_find_followers_of_the_user() {
   let body: CursorConnection<User> = test::read_body_json(res).await;
 
   assert_eq!(status, StatusCode::OK);
+  assert_eq!(body.edges.len(), 1);
   assert_eq!(body.edges[0].node.login, "user_dee");
 }
 
@@ -212,6 +214,7 @@ async fn should_find_following_of_the_user() {
   let body: CursorConnection<User> = test::read_body_json(res).await;
 
   assert_eq!(status, StatusCode::OK);
+  assert_eq!(body.edges.len(), 1);
   assert_eq!(body.edges[0].node.login, "user_foo");
 }
 

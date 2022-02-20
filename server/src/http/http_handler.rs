@@ -14,7 +14,7 @@ impl HttpError {
   }
 }
 
-pub fn to_response<T, E>(result: Result<Option<T>, E>, model_name: &'static str) -> HttpResponse
+pub fn into_response_object<T, E>(result: Result<Option<T>, E>, model_name: &str) -> HttpResponse
 where
   T: Serialize + std::fmt::Debug,
   E: std::fmt::Debug,
@@ -31,6 +31,21 @@ where
     let error_message = format!("{} not found", model_name);
     let result_error = HttpError::new(error_message);
     return HttpResponse::NotFound().json(result_error);
+  }
+
+  let result = result.unwrap();
+  HttpResponse::Ok().json(result)
+}
+
+pub fn into_response_list<T, E>(result: Result<T, E>) -> HttpResponse
+where
+  T: Serialize + std::fmt::Debug,
+  E: std::fmt::Debug,
+{
+  if let Err(err) = result {
+    log::error!("Internal Server Error: {:#?}", err);
+    let result_error = HttpError::new("Internal Server Error".to_string());
+    return HttpResponse::InternalServerError().json(result_error);
   }
 
   let result = result.unwrap();

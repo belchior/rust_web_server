@@ -1,7 +1,7 @@
 use crate::db::db_client_connection;
 use mongodb::{
   bson::{self, doc, oid::ObjectId},
-  error::Error as MongodbError,
+  error::Error as ModelError,
   results::InsertOneResult,
   Database,
 };
@@ -17,7 +17,7 @@ fn random_id() -> ObjectId {
   ObjectId::new()
 }
 
-async fn insert_mocked_data(db: &Database) -> Result<(), MongodbError> {
+async fn insert_mocked_data(db: &Database) -> Result<(), ModelError> {
   let organization_foo_id = random_id();
   let organization_acme_id = random_id();
   let user_foo_id = random_id();
@@ -162,19 +162,19 @@ async fn drop_collections(db: &Database) {
   users_collection.drop(None).await.unwrap();
 }
 
-async fn insert_organization(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {
+async fn insert_organization(db: &Database, document: bson::Document) -> Result<InsertOneResult, ModelError> {
   db.collection::<bson::Document>("organizations")
     .insert_one(document, None)
     .await
 }
 
-async fn insert_repository(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {
+async fn insert_repository(db: &Database, document: bson::Document) -> Result<InsertOneResult, ModelError> {
   db.collection::<bson::Document>("repositories")
     .insert_one(document, None)
     .await
 }
 
-async fn insert_user(db: &Database, document: bson::Document) -> Result<InsertOneResult, MongodbError> {
+async fn insert_user(db: &Database, document: bson::Document) -> Result<InsertOneResult, ModelError> {
   db.collection::<bson::Document>("users")
     .insert_one(document, None)
     .await

@@ -21,33 +21,10 @@ async fn should_find_organizations_people() {
     before: None,
   };
 
-  let users = find_people_by_login(&db, &login, pagination_argument)
-    .await
-    .unwrap()
-    .unwrap();
+  let users = find_people_by_login(&db, &login, pagination_argument).await.unwrap();
 
-  assert_eq!(users.edges.len(), 1);
-  assert_eq!(users.edges[0].node.login, "user_foo");
-}
-
-#[actix_rt::test]
-async fn should_find_organizations_repositories() {
-  let db = mock::setup().await;
-  let login = "organization_acme".to_owned();
-  let pagination_argument = PaginationArguments {
-    first: Some(1),
-    after: None,
-    last: None,
-    before: None,
-  };
-
-  let repositories = find_repositories_by_login(&db, &login, pagination_argument)
-    .await
-    .unwrap()
-    .unwrap();
-
-  assert_eq!(repositories.edges.len(), 1);
-  assert_eq!(repositories.edges[0].node.name, "repository_tux");
+  assert_eq!(users.len(), 1);
+  assert_eq!(users[0].login, "user_foo");
 }
 
 /// Paginating People
@@ -66,18 +43,12 @@ async fn should_paginating_people_from_start_to_end() {
     before: None,
   };
 
-  let users = find_people_by_login(&db, &login, pagination_arguments)
-    .await
-    .unwrap()
-    .unwrap();
+  let users = find_people_by_login(&db, &login, pagination_arguments).await.unwrap();
 
-  assert_eq!(users.edges.len(), 1);
-  assert_eq!(users.edges[0].node.login, "user_foo");
+  assert_eq!(users.len(), 1);
+  assert_eq!(users[0].login, "user_foo");
 
-  let end_cursor = Some(base64::encode(users.edges[0].node._id.to_hex()));
-
-  assert_eq!(users.page_info.has_next_page, true);
-  assert_eq!(users.page_info.end_cursor, end_cursor);
+  let end_cursor = Some(base64::encode(users[0]._id.to_hex()));
 
   // should find the last user
 
@@ -88,18 +59,12 @@ async fn should_paginating_people_from_start_to_end() {
     before: None,
   };
 
-  let users = find_people_by_login(&db, &login, pagination_arguments)
-    .await
-    .unwrap()
-    .unwrap();
+  let users = find_people_by_login(&db, &login, pagination_arguments).await.unwrap();
 
-  assert_eq!(users.edges.len(), 1);
-  assert_eq!(users.edges[0].node.login, "user_dee");
+  assert_eq!(users.len(), 1);
+  assert_eq!(users[0].login, "user_dee");
 
-  let end_cursor = Some(base64::encode(users.edges[0].node._id.to_hex()));
-
-  assert_eq!(users.page_info.has_next_page, false);
-  assert_eq!(users.page_info.end_cursor, end_cursor);
+  let end_cursor = Some(base64::encode(users[0]._id.to_hex()));
 
   // should return an empty list
 
@@ -110,13 +75,9 @@ async fn should_paginating_people_from_start_to_end() {
     before: None,
   };
 
-  let users = find_people_by_login(&db, &login, pagination_arguments)
-    .await
-    .unwrap()
-    .unwrap();
+  let users = find_people_by_login(&db, &login, pagination_arguments).await.unwrap();
 
-  assert_eq!(users.edges.len(), 0);
-  assert_eq!(users.page_info.has_next_page, false);
+  assert_eq!(users.len(), 0);
 }
 
 #[actix_rt::test]
@@ -133,18 +94,12 @@ async fn should_paginating_people_from_end_to_start() {
     before: None,
   };
 
-  let users = find_people_by_login(&db, &login, pagination_arguments)
-    .await
-    .unwrap()
-    .unwrap();
+  let users = find_people_by_login(&db, &login, pagination_arguments).await.unwrap();
 
-  assert_eq!(users.edges.len(), 1);
-  assert_eq!(users.edges[0].node.login, "user_dee");
+  assert_eq!(users.len(), 1);
+  assert_eq!(users[0].login, "user_dee");
 
-  let start_cursor = Some(base64::encode(users.edges[0].node._id.to_hex()));
-
-  assert_eq!(users.page_info.has_previous_page, true);
-  assert_eq!(users.page_info.start_cursor, start_cursor);
+  let start_cursor = Some(base64::encode(users[0]._id.to_hex()));
 
   // should find the first user
 
@@ -155,18 +110,12 @@ async fn should_paginating_people_from_end_to_start() {
     before: start_cursor,
   };
 
-  let users = find_people_by_login(&db, &login, pagination_arguments)
-    .await
-    .unwrap()
-    .unwrap();
+  let users = find_people_by_login(&db, &login, pagination_arguments).await.unwrap();
 
-  assert_eq!(users.edges.len(), 1);
-  assert_eq!(users.edges[0].node.login, "user_foo");
+  assert_eq!(users.len(), 1);
+  assert_eq!(users[0].login, "user_foo");
 
-  let start_cursor = Some(base64::encode(users.edges[0].node._id.to_hex()));
-
-  assert_eq!(users.page_info.has_previous_page, false);
-  assert_eq!(users.page_info.start_cursor, start_cursor);
+  let start_cursor = Some(base64::encode(users[0]._id.to_hex()));
 
   // should return an empty list
 
@@ -177,11 +126,7 @@ async fn should_paginating_people_from_end_to_start() {
     before: start_cursor,
   };
 
-  let users = find_people_by_login(&db, &login, pagination_arguments)
-    .await
-    .unwrap()
-    .unwrap();
+  let users = find_people_by_login(&db, &login, pagination_arguments).await.unwrap();
 
-  assert_eq!(users.edges.len(), 0);
-  assert_eq!(users.page_info.has_previous_page, false);
+  assert_eq!(users.len(), 0);
 }

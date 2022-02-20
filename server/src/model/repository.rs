@@ -4,7 +4,7 @@ use crate::{
 };
 use mongodb::{
   bson::{doc, oid::ObjectId, Document},
-  error::Error as MongodbError,
+  error::Error as ModelError,
 };
 use serde::{Deserialize, Serialize};
 use tokio_stream::StreamExt;
@@ -44,36 +44,49 @@ pub async fn find_repositories_by_owner_id(
   db: &mongodb::Database,
   owner_id: &ObjectId,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
+) -> Result<Vec<Repository>, ModelError> {
   let repo_collection = db.collection::<Repository>("repositories");
-
   let pipeline = pipeline_paginated_repositories(pagination_arguments, owner_id);
   let cursor = repo_collection.aggregate(pipeline, None).await?;
-  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let (has_previous_page, has_next_page) = find_previous_and_next_pages(db, owner_id, &result).await;
-  let reference_from = |item: &Repository| item._id.to_hex();
-  let repositories = model::utils::to_cursor_connection(result, has_previous_page, has_next_page, reference_from);
+  let items = model::utils::collect_into_model(cursor).await;
 
-  Ok(Some(repositories))
+  Ok(items)
 }
 
-pub async fn find_previous_and_next_pages(
+pub async fn repositories_to_cursor_connection(
   db: &mongodb::Database,
   owner_id: &ObjectId,
-  result: &Vec<Result<Document, MongodbError>>,
-) -> (bool, bool) {
-  if result.len() == 0 {
-    return (false, false);
-  }
+  result: Result<Vec<Repository>, ModelError>,
+) -> Result<CursorConnection<Repository>, ModelError> {
+  let result = result?;
+  let (has_previous_page, has_next_page) = if result.len() > 0 {
+    let first_item_id = result.first().unwrap()._id;
+    let last_item_id = result.first().unwrap()._id;
 
-  let ids = model::utils::ids_first_and_last(result);
-  let pipeline = pipeline_pages_previous_and_next(owner_id, ids.unwrap());
+    pages_previous_and_next(db, owner_id, &first_item_id, &last_item_id).await
+  } else {
+    (false, false)
+  };
+
+  let reference_from = |item: &Repository| item._id.to_hex();
+  let items = CursorConnection::new(result, has_previous_page, has_next_page, reference_from);
+
+  Ok(items)
+}
+
+pub async fn pages_previous_and_next(
+  db: &mongodb::Database,
+  owner_id: &ObjectId,
+  first_item_id: &ObjectId,
+  last_item_id: &ObjectId,
+) -> (bool, bool) {
+  let pipeline = pipeline_pages_previous_and_next(owner_id, first_item_id, last_item_id);
   let cursor = db
     .collection::<Document>("repositories")
     .aggregate(pipeline, None)
     .await
     .unwrap();
-  let result_has_pages = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
+  let result_has_pages = cursor.collect::<Vec<_>>().await;
   let document = result_has_pages.first().unwrap().as_ref().unwrap();
   let has_previous_page = document.get_bool("has_previous_page").unwrap();
   let has_next_page = document.get_bool("has_next_page").unwrap();
@@ -81,9 +94,11 @@ pub async fn find_previous_and_next_pages(
   (has_previous_page, has_next_page)
 }
 
-fn pipeline_pages_previous_and_next(owner_id: &ObjectId, ids: (ObjectId, ObjectId)) -> model::Pipeline {
-  let (first_item_id, last_item_id) = ids;
-
+fn pipeline_pages_previous_and_next(
+  owner_id: &ObjectId,
+  first_item_id: &ObjectId,
+  last_item_id: &ObjectId,
+) -> model::Pipeline {
   let pipeline_previous_page = vec![
     doc! { "$match": {
       "owner._id": owner_id,

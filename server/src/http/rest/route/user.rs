@@ -1,11 +1,16 @@
-use crate::http::http_handler::to_response;
-use crate::http::rest::{middleware, AppState};
-use crate::lib::cursor_connection::PaginationArguments;
-use crate::model::{
-  repository::find_repositories_by_owner_id,
-  user::{
-    find_followers_by_login, find_following_by_login, find_organizations_by_login, find_starred_repositories_by_login,
-    find_user_by_login,
+use crate::{
+  http::{
+    http_handler::{into_response_list, into_response_object},
+    rest::{middleware, AppState},
+  },
+  lib::cursor_connection::PaginationArguments,
+  model::{
+    organization::organizations_to_cursor_connection,
+    repository::{find_repositories_by_owner_id, repositories_to_cursor_connection},
+    user::{
+      find_followers_by_login, find_following_by_login, find_organizations_by_login,
+      find_starred_repositories_by_login, find_user_by_login, users_to_cursor_connection,
+    },
   },
 };
 use actix_web::{web, Responder, Scope};
@@ -43,7 +48,7 @@ pub fn scope() -> Scope {
 async fn user(state: web::Data<AppState>, web::Path(login): web::Path<String>) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
 
-  to_response(result, "User")
+  into_response_object(result, "User")
 }
 
 async fn organizations(
@@ -52,12 +57,16 @@ async fn organizations(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
-  if let Ok(None) = result {
-    return to_response(result, "User");
-  }
-  let result = find_organizations_by_login(&state.db, &login, pagination_arguments).await;
 
-  to_response(result, "Organizations")
+  match result {
+    Err(_) => into_response_object(result, ""),
+    Ok(None) => into_response_object(result, "User"),
+    Ok(Some(_)) => {
+      let result = find_organizations_by_login(&state.db, &login, pagination_arguments).await;
+      let result = organizations_to_cursor_connection(&state.db, &login, result).await;
+      into_response_list(result)
+    }
+  }
 }
 
 async fn repositories(
@@ -66,14 +75,16 @@ async fn repositories(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
-  if let Ok(None) = result {
-    return to_response(result, "User");
+
+  match result {
+    Err(_) => into_response_object(result, ""),
+    Ok(None) => into_response_object(result, "User"),
+    Ok(Some(owner)) => {
+      let result = find_repositories_by_owner_id(&state.db, &owner._id, pagination_arguments).await;
+      let result = repositories_to_cursor_connection(&state.db, &owner._id, result).await;
+      into_response_list(result)
+    }
   }
-
-  let user = result.unwrap().unwrap();
-  let result = find_repositories_by_owner_id(&state.db, &user._id, pagination_arguments).await;
-
-  to_response(result, "Repositories")
 }
 
 async fn starred_repositories(
@@ -82,12 +93,16 @@ async fn starred_repositories(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
-  if let Ok(None) = result {
-    return to_response(result, "User");
-  }
-  let result = find_starred_repositories_by_login(&state.db, &login, pagination_arguments).await;
 
-  to_response(result, "Starred repositories")
+  match result {
+    Err(_) => into_response_object(result, ""),
+    Ok(None) => into_response_object(result, "User"),
+    Ok(Some(owner)) => {
+      let result = find_starred_repositories_by_login(&state.db, &login, pagination_arguments).await;
+      let result = repositories_to_cursor_connection(&state.db, &owner._id, result).await;
+      into_response_list(result)
+    }
+  }
 }
 
 async fn followers(
@@ -96,12 +111,16 @@ async fn followers(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
-  if let Ok(None) = result {
-    return to_response(result, "User");
-  }
-  let result = find_followers_by_login(&state.db, &login, pagination_arguments).await;
 
-  to_response(result, "Followers")
+  match result {
+    Err(_) => into_response_object(result, ""),
+    Ok(None) => into_response_object(result, "User"),
+    Ok(Some(_)) => {
+      let result = find_followers_by_login(&state.db, &login, pagination_arguments).await;
+      let result = users_to_cursor_connection(&state.db, &login, result).await;
+      into_response_list(result)
+    }
+  }
 }
 
 async fn following(
@@ -110,10 +129,14 @@ async fn following(
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
-  if let Ok(None) = result {
-    return to_response(result, "User");
-  }
-  let result = find_following_by_login(&state.db, &login, pagination_arguments).await;
 
-  to_response(result, "Following")
+  match result {
+    Err(_) => into_response_object(result, ""),
+    Ok(None) => into_response_object(result, "User"),
+    Ok(Some(_)) => {
+      let result = find_following_by_login(&state.db, &login, pagination_arguments).await;
+      let result = users_to_cursor_connection(&state.db, &login, result).await;
+      into_response_list(result)
+    }
+  }
 }

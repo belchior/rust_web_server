@@ -1,12 +1,13 @@
-use super::{organization::Organization, repository::Repository, utils, Pipeline};
-use crate::lib::cursor_connection::{CursorConnection, PaginationArguments};
+use crate::{
+  lib::cursor_connection::{CursorConnection, PaginationArguments},
+  model::{self, organization::Organization, repository::Repository, Pipeline},
+};
 use mongodb::{
-  bson::{doc, oid::ObjectId, Document},
-  error::Error as MongodbError,
+  bson::{doc, oid::ObjectId},
+  error::Error as ModelError,
   options::FindOneOptions,
 };
 use serde::{Deserialize, Serialize};
-use tokio_stream::StreamExt;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -22,7 +23,7 @@ pub struct User {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub name: Option<String>,
   #[serde(skip_deserializing, skip_serializing_if = "Option::is_none")]
-  pub organizations: Option<CursorConnection<Organization>>,
+  pub organizations: Option<Vec<Organization>>,
   pub url: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub website_url: Option<String>,
@@ -30,7 +31,7 @@ pub struct User {
   pub typename: String,
 }
 
-pub async fn find_user_by_login(db: &mongodb::Database, login: &String) -> Result<Option<User>, MongodbError> {
+pub async fn find_user_by_login(db: &mongodb::Database, login: &String) -> Result<Option<User>, ModelError> {
   let user_collection = db.collection::<User>("users");
   let filter = doc! { "login": login };
   let options = FindOneOptions::builder()
@@ -46,79 +47,82 @@ pub async fn find_organizations_by_login(
   db: &mongodb::Database,
   login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<Organization>>, MongodbError> {
+) -> Result<Vec<Organization>, ModelError> {
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_organization(&login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
-  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let (has_previous_page, has_next_page) =
-    utils::pages_previous_and_next(db, login, &result, "users", "organizations").await;
-  let reference_from = |item: &Organization| item._id.to_hex();
+  let items = model::utils::collect_into_model(cursor).await;
 
-  let organizations = utils::to_cursor_connection(result, has_previous_page, has_next_page, reference_from);
-
-  Ok(Some(organizations))
+  Ok(items)
 }
 
 pub async fn find_starred_repositories_by_login(
   db: &mongodb::Database,
   login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
+) -> Result<Vec<Repository>, ModelError> {
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_starred_repositories(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
-  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let (has_previous_page, has_next_page) =
-    utils::pages_previous_and_next(db, login, &result, "users", "starredRepositories").await;
-  let reference_from = |item: &Repository| item._id.to_hex();
+  let items = model::utils::collect_into_model(cursor).await;
 
-  let repositories = utils::to_cursor_connection(result, has_previous_page, has_next_page, reference_from);
-
-  Ok(Some(repositories))
+  Ok(items)
 }
 
 pub async fn find_followers_by_login(
   db: &mongodb::Database,
   login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<User>>, MongodbError> {
+) -> Result<Vec<User>, ModelError> {
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_followers(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
-  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let (has_previous_page, has_next_page) =
-    utils::pages_previous_and_next(db, login, &result, "users", "followers").await;
-  let reference_from = |item: &User| item._id.to_hex();
+  let items = model::utils::collect_into_model(cursor).await;
 
-  let followers = utils::to_cursor_connection(result, has_previous_page, has_next_page, reference_from);
-
-  Ok(Some(followers))
+  Ok(items)
 }
 
 pub async fn find_following_by_login(
   db: &mongodb::Database,
   login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<User>>, MongodbError> {
+) -> Result<Vec<User>, ModelError> {
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_following(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline, None).await?;
-  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let (has_previous_page, has_next_page) =
-    utils::pages_previous_and_next(db, login, &result, "users", "following").await;
+  let items = model::utils::collect_into_model(cursor).await;
+
+  Ok(items)
+}
+
+pub async fn users_to_cursor_connection(
+  db: &mongodb::Database,
+  login: &String,
+  result: Result<Vec<User>, ModelError>,
+) -> Result<CursorConnection<User>, ModelError> {
+  let result = result?;
+  let (has_previous_page, has_next_page) = if result.len() > 0 {
+    let coll_name = "organizations";
+    let field_name = "people";
+    let first_item_id = result.first().unwrap()._id;
+    let last_item_id = result.first().unwrap()._id;
+
+    model::utils::pages_previous_and_next(db, login, &first_item_id, &last_item_id, coll_name, field_name).await
+  } else {
+    (false, false)
+  };
+
   let reference_from = |item: &User| item._id.to_hex();
+  let items = CursorConnection::new(result, has_previous_page, has_next_page, reference_from);
 
-  let following = utils::to_cursor_connection(result, has_previous_page, has_next_page, reference_from);
-
-  Ok(Some(following))
+  Ok(items)
 }
 
 fn pipeline_paginated_organization(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let organization_id = utils::to_object_id(cursor);
-  let order = utils::to_order(&direction);
-  let operator = utils::to_operator(&direction);
+  let organization_id = model::utils::to_object_id(cursor);
+  let order = model::utils::to_order(&direction);
+  let operator = model::utils::to_operator(&direction);
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 
@@ -173,9 +177,9 @@ fn pipeline_paginated_organization(login: &String, pagination_arguments: Paginat
 
 fn pipeline_paginated_starred_repositories(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let repository_id = utils::to_object_id(cursor);
-  let order = utils::to_order(&direction);
-  let operator = utils::to_operator(&direction);
+  let repository_id = model::utils::to_object_id(cursor);
+  let order = model::utils::to_order(&direction);
+  let operator = model::utils::to_operator(&direction);
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 
@@ -221,9 +225,9 @@ fn pipeline_paginated_starred_repositories(login: &String, pagination_arguments:
 
 fn pipeline_paginated_followers(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let user_id = utils::to_object_id(cursor);
-  let order = utils::to_order(&direction);
-  let operator = utils::to_operator(&direction);
+  let user_id = model::utils::to_object_id(cursor);
+  let order = model::utils::to_order(&direction);
+  let operator = model::utils::to_operator(&direction);
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 
@@ -269,9 +273,9 @@ fn pipeline_paginated_followers(login: &String, pagination_arguments: Pagination
 
 fn pipeline_paginated_following(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let user_id = utils::to_object_id(cursor);
-  let order = utils::to_order(&direction);
-  let operator = utils::to_operator(&direction);
+  let user_id = model::utils::to_object_id(cursor);
+  let order = model::utils::to_order(&direction);
+  let operator = model::utils::to_operator(&direction);
 
   let filter_by_login = vec![doc! { "$match": { "login": login } }];
 

@@ -19,11 +19,10 @@ async fn should_find_users_repositories() {
 
   let repositories = find_repositories_by_owner_id(&db, &user._id, pagination_argument)
     .await
-    .unwrap()
     .unwrap();
 
-  assert_eq!(repositories.edges.len(), 1);
-  assert_eq!(repositories.edges[0].node.name, "repository_bar");
+  assert_eq!(repositories.len(), 1);
+  assert_eq!(repositories[0].name, "repository_bar");
 }
 
 /// Paginating Repositories
@@ -46,16 +45,12 @@ async fn should_paginating_repositories_from_start_to_end() {
 
   let repositories = find_repositories_by_owner_id(&db, &owner._id, pagination_arguments)
     .await
-    .unwrap()
     .unwrap();
 
-  assert_eq!(repositories.edges.len(), 1);
-  assert_eq!(repositories.edges[0].node.name, "repository_tux");
+  assert_eq!(repositories.len(), 1);
+  assert_eq!(repositories[0].name, "repository_tux");
 
-  let end_cursor = Some(base64::encode(repositories.edges[0].node._id.to_hex()));
-
-  assert_eq!(repositories.page_info.has_next_page, true);
-  assert_eq!(repositories.page_info.end_cursor, end_cursor);
+  let end_cursor = Some(base64::encode(repositories[0]._id.to_hex()));
 
   // should find the last repository
 
@@ -68,16 +63,12 @@ async fn should_paginating_repositories_from_start_to_end() {
 
   let repositories = find_repositories_by_owner_id(&db, &owner._id, pagination_arguments)
     .await
-    .unwrap()
     .unwrap();
 
-  assert_eq!(repositories.edges.len(), 1);
-  assert_eq!(repositories.edges[0].node.name, "repository_mar");
+  assert_eq!(repositories.len(), 1);
+  assert_eq!(repositories[0].name, "repository_mar");
 
-  let end_cursor = Some(base64::encode(repositories.edges[0].node._id.to_hex()));
-
-  assert_eq!(repositories.page_info.has_next_page, false);
-  assert_eq!(repositories.page_info.end_cursor, end_cursor);
+  let end_cursor = Some(base64::encode(repositories[0]._id.to_hex()));
 
   // should return an empty list
 
@@ -90,11 +81,9 @@ async fn should_paginating_repositories_from_start_to_end() {
 
   let repositories = find_repositories_by_owner_id(&db, &owner._id, pagination_arguments)
     .await
-    .unwrap()
     .unwrap();
 
-  assert_eq!(repositories.edges.len(), 0);
-  assert_eq!(repositories.page_info.has_next_page, false);
+  assert_eq!(repositories.len(), 0);
 }
 
 #[actix_rt::test]
@@ -115,16 +104,12 @@ async fn should_paginating_repositories_from_end_to_start() {
 
   let repositories = find_repositories_by_owner_id(&db, &owner._id, pagination_arguments)
     .await
-    .unwrap()
     .unwrap();
 
-  assert_eq!(repositories.edges.len(), 1);
-  assert_eq!(repositories.edges[0].node.name, "repository_mar");
+  assert_eq!(repositories.len(), 1);
+  assert_eq!(repositories[0].name, "repository_mar");
 
-  let start_cursor = Some(base64::encode(repositories.edges[0].node._id.to_hex()));
-
-  assert_eq!(repositories.page_info.has_previous_page, true);
-  assert_eq!(repositories.page_info.start_cursor, start_cursor);
+  let start_cursor = Some(base64::encode(repositories[0]._id.to_hex()));
 
   // should find the first repository
 
@@ -137,16 +122,12 @@ async fn should_paginating_repositories_from_end_to_start() {
 
   let repositories = find_repositories_by_owner_id(&db, &owner._id, pagination_arguments)
     .await
-    .unwrap()
     .unwrap();
 
-  assert_eq!(repositories.edges.len(), 1);
-  assert_eq!(repositories.edges[0].node.name, "repository_tux");
+  assert_eq!(repositories.len(), 1);
+  assert_eq!(repositories[0].name, "repository_tux");
 
-  let start_cursor = Some(base64::encode(repositories.edges[0].node._id.to_hex()));
-
-  assert_eq!(repositories.page_info.has_previous_page, false);
-  assert_eq!(repositories.page_info.start_cursor, start_cursor);
+  let start_cursor = Some(base64::encode(repositories[0]._id.to_hex()));
 
   // should return an empty list
 
@@ -159,9 +140,7 @@ async fn should_paginating_repositories_from_end_to_start() {
 
   let repositories = find_repositories_by_owner_id(&db, &owner._id, pagination_arguments)
     .await
-    .unwrap()
     .unwrap();
 
-  assert_eq!(repositories.edges.len(), 0);
-  assert_eq!(repositories.page_info.has_previous_page, false);
+  assert_eq!(repositories.len(), 0);
 }

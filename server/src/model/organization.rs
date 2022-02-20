@@ -1,14 +1,13 @@
 use crate::{
   lib::cursor_connection::{CursorConnection, PaginationArguments},
-  model::{self, repository::Repository, user::User},
+  model::{self, user::User},
 };
 use mongodb::{
-  bson::{doc, oid::ObjectId, Document},
-  error::Error as MongodbError,
+  bson::{doc, oid::ObjectId},
+  error::Error as ModelError,
   options::FindOneOptions,
 };
 use serde::{Deserialize, Serialize};
-use tokio_stream::StreamExt;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -35,7 +34,7 @@ pub struct Organization {
 pub async fn find_organization_by_login(
   db: &mongodb::Database,
   login: &String,
-) -> Result<Option<Organization>, MongodbError> {
+) -> Result<Option<Organization>, ModelError> {
   let organization_collection = db.collection::<Organization>("organizations");
 
   let filter = doc! { "login": login };
@@ -49,34 +48,36 @@ pub async fn find_people_by_login(
   db: &mongodb::Database,
   login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<User>>, MongodbError> {
+) -> Result<Vec<User>, ModelError> {
   let organization_collection = db.collection::<Organization>("organizations");
-
   let pipeline = pipeline_paginated_people(login, pagination_arguments);
   let cursor = organization_collection.aggregate(pipeline, None).await?;
-  let result = cursor.collect::<Vec<Result<Document, MongodbError>>>().await;
-  let (has_previous_page, has_next_page) =
-    model::utils::pages_previous_and_next(db, login, &result, "organizations", "people").await;
-  let reference_from = |item: &User| item._id.to_hex();
-  let people = model::utils::to_cursor_connection(result, has_previous_page, has_next_page, reference_from);
+  let result = model::utils::collect_into_model(cursor).await;
 
-  Ok(Some(people))
+  Ok(result)
 }
 
-pub async fn find_repositories_by_login(
+pub async fn organizations_to_cursor_connection(
   db: &mongodb::Database,
-  login: &String,
-  pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<Repository>>, MongodbError> {
-  let organization = find_organization_by_login(db, login).await?;
+  user_login: &String,
+  result: Result<Vec<Organization>, ModelError>,
+) -> Result<CursorConnection<Organization>, ModelError> {
+  let result = result?;
+  let (has_previous_page, has_next_page) = if result.len() > 0 {
+    let coll_name = "users";
+    let field_name = "organizations";
+    let first_item_id = result.first().unwrap()._id;
+    let last_item_id = result.first().unwrap()._id;
 
-  if let None = organization {
-    return Ok(None);
-  }
+    model::utils::pages_previous_and_next(db, user_login, &first_item_id, &last_item_id, coll_name, field_name).await
+  } else {
+    (false, false)
+  };
 
-  let organization = organization.unwrap();
+  let reference_from = |item: &Organization| item._id.to_hex();
+  let items = CursorConnection::new(result, has_previous_page, has_next_page, reference_from);
 
-  model::repository::find_repositories_by_owner_id(db, &organization._id, pagination_arguments).await
+  Ok(items)
 }
 
 fn pipeline_paginated_people(login: &String, pagination_arguments: PaginationArguments) -> model::Pipeline {

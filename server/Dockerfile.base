@@ -1,4 +1,4 @@
-FROM rust:1.58-slim
+FROM rust:1.58.1-slim
 WORKDIR /server
 COPY Cargo.* .
 
@@ -14,7 +14,7 @@ RUN cargo install rustfilt cargo-binutils &&\
     rustup toolchain install nightly &&\
     rustup +nightly component add llvm-tools-preview &&\
     cargo test --no-run &&\
-    RUSTFLAGS="-Z instrument-coverage" cargo +nightly test --no-run
+    RUSTFLAGS="-C instrument-coverage" cargo +nightly test --no-run
 
 # Install and compile dependencies to production
 RUN apt-get update &&\

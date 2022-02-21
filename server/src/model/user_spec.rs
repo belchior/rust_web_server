@@ -1,4 +1,8 @@
-use crate::{lib::cursor_connection::PaginationArguments, mock, model::user::*};
+use crate::{
+  lib::cursor_connection::PaginationArguments,
+  mock,
+  model::{organization, user::*},
+};
 use base64;
 use pretty_assertions::assert_eq;
 
@@ -10,6 +14,16 @@ async fn should_find_an_existing_user() {
   let user = find_user_by_login(&db, &login).await.unwrap().unwrap();
 
   assert_eq!(user.email, "foo@email.com".to_owned());
+}
+
+#[actix_rt::test]
+async fn should_dont_panic_when_user_is_not_found() {
+  let db = mock::setup().await;
+  let login = "user_xxx".to_owned();
+
+  let user = find_user_by_login(&db, &login).await.unwrap();
+
+  assert_eq!(user, None);
 }
 
 #[actix_rt::test]
@@ -32,6 +46,24 @@ async fn should_find_users_organizations() {
 }
 
 #[actix_rt::test]
+async fn should_dont_panic_when_organization_is_not_found() {
+  let db = mock::setup().await;
+  let login = "empty_user".to_owned();
+  let pagination_argument = PaginationArguments {
+    first: Some(1),
+    after: None,
+    last: None,
+    before: None,
+  };
+
+  let organizations = find_organizations_by_login(&db, &login, pagination_argument)
+    .await
+    .unwrap();
+
+  assert_eq!(organizations.len(), 0);
+}
+
+#[actix_rt::test]
 async fn should_find_users_starred_repositories() {
   let db = mock::setup().await;
   let login = "user_bar".to_owned();
@@ -48,6 +80,24 @@ async fn should_find_users_starred_repositories() {
 
   assert_eq!(repositories.len(), 1);
   assert_eq!(repositories[0].name, "repository_tux");
+}
+
+#[actix_rt::test]
+async fn should_dont_panic_when_starred_reposiotry_is_not_found() {
+  let db = mock::setup().await;
+  let login = "empty_user".to_owned();
+  let pagination_argument = PaginationArguments {
+    first: Some(1),
+    after: None,
+    last: None,
+    before: None,
+  };
+
+  let repositories = find_starred_repositories_by_login(&db, &login, pagination_argument)
+    .await
+    .unwrap();
+
+  assert_eq!(repositories.len(), 0);
 }
 
 #[actix_rt::test]
@@ -69,6 +119,22 @@ async fn should_find_users_followers() {
 }
 
 #[actix_rt::test]
+async fn should_dont_panic_when_follower_is_not_found() {
+  let db = mock::setup().await;
+  let login = "empty_user".to_owned();
+  let pagination_argument = PaginationArguments {
+    first: Some(1),
+    after: None,
+    last: None,
+    before: None,
+  };
+
+  let repositories = find_followers_by_login(&db, &login, pagination_argument).await.unwrap();
+
+  assert_eq!(repositories.len(), 0);
+}
+
+#[actix_rt::test]
 async fn should_find_users_following() {
   let db = mock::setup().await;
   let login = "user_dee".to_owned();
@@ -84,6 +150,46 @@ async fn should_find_users_following() {
   assert_eq!(users.len(), 2);
   assert_eq!(users[0].login, "user_foo");
   assert_eq!(users[1].login, "user_bar");
+}
+
+#[actix_rt::test]
+async fn should_dont_panic_when_following_is_not_found() {
+  let db = mock::setup().await;
+  let login = "empty_user".to_owned();
+  let pagination_argument = PaginationArguments {
+    first: Some(1),
+    after: None,
+    last: None,
+    before: None,
+  };
+
+  let repositories = find_following_by_login(&db, &login, pagination_argument).await.unwrap();
+
+  assert_eq!(repositories.len(), 0);
+}
+
+#[actix_rt::test]
+async fn should_convert_a_user_list_into_cursor_connection_of_users() {
+  let db = mock::setup().await;
+  let organization_login = "organization_acme".to_owned();
+  let pagination_argument = PaginationArguments {
+    first: Some(1),
+    after: None,
+    last: None,
+    before: None,
+  };
+  let users = organization::find_people_by_login(&db, &organization_login, pagination_argument)
+    .await
+    .unwrap();
+
+  let cursor_connection = users_to_cursor_connection(&db, &organization_login, Ok(users))
+    .await
+    .unwrap();
+
+  assert_eq!(cursor_connection.edges.len(), 1);
+  assert_eq!(cursor_connection.edges[0].node.login, "user_foo");
+  assert_eq!(cursor_connection.page_info.has_previous_page, false);
+  assert_eq!(cursor_connection.page_info.has_next_page, true);
 }
 
 /// Paginating Organizations

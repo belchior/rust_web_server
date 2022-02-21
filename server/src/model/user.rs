@@ -97,7 +97,7 @@ pub async fn find_following_by_login(
 
 pub async fn users_to_cursor_connection(
   db: &mongodb::Database,
-  login: &String,
+  org_login: &String,
   result: Result<Vec<User>, ModelError>,
 ) -> Result<CursorConnection<User>, ModelError> {
   let result = result?;
@@ -107,7 +107,7 @@ pub async fn users_to_cursor_connection(
     let first_item_id = result.first().unwrap()._id;
     let last_item_id = result.first().unwrap()._id;
 
-    model::utils::pages_previous_and_next(db, login, &first_item_id, &last_item_id, coll_name, field_name).await
+    model::utils::pages_previous_and_next(db, org_login, &first_item_id, &last_item_id, coll_name, field_name).await
   } else {
     (false, false)
   };

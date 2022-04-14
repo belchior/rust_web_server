@@ -1,21 +1,25 @@
+use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 use log;
-use mongodb::{Client, Database};
 use std::env;
+use tokio_postgres;
 
-pub async fn db_client_connection() -> Result<Database, mongodb::error::Error> {
-  let database_uri = env::var("DATABASE_URI").unwrap();
-  let database_name = env::var("DATABASE_NAME").unwrap();
-  let client = Client::with_uri_str(&database_uri).await;
+pub async fn db_connection_poll() -> Result<Pool, tokio_postgres::Error> {
+  let mut pg_config = tokio_postgres::Config::new();
+  pg_config.user(env::var("POSTGRES_USER").unwrap().as_str());
+  pg_config.password(env::var("POSTGRES_PASSWORD").unwrap().as_str());
+  pg_config.host(env::var("POSTGRES_HOST").unwrap().as_str());
+  pg_config.port(env::var("POSTGRES_PORT").unwrap().parse().unwrap());
+  pg_config.dbname(env::var("POSTGRES_DB").unwrap().as_str());
 
-  match client {
-    Ok(client) => {
-      log::info!("DB connection stablished with success");
-      let db = client.database(database_name.as_str());
-      Ok(db)
-    }
-    Err(err) => {
-      log::error!("DB connection fails with the error\n{}", err);
-      Err(err)
-    }
-  }
+  let mgr_config = ManagerConfig {
+    recycling_method: RecyclingMethod::Fast,
+  };
+  let mgr = Manager::from_config(pg_config, tokio_postgres::NoTls, mgr_config);
+  let pool = Pool::builder(mgr).max_size(4).build().unwrap();
+
+  log::info!(
+    "DB connection with `{}` stablished with success",
+    env::var("POSTGRES_DB").unwrap()
+  );
+  Ok(pool)
 }

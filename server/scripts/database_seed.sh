@@ -1,5 +1,12 @@
 #!/bin/sh
 
-mongoimport --host $DATABASE_HOST --db $DATABASE_NAME --collection users --type json --file /data/seed/users.json
-mongoimport --host $DATABASE_HOST --db $DATABASE_NAME --collection organizations --type json --file /data/seed/organizations.json
-mongoimport --host $DATABASE_HOST --db $DATABASE_NAME --collection repositories --type json --file /data/seed/repositories.json
+while ! nc -z $POSTGRES_HOST $POSTGRES_PORT; do sleep 1; done;
+
+PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -h $POSTGRES_HOST -p $POSTGRES_PORT -d $POSTGRES_DB -f /data/seed/schema.sql
+PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -h $POSTGRES_HOST -p $POSTGRES_PORT -d $POSTGRES_DB -f /data/seed/seed.sql
+
+PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -h $POSTGRES_HOST -p $POSTGRES_PORT << EOF
+CREATE DATABASE $POSTGRES_DB_TEST OWNER $POSTGRES_USER;
+EOF
+PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -h $POSTGRES_HOST -p $POSTGRES_PORT -d $POSTGRES_DB_TEST -f /data/seed/schema.sql
+PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -h $POSTGRES_HOST -p $POSTGRES_PORT -d $POSTGRES_DB_TEST -f /data/seed/seed.sql

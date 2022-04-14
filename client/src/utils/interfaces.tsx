@@ -36,7 +36,6 @@ export type Repository = {
   owner: RepositoryOwner
   primaryLanguage?: Language
   url: string
-  __typename?: 'Repository'
 }
 
 type Node = {
@@ -48,7 +47,7 @@ export type ProfileOwner = Node & {
   login: string
   name?: string
   url: string
-  __typename?: string
+  profileType?: string
 }
 
 export type RepositoryOwner = Node & {
@@ -73,7 +72,7 @@ export type User = ProfileOwner & RepositoryOwner & {
   organizations?: CursorConnection
   url: string
   websiteUrl?: string
-  __typename?: 'User'
+  profileType?: 'User'
 }
 
 export type Organization = ProfileOwner & RepositoryOwner & {
@@ -87,7 +86,7 @@ export type Organization = ProfileOwner & RepositoryOwner & {
   repositories?: CursorConnection
   url: string
   websiteUrl?: string
-  __typename?: 'Organization'
+  profileType?: 'Organization'
 }
 
 export type EventFn = (event: ChangeEvent<{}>, value: any) => void

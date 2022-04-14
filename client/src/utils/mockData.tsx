@@ -1,7 +1,7 @@
 import { Organization, Repository, User } from './interfaces';
 
 export const profileOwnerUser: User = {
-  __typename: 'User',
+  profileType: 'User',
   avatarUrl: 'path/to/avatarUrl.png',
   bio: 'Software developer',
   company: 'Company',
@@ -15,7 +15,7 @@ export const profileOwnerUser: User = {
 };
 
 export const organization: Organization = {
-  __typename: 'Organization',
+  profileType: 'Organization',
   avatarUrl: 'path/to/avatarUrl.png',
   description: 'Ecma International, Technical Committee 39 - ECMAScript',
   id: '1234',
@@ -31,7 +31,6 @@ export const organization: Organization = {
 };
 
 export const repository: Repository = {
-  __typename: 'Repository',
   description: 'repository description',
   forkCount: 123,
   id: 'ba86',
@@ -48,7 +47,7 @@ export const repository: Repository = {
 };
 
 export const user: User = {
-  __typename: 'User',
+  profileType: 'User',
   avatarUrl: 'path/to/avatarUrl.png',
   bio: 'Software developer',
   email: 'belchior@email.com',

@@ -37,7 +37,7 @@ const Profile = () => {
     () => fetch(`${endpoint}/profile/${login}`).then(res => res.json())
   );
 
-  const isUser = profile?.__typename === 'User';
+  const isUser = profile?.profileType === 'User';
 
   const { data: organizations } = useQuery(
     ['organizations', login],
@@ -58,7 +58,7 @@ const Profile = () => {
     </Fragment>
   );
 
-  switch (profile?.__typename) {
+  switch (profile?.profileType) {
     case 'User': return <UserProfile profile={profile} tabName={tabName as TUserTabs} />;
     case 'Organization': return <OrganizationProfile profile={profile} tabName={tabName as TOrganizationTabs} />;
     default: return <NotFound />;

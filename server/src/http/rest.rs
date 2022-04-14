@@ -1,19 +1,21 @@
 mod middleware;
 mod route;
 
-use crate::db::db_client_connection;
+use crate::db::db_connection_poll;
 use crate::http::cors::get_cors;
-use actix_web::{App, HttpServer};
+use actix_web::{web, App, HttpServer};
+use deadpool_postgres;
 use log;
 use std::env;
 
+#[derive(Clone)]
 pub struct AppState {
-  db: mongodb::Database,
+  poll: deadpool_postgres::Pool,
 }
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
-  let db = db_client_connection().await.unwrap();
+  let poll = db_connection_poll().await.unwrap();
   let server_uri = format!(
     "{}:{}",
     env::var("SERVER_HOST").unwrap(),

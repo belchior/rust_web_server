@@ -4,11 +4,7 @@ use crate::{
     rest::{middleware, AppState},
   },
   lib::cursor_connection::PaginationArguments,
-  model::{
-    organization::{find_organization_by_login, find_people_by_login},
-    repository::{find_repositories_by_owner_id, repositories_to_cursor_connection},
-    user::users_to_cursor_connection,
-  },
+  model::{organization, repository},
 };
 use actix_web::{web, Responder, Scope};
 
@@ -27,25 +23,27 @@ pub fn scope() -> Scope {
     )
 }
 
-async fn organization(state: web::Data<AppState>, web::Path(login): web::Path<String>) -> impl Responder {
-  let result = find_organization_by_login(&state.db, &login).await;
+async fn organization(state: web::Data<AppState>, login: web::Path<String>) -> impl Responder {
+  let db = state.poll.get().await.unwrap();
+  let result = organization::find_organization_by_login(&db, &login).await;
 
   into_response_object(result, "Organization")
 }
 
 async fn people(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let result = find_organization_by_login(&state.db, &login).await;
+  let db_client = state.poll.get().await.unwrap();
+  let result = organization::find_organization_by_login(&db_client, &login).await;
 
   match result {
     Err(_) => into_response_object(result, ""),
     Ok(None) => into_response_object(result, "Organization"),
     Ok(Some(_)) => {
-      let result = find_people_by_login(&state.db, &login, pagination_arguments).await;
-      let result = users_to_cursor_connection(&state.db, &login, result).await;
+      let result = organization::find_people_by_login(&db_client, &login, pagination_arguments).await;
+      let result = organization::organizations_users_to_cursor_connection(&db_client, &login, result).await;
       into_response_list(result)
     }
   }
@@ -53,17 +51,18 @@ async fn people(
 
 async fn repositories(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let result = find_organization_by_login(&state.db, &login).await;
+  let db_client = state.poll.get().await.unwrap();
+  let result = organization::find_organization_by_login(&db_client, &login).await;
 
   match result {
     Err(_) => into_response_object(result, ""),
     Ok(None) => into_response_object(result, "Organization"),
     Ok(Some(owner)) => {
-      let result = find_repositories_by_owner_id(&state.db, &owner._id, pagination_arguments).await;
-      let result = repositories_to_cursor_connection(&state.db, &owner._id, result).await;
+      let result = repository::find_repositories_by_owner_login(&db_client, &owner.login, pagination_arguments).await;
+      let result = repository::repositories_to_cursor_connection(&db_client, &owner.login, result).await;
       into_response_list(result)
     }
   }

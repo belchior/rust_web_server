@@ -4,14 +4,7 @@ use crate::{
     rest::{middleware, AppState},
   },
   lib::cursor_connection::PaginationArguments,
-  model::{
-    organization::organizations_to_cursor_connection,
-    repository::{find_repositories_by_owner_id, repositories_to_cursor_connection},
-    user::{
-      find_followers_by_login, find_following_by_login, find_organizations_by_login,
-      find_starred_repositories_by_login, find_user_by_login, users_to_cursor_connection,
-    },
-  },
+  model::{repository, user},
 };
 use actix_web::{web, Responder, Scope};
 
@@ -45,25 +38,27 @@ pub fn scope() -> Scope {
     )
 }
 
-async fn user(state: web::Data<AppState>, web::Path(login): web::Path<String>) -> impl Responder {
-  let result = find_user_by_login(&state.db, &login).await;
+async fn user(state: web::Data<AppState>, login: web::Path<String>) -> impl Responder {
+  let db_client = state.poll.get().await.unwrap();
+  let result = user::find_user_by_login(&db_client, &login).await;
 
   into_response_object(result, "User")
 }
 
 async fn organizations(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let result = find_user_by_login(&state.db, &login).await;
+  let db_client = state.poll.get().await.unwrap();
+  let result = user::find_user_by_login(&db_client, &login).await;
 
   match result {
     Err(_) => into_response_object(result, ""),
     Ok(None) => into_response_object(result, "User"),
     Ok(Some(_)) => {
-      let result = find_organizations_by_login(&state.db, &login, pagination_arguments).await;
-      let result = organizations_to_cursor_connection(&state.db, &login, result).await;
+      let result = user::find_organizations_by_user_login(&db_client, &login, pagination_arguments).await;
+      let result = user::users_organizations_to_cursor_connection(&db_client, &login, result).await;
       into_response_list(result)
     }
   }
@@ -71,17 +66,18 @@ async fn organizations(
 
 async fn repositories(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let result = find_user_by_login(&state.db, &login).await;
+  let db_client = state.poll.get().await.unwrap();
+  let result = user::find_user_by_login(&db_client, &login).await;
 
   match result {
     Err(_) => into_response_object(result, ""),
     Ok(None) => into_response_object(result, "User"),
     Ok(Some(owner)) => {
-      let result = find_repositories_by_owner_id(&state.db, &owner._id, pagination_arguments).await;
-      let result = repositories_to_cursor_connection(&state.db, &owner._id, result).await;
+      let result = repository::find_repositories_by_owner_login(&db_client, &owner.login, pagination_arguments).await;
+      let result = repository::repositories_to_cursor_connection(&db_client, &owner.login, result).await;
       into_response_list(result)
     }
   }
@@ -89,17 +85,18 @@ async fn repositories(
 
 async fn starred_repositories(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let result = find_user_by_login(&state.db, &login).await;
+  let db_client = state.poll.get().await.unwrap();
+  let result = user::find_user_by_login(&db_client, &login).await;
 
   match result {
     Err(_) => into_response_object(result, ""),
     Ok(None) => into_response_object(result, "User"),
     Ok(Some(owner)) => {
-      let result = find_starred_repositories_by_login(&state.db, &login, pagination_arguments).await;
-      let result = repositories_to_cursor_connection(&state.db, &owner._id, result).await;
+      let result = user::find_starred_repositories_by_user_login(&db_client, &login, pagination_arguments).await;
+      let result = repository::repositories_to_cursor_connection(&db_client, &owner.login, result).await;
       into_response_list(result)
     }
   }
@@ -107,17 +104,18 @@ async fn starred_repositories(
 
 async fn followers(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let result = find_user_by_login(&state.db, &login).await;
+  let db_client = state.poll.get().await.unwrap();
+  let result = user::find_user_by_login(&db_client, &login).await;
 
   match result {
     Err(_) => into_response_object(result, ""),
     Ok(None) => into_response_object(result, "User"),
     Ok(Some(_)) => {
-      let result = find_followers_by_login(&state.db, &login, pagination_arguments).await;
-      let result = users_to_cursor_connection(&state.db, &login, result).await;
+      let result = user::find_followers_by_login(&db_client, &login, pagination_arguments).await;
+      let result = user::followers_to_cursor_connection(&db_client, &login, result).await;
       into_response_list(result)
     }
   }
@@ -125,17 +123,18 @@ async fn followers(
 
 async fn following(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let result = find_user_by_login(&state.db, &login).await;
+  let db_client = state.poll.get().await.unwrap();
+  let result = user::find_user_by_login(&db_client, &login).await;
 
   match result {
     Err(_) => into_response_object(result, ""),
     Ok(None) => into_response_object(result, "User"),
     Ok(Some(_)) => {
-      let result = find_following_by_login(&state.db, &login, pagination_arguments).await;
-      let result = users_to_cursor_connection(&state.db, &login, result).await;
+      let result = user::find_followed_by_login(&db_client, &login, pagination_arguments).await;
+      let result = user::followed_to_cursor_connection(&db_client, &login, result).await;
       into_response_list(result)
     }
   }

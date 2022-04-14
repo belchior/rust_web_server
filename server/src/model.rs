@@ -1,11 +1,11 @@
-use mongodb::bson;
-
 pub mod organization;
 pub mod repository;
 pub mod user;
 pub mod utils;
 
-pub type Pipeline = Vec<bson::Document>;
+use tokio_postgres::types::ToSql;
+
+pub type QueryParam<'a> = &'a (dyn ToSql + Sync);
 
 #[cfg(test)]
 mod organization_spec;

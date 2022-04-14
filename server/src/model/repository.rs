@@ -1,13 +1,12 @@
 use crate::{
-  lib::cursor_connection::{CursorConnection, PaginationArguments},
-  model,
-};
-use mongodb::{
-  bson::{doc, oid::ObjectId, Document},
-  error::Error as ModelError,
+  lib::{
+    cursor_connection::{CursorConnection, Direction, PaginationArguments},
+    sql_query_builder::SelectBuilder,
+  },
+  model::{utils, QueryParam},
 };
 use serde::{Deserialize, Serialize};
-use tokio_stream::StreamExt;
+use tokio_postgres::{Client, Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Language {
@@ -21,121 +20,143 @@ pub struct License {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct Owner {
-  pub _id: ObjectId,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Repository {
-  #[serde(rename = "_id")]
-  pub _id: ObjectId,
   pub description: Option<String>,
-  pub fork_count: f64,
+  pub fork_count: i32,
+  pub id: i32,
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub license_info: Option<License>,
+  pub license_name: Option<String>,
   pub name: String,
-  pub owner: Owner,
+  pub owner_login: String,
+  pub owner_ref: String,
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub primary_language: Option<Language>,
+  pub primary_language: Option<String>,
+  pub url: String,
 }
 
-pub async fn find_repositories_by_owner_id(
-  db: &mongodb::Database,
-  owner_id: &ObjectId,
+impl From<Row> for Repository {
+  fn from(row: Row) -> Self {
+    Self {
+      description: row.try_get("description").unwrap_or(None),
+      fork_count: row.get("fork_count"),
+      id: row.get("id"),
+      license_name: row.try_get("license_name").unwrap_or(None),
+      name: row.get("name"),
+      owner_login: row.get("owner_login"),
+      owner_ref: row.get("owner_ref"),
+      primary_language: row.try_get("primary_language").unwrap_or(None),
+      url: row.get("url"),
+    }
+  }
+}
+
+// Finds
+
+pub async fn find_repositories_by_owner_login(
+  db_client: &Client,
+  owner_login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Vec<Repository>, ModelError> {
-  let repo_collection = db.collection::<Repository>("repositories");
-  let pipeline = pipeline_paginated_repositories(pagination_arguments, owner_id);
-  let cursor = repo_collection.aggregate(pipeline, None).await?;
-  let items = model::utils::collect_into_model(cursor).await;
+) -> Result<Vec<Repository>, ClientError> {
+  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
+  let repository_id = utils::parse_cursor(cursor);
+  let (query, params) = query_find_repositories_by_owner_login(owner_login, &repository_id, &direction, &limit);
+  let result = db_client.query(query.as_str(), &params[..]).await?;
+  let repositories = result.into_iter().map(|row| Repository::from(row)).collect::<Vec<_>>();
 
-  Ok(items)
+  Ok(repositories)
 }
+
+// Cursor connections
 
 pub async fn repositories_to_cursor_connection(
-  db: &mongodb::Database,
-  owner_id: &ObjectId,
-  result: Result<Vec<Repository>, ModelError>,
-) -> Result<CursorConnection<Repository>, ModelError> {
+  db_client: &Client,
+  owner_login: &String,
+  result: Result<Vec<Repository>, ClientError>,
+) -> Result<CursorConnection<Repository>, ClientError> {
   let result = result?;
-  let (has_previous_page, has_next_page) = if result.len() > 0 {
-    let first_item_id = result.first().unwrap()._id;
-    let last_item_id = result.first().unwrap()._id;
+  let reference_from = |item: &Repository| item.id.to_string();
 
-    pages_previous_and_next(db, owner_id, &first_item_id, &last_item_id).await
-  } else {
-    (false, false)
-  };
+  if result.len() == 0 {
+    let items = CursorConnection::new(result, reference_from, false, false);
+    return Ok(items);
+  }
 
-  let reference_from = |item: &Repository| item._id.to_hex();
-  let items = CursorConnection::new(result, has_previous_page, has_next_page, reference_from);
+  let first_item_id = result.first().unwrap().id;
+  let last_item_id = result.last().unwrap().id;
+  let (query, params) = query_pages_previous_and_next(owner_login, &first_item_id, &last_item_id);
+  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(db_client, query, params).await?;
+  let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
 
   Ok(items)
 }
 
-pub async fn pages_previous_and_next(
-  db: &mongodb::Database,
-  owner_id: &ObjectId,
-  first_item_id: &ObjectId,
-  last_item_id: &ObjectId,
-) -> (bool, bool) {
-  let pipeline = pipeline_pages_previous_and_next(owner_id, first_item_id, last_item_id);
-  let cursor = db
-    .collection::<Document>("repositories")
-    .aggregate(pipeline, None)
-    .await
-    .unwrap();
-  let result_has_pages = cursor.collect::<Vec<_>>().await;
-  let document = result_has_pages.first().unwrap().as_ref().unwrap();
-  let has_previous_page = document.get_bool("has_previous_page").unwrap();
-  let has_next_page = document.get_bool("has_next_page").unwrap();
+// Queries
 
-  (has_previous_page, has_next_page)
-}
+fn query_find_repositories_by_owner_login<'a>(
+  owner_login: &'a String,
+  repository_id: &'a Option<i32>,
+  direction: &'a Direction,
+  limit: &'a i64,
+) -> (String, Vec<QueryParam<'a>>) {
+  let mut select_base = SelectBuilder::new()
+    .select("*")
+    .from("repositories")
+    .where_clause("owner_login = $1")
+    .limit("$2");
 
-fn pipeline_pages_previous_and_next(
-  owner_id: &ObjectId,
-  first_item_id: &ObjectId,
-  last_item_id: &ObjectId,
-) -> model::Pipeline {
-  let pipeline_previous_page = vec![
-    doc! { "$match": {
-      "owner._id": owner_id,
-      "_id": { "$lt": first_item_id }
-    } },
-    doc! { "$limit": 1 },
-    doc! { "$count": "count" },
-  ];
+  let mut params: Vec<QueryParam> = vec![owner_login, limit];
 
-  let pipeline_next_page = vec![
-    doc! { "$match": {
-      "owner._id": owner_id,
-      "_id": { "$gt": last_item_id }
-    } },
-    doc! { "$limit": 1 },
-    doc! { "$count": "count" },
-  ];
+  let query = match direction {
+    Direction::Forward => {
+      if let Some(id) = repository_id {
+        select_base = select_base.and("id > $3 /* last_id */");
+        params.push(id);
+      }
 
-  model::utils::pipeline_convert_result_values_into_booleans(pipeline_previous_page, pipeline_next_page)
-}
+      select_base.order_by("id asc").as_string()
+    }
+    Direction::Backward => {
+      if let Some(id) = repository_id {
+        select_base = select_base.and("id < $3 /* first_id */");
+        params.push(id);
+      }
 
-fn pipeline_paginated_repositories(pagination_arguments: PaginationArguments, owner_id: &ObjectId) -> model::Pipeline {
-  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let order = model::utils::to_order(&direction);
-  let operator = model::utils::to_operator(&direction);
-  let repository_id = model::utils::to_object_id(cursor);
+      select_base = select_base.order_by("id desc");
 
-  let filter_by_owner_id = match repository_id {
-    None => vec![doc! { "$match": { "owner._id": owner_id } }],
-    Some(repository_id) => vec![doc! { "$match": { "owner._id": owner_id, "_id": { operator: repository_id } } }],
+      SelectBuilder::new()
+        .with("repositories_reverse", select_base)
+        .select("*")
+        .from("repositories_reverse")
+        .order_by("id asc")
+        .as_string()
+    }
   };
 
-  let paginate = vec![
-    doc! { "$sort": { "_id": order } },
-    doc! { "$limit": limit },
-    doc! { "$sort": { "_id": 1 } },
-  ];
+  (query, params)
+}
 
-  vec![].into_iter().chain(filter_by_owner_id).chain(paginate).collect()
+fn query_pages_previous_and_next<'a>(
+  owner_login: &'a String,
+  first_item_id: &'a i32,
+  last_item_id: &'a i32,
+) -> (String, Vec<QueryParam<'a>>) {
+  let select_base = SelectBuilder::new()
+    .from("repositories")
+    .where_clause("owner_login = $1")
+    .limit("1");
+
+  let select_previous = select_base
+    .clone()
+    .select("'previous' as page")
+    .and("id < $2 /* first_id */");
+  let select_next = select_base
+    .clone()
+    .select("'next' as page")
+    .and("id > $3 /* last_id */");
+
+  let query = select_previous.union(select_next).as_string();
+  let params: Vec<QueryParam> = vec![owner_login, first_item_id, last_item_id];
+
+  (query, params)
 }

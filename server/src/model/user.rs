@@ -1,320 +1,488 @@
 use crate::{
-  lib::cursor_connection::{CursorConnection, PaginationArguments},
-  model::{self, organization::Organization, repository::Repository, Pipeline},
-};
-use mongodb::{
-  bson::{doc, oid::ObjectId},
-  error::Error as ModelError,
-  options::FindOneOptions,
+  lib::{
+    cursor_connection::{CursorConnection, Direction, PaginationArguments},
+    sql_query_builder::SelectBuilder,
+  },
+  model::{organization::Organization, repository::Repository, utils, QueryParam},
 };
 use serde::{Deserialize, Serialize};
+use tokio_postgres::{Client, Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
-  // TODO find a way to serialize _id into id with hex version
-  #[serde(rename = "_id")]
-  pub _id: ObjectId,
   pub avatar_url: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub bio: Option<String>,
   pub email: String,
+  pub id: i32,
   pub login: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub name: Option<String>,
-  #[serde(skip_deserializing, skip_serializing_if = "Option::is_none")]
-  pub organizations: Option<Vec<Organization>>,
   pub url: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub website_url: Option<String>,
-  #[serde(rename = "__typename")]
-  pub typename: String,
+  pub profile_type: utils::ProfileType,
 }
 
-pub async fn find_user_by_login(db: &mongodb::Database, login: &String) -> Result<Option<User>, ModelError> {
-  let user_collection = db.collection::<User>("users");
-  let filter = doc! { "login": login };
-  let options = FindOneOptions::builder()
-    .projection(doc! { "organizations": 0 })
-    .build();
-
-  let user = user_collection.find_one(filter, options).await?;
-
-  Ok(user)
+impl From<Row> for User {
+  fn from(row: Row) -> Self {
+    Self {
+      avatar_url: row.get("avatar_url"),
+      bio: row.try_get("bio").unwrap_or(None),
+      email: row.get("email"),
+      id: row.get("id"),
+      login: row.get("login"),
+      name: row.try_get("name").unwrap_or(None),
+      url: row.get("url"),
+      website_url: row.try_get("website_url").unwrap_or(None),
+      profile_type: utils::ProfileType::User,
+    }
+  }
 }
 
-pub async fn find_organizations_by_login(
-  db: &mongodb::Database,
-  login: &String,
-  pagination_arguments: PaginationArguments,
-) -> Result<Vec<Organization>, ModelError> {
-  let user_collection = db.collection::<User>("users");
-  let pipeline = pipeline_paginated_organization(&login, pagination_arguments);
-  let cursor = user_collection.aggregate(pipeline, None).await?;
-  let items = model::utils::collect_into_model(cursor).await;
-
-  Ok(items)
-}
-
-pub async fn find_starred_repositories_by_login(
-  db: &mongodb::Database,
-  login: &String,
-  pagination_arguments: PaginationArguments,
-) -> Result<Vec<Repository>, ModelError> {
-  let user_collection = db.collection::<User>("users");
-  let pipeline = pipeline_paginated_starred_repositories(login, pagination_arguments);
-  let cursor = user_collection.aggregate(pipeline, None).await?;
-  let items = model::utils::collect_into_model(cursor).await;
-
-  Ok(items)
-}
+// Finds
 
 pub async fn find_followers_by_login(
-  db: &mongodb::Database,
-  login: &String,
+  db_client: &Client,
+  user_login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Vec<User>, ModelError> {
-  let user_collection = db.collection::<User>("users");
-  let pipeline = pipeline_paginated_followers(login, pagination_arguments);
-  let cursor = user_collection.aggregate(pipeline, None).await?;
-  let items = model::utils::collect_into_model(cursor).await;
+) -> Result<Vec<User>, ClientError> {
+  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
+  let follower_id = utils::parse_cursor(cursor);
+  let (query, params) = query_find_followers_by_login(user_login, &follower_id, &direction, &limit);
+  let result = db_client.query(query.as_str(), &params[..]).await?;
+  let users = result.into_iter().map(|row| User::from(row)).collect::<Vec<_>>();
 
-  Ok(items)
+  Ok(users)
 }
 
-pub async fn find_following_by_login(
-  db: &mongodb::Database,
-  login: &String,
+pub async fn find_followed_by_login(
+  db_client: &Client,
+  user_login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Vec<User>, ModelError> {
-  let user_collection = db.collection::<User>("users");
-  let pipeline = pipeline_paginated_following(login, pagination_arguments);
-  let cursor = user_collection.aggregate(pipeline, None).await?;
-  let items = model::utils::collect_into_model(cursor).await;
+) -> Result<Vec<User>, ClientError> {
+  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
+  let follower_id = utils::parse_cursor(cursor);
+  let (query, params) = query_find_followed_by_login(user_login, &follower_id, &direction, &limit);
+  let result = db_client.query(query.as_str(), &params[..]).await?;
+  let users = result.into_iter().map(|row| User::from(row)).collect::<Vec<_>>();
 
-  Ok(items)
+  Ok(users)
 }
 
-pub async fn users_to_cursor_connection(
-  db: &mongodb::Database,
-  org_login: &String,
-  result: Result<Vec<User>, ModelError>,
-) -> Result<CursorConnection<User>, ModelError> {
+pub async fn find_organizations_by_user_login(
+  db_client: &Client,
+  user_login: &String,
+  pagination_arguments: PaginationArguments,
+) -> Result<Vec<Organization>, ClientError> {
+  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
+  let org_id = utils::parse_cursor(cursor);
+  let (query, params) = query_find_organizations_by_user_login(user_login, &org_id, &direction, &limit);
+  let result = db_client.query(query.as_str(), &params[..]).await?;
+  let organizations = result
+    .into_iter()
+    .map(|row| Organization::from(row))
+    .collect::<Vec<_>>();
+
+  Ok(organizations)
+}
+
+pub async fn find_starred_repositories_by_user_login(
+  db_client: &Client,
+  user_login: &String,
+  pagination_arguments: PaginationArguments,
+) -> Result<Vec<Repository>, ClientError> {
+  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
+  let repo_id = utils::parse_cursor(cursor);
+  let (query, params) = query_find_starred_repositories_by_user_login(user_login, &repo_id, &direction, &limit);
+  let result = db_client.query(query.as_str(), &params[..]).await?;
+  let repositories = result.into_iter().map(|row| Repository::from(row)).collect::<Vec<_>>();
+
+  Ok(repositories)
+}
+
+pub async fn find_user_by_login(db_client: &Client, login: &String) -> Result<Option<User>, ClientError> {
+  let query = SelectBuilder::new()
+    .select("*")
+    .from("users")
+    .where_clause("login = $1")
+    .as_string();
+
+  let params: Vec<QueryParam> = vec![&login];
+  let result = db_client.query_opt(query.as_str(), &params[..]).await?;
+  match result {
+    Some(row) => {
+      let user = User::from(row);
+      Ok(Some(user))
+    }
+    None => Ok(None),
+  }
+}
+
+// Cursor connections
+
+pub async fn followers_to_cursor_connection(
+  db_client: &Client,
+  user_login: &String,
+  result: Result<Vec<User>, ClientError>,
+) -> Result<CursorConnection<User>, ClientError> {
   let result = result?;
-  let (has_previous_page, has_next_page) = if result.len() > 0 {
-    let coll_name = "organizations";
-    let field_name = "people";
-    let first_item_id = result.first().unwrap()._id;
-    let last_item_id = result.first().unwrap()._id;
+  let reference_from = |item: &User| item.id.to_string();
 
-    model::utils::pages_previous_and_next(db, org_login, &first_item_id, &last_item_id, coll_name, field_name).await
-  } else {
-    (false, false)
-  };
+  if result.len() == 0 {
+    let items = CursorConnection::new(result, reference_from, false, false);
+    return Ok(items);
+  }
 
-  let reference_from = |item: &User| item._id.to_hex();
-  let items = CursorConnection::new(result, has_previous_page, has_next_page, reference_from);
+  let first_item_id = result.first().unwrap().id;
+  let last_item_id = result.last().unwrap().id;
+  let (query, params) = query_followers_pages_previous_and_next(user_login, &first_item_id, &last_item_id);
+  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(db_client, query, params).await?;
+  let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
 
   Ok(items)
 }
 
-fn pipeline_paginated_organization(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
-  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let organization_id = model::utils::to_object_id(cursor);
-  let order = model::utils::to_order(&direction);
-  let operator = model::utils::to_operator(&direction);
+pub async fn followed_to_cursor_connection(
+  db_client: &Client,
+  user_login: &String,
+  result: Result<Vec<User>, ClientError>,
+) -> Result<CursorConnection<User>, ClientError> {
+  let result = result?;
+  let reference_from = |item: &User| item.id.to_string();
 
-  let filter_by_login = vec![doc! { "$match": { "login": login } }];
+  if result.len() == 0 {
+    let items = CursorConnection::new(result, reference_from, false, false);
+    return Ok(items);
+  }
 
-  let keep_only_organizations = vec![
-    doc! { "$project": { "_id": 0, "organizations": 1 } },
-    doc! { "$unwind": "$organizations" },
-  ];
+  let first_item_id = result.first().unwrap().id;
+  let last_item_id = result.last().unwrap().id;
+  let (query, params) = query_followed_pages_previous_and_next(user_login, &first_item_id, &last_item_id);
+  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(db_client, query, params).await?;
+  let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
 
-  let lookup_with_organizations = vec![
-    doc! { "$lookup": {
-      "from": "organizations",
-      "localField": "organizations._id",
-      "foreignField": "_id",
-      "as": "organizations",
-    }},
-    doc! { "$replaceRoot": {
-      "newRoot": {
-        "$arrayElemAt": [ "$organizations", 0 ]
-      }
-    } },
-  ];
-
-  let filter_by_organization_id = match organization_id {
-    None => vec![],
-    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
-  };
-
-  let paginate_items = vec![
-    doc! { "$sort": { "_id": order } },
-    doc! { "$limit": limit },
-    doc! { "$sort": { "_id": 1 } },
-  ];
-
-  let project_organizations = vec![doc! { "$project": {
-    "login": 1,
-    "name": 1,
-    "avatarUrl": 1,
-    "url": 1,
-    "__typename": 1,
-  } }];
-
-  vec![]
-    .into_iter()
-    .chain(filter_by_login)
-    .chain(keep_only_organizations)
-    .chain(lookup_with_organizations)
-    .chain(filter_by_organization_id)
-    .chain(paginate_items)
-    .chain(project_organizations)
-    .collect()
+  Ok(items)
 }
 
-fn pipeline_paginated_starred_repositories(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
-  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let repository_id = model::utils::to_object_id(cursor);
-  let order = model::utils::to_order(&direction);
-  let operator = model::utils::to_operator(&direction);
+pub async fn users_organizations_to_cursor_connection(
+  db_client: &Client,
+  owner_login: &String,
+  result: Result<Vec<Organization>, ClientError>,
+) -> Result<CursorConnection<Organization>, ClientError> {
+  let result = result?;
+  let reference_from = |item: &Organization| item.id.to_string();
 
-  let filter_by_login = vec![doc! { "$match": { "login": login } }];
+  if result.len() == 0 {
+    let items = CursorConnection::new(result, reference_from, false, false);
+    return Ok(items);
+  }
 
-  let keep_only_starred_repositories = vec![
-    doc! { "$project": { "_id": 0, "starredRepositories": 1 } },
-    doc! { "$unwind": "$starredRepositories" },
-  ];
+  let first_item_id = result.first().unwrap().id;
+  let last_item_id = result.last().unwrap().id;
+  let (query, params) = query_organizations_pages_previous_and_next(owner_login, &first_item_id, &last_item_id);
+  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(db_client, query, params).await?;
+  let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
 
-  let lookup_with_repositories = vec![
-    doc! { "$lookup": {
-      "from": "repositories",
-      "localField": "starredRepositories._id",
-      "foreignField": "_id",
-      "as": "item"
-    } },
-    doc! { "$replaceRoot": {
-      "newRoot": {
-        "$arrayElemAt": [ "$item", 0 ]
-      }
-    } },
-  ];
-
-  let filter_by_repository_id = match repository_id {
-    None => vec![],
-    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
-  };
-
-  let paginate_items = vec![
-    doc! { "$sort": { "_id": order } },
-    doc! { "$limit": limit },
-    doc! { "$sort": { "_id": 1 } },
-  ];
-
-  vec![]
-    .into_iter()
-    .chain(filter_by_login)
-    .chain(keep_only_starred_repositories)
-    .chain(lookup_with_repositories)
-    .chain(filter_by_repository_id)
-    .chain(paginate_items)
-    .collect()
+  Ok(items)
 }
 
-fn pipeline_paginated_followers(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
-  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let user_id = model::utils::to_object_id(cursor);
-  let order = model::utils::to_order(&direction);
-  let operator = model::utils::to_operator(&direction);
+// Queries
 
-  let filter_by_login = vec![doc! { "$match": { "login": login } }];
+fn query_find_followers_by_login<'a>(
+  user_login: &'a String,
+  follower_id: &'a Option<i32>,
+  direction: &'a Direction,
+  limit: &'a i64,
+) -> (String, Vec<QueryParam<'a>>) {
+  let mut select_followers = SelectBuilder::new()
+    .select("u.*")
+    .from("users u")
+    .inner_join("users_following uf", "uf.user_login = u.login")
+    .where_clause("uf.following_login = $1")
+    .order_by("u.id asc");
 
-  let keep_only_followers = vec![
-    doc! { "$project": { "_id": 0, "followers": 1 } },
-    doc! { "$unwind": "$followers" },
-  ];
+  let mut params: Vec<QueryParam> = vec![user_login];
 
-  let lookup_with_users = vec![
-    doc! { "$lookup": {
-      "from": "users",
-      "localField": "followers._id",
-      "foreignField": "_id",
-      "as": "item"
-    } },
-    doc! { "$replaceRoot": {
-      "newRoot": {
-        "$arrayElemAt": [ "$item", 0 ]
+  let query = match direction {
+    Direction::Backward => {
+      let mut select_followers_reverse = SelectBuilder::new()
+        .select("*")
+        .from("followers")
+        .order_by("id desc")
+        .limit("$2");
+
+      params.push(limit);
+
+      if let Some(follower_id) = follower_id {
+        select_followers_reverse = select_followers_reverse.and("id < $3::int");
+        params.push(follower_id);
       }
-    } },
-  ];
 
-  let filter_by_user_id = match user_id {
-    None => vec![],
-    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
+      SelectBuilder::new()
+        .with("followers", select_followers)
+        .with("followers_reverse", select_followers_reverse)
+        .select("*")
+        .from("followers_reverse")
+        .order_by("id asc")
+        .as_string()
+    }
+    Direction::Forward => {
+      select_followers = select_followers.limit("$2");
+      params.push(limit);
+
+      if let Some(follower_id) = follower_id {
+        select_followers = select_followers.and("u.id > $3");
+        params.push(follower_id);
+      }
+
+      select_followers.as_string()
+    }
   };
 
-  let paginate_items = vec![
-    doc! { "$sort": { "_id": order } },
-    doc! { "$limit": limit },
-    doc! { "$sort": { "_id": 1 } },
-  ];
-
-  vec![]
-    .into_iter()
-    .chain(filter_by_login)
-    .chain(keep_only_followers)
-    .chain(lookup_with_users)
-    .chain(filter_by_user_id)
-    .chain(paginate_items)
-    .collect()
+  (query, params)
 }
 
-fn pipeline_paginated_following(login: &String, pagination_arguments: PaginationArguments) -> Pipeline {
-  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let user_id = model::utils::to_object_id(cursor);
-  let order = model::utils::to_order(&direction);
-  let operator = model::utils::to_operator(&direction);
+fn query_find_followed_by_login<'a>(
+  user_login: &'a String,
+  followed_id: &'a Option<i32>,
+  direction: &'a Direction,
+  limit: &'a i64,
+) -> (String, Vec<QueryParam<'a>>) {
+  let mut select_following = SelectBuilder::new()
+    .select("u.*")
+    .from("users u")
+    .inner_join("users_following uf", "uf.following_login = u.login")
+    .where_clause("uf.user_login = $1")
+    .order_by("u.id asc");
 
-  let filter_by_login = vec![doc! { "$match": { "login": login } }];
+  let mut params: Vec<QueryParam> = vec![user_login];
 
-  let keep_only_following = vec![
-    doc! { "$project": { "_id": 0, "following": 1 } },
-    doc! { "$unwind": "$following" },
-  ];
+  let query = match direction {
+    Direction::Backward => {
+      let mut select_following_reverse = SelectBuilder::new()
+        .select("*")
+        .from("following")
+        .order_by("id desc")
+        .limit("$2");
 
-  let lookup_with_users = vec![
-    doc! { "$lookup": {
-      "from": "users",
-      "localField": "following._id",
-      "foreignField": "_id",
-      "as": "item"
-    } },
-    doc! { "$replaceRoot": {
-      "newRoot": {
-        "$arrayElemAt": [ "$item", 0 ]
+      params.push(limit);
+
+      if let Some(followed_id) = followed_id {
+        select_following_reverse = select_following_reverse.and("id < $3::int");
+        params.push(followed_id);
       }
-    } },
-  ];
 
-  let filter_by_user_id = match user_id {
-    None => vec![],
-    Some(_id) => vec![doc! { "$match": { "_id": { operator: _id } } }],
+      SelectBuilder::new()
+        .with("following", select_following)
+        .with("following_reverse", select_following_reverse)
+        .select("*")
+        .from("following_reverse")
+        .order_by("id asc")
+        .as_string()
+    }
+    Direction::Forward => {
+      select_following = select_following.limit("$2");
+      params.push(limit);
+
+      if let Some(followed_id) = followed_id {
+        select_following = select_following.and("u.id > $3");
+        params.push(followed_id);
+      }
+
+      select_following.as_string()
+    }
   };
 
-  let paginate_items = vec![
-    doc! { "$sort": { "_id": order } },
-    doc! { "$limit": limit },
-    doc! { "$sort": { "_id": 1 } },
-  ];
+  (query, params)
+}
 
-  vec![]
-    .into_iter()
-    .chain(filter_by_login)
-    .chain(keep_only_following)
-    .chain(lookup_with_users)
-    .chain(filter_by_user_id)
-    .chain(paginate_items)
-    .collect()
+fn query_find_organizations_by_user_login<'a>(
+  user_login: &'a String,
+  org_id: &'a Option<i32>,
+  direction: &'a Direction,
+  limit: &'a i64,
+) -> (String, Vec<QueryParam<'a>>) {
+  let mut select_org = SelectBuilder::new()
+    .select("o.*, uo.created_at as joined_at")
+    .from("users u")
+    .inner_join("users_organizations uo", "uo.user_login = u.login")
+    .inner_join("organizations o", "o.login = uo.organization_login")
+    .where_clause("u.login = $1")
+    .order_by("o.id asc");
+
+  let mut params: Vec<QueryParam> = vec![user_login];
+
+  let query = match direction {
+    Direction::Backward => {
+      let mut select_org_reverse = SelectBuilder::new()
+        .select("*")
+        .from("orgs")
+        .order_by("id desc")
+        .limit("$2");
+
+      params.push(limit);
+
+      if let Some(org_id) = org_id {
+        select_org_reverse = select_org_reverse.and("id < $3::int");
+        params.push(org_id);
+      }
+
+      SelectBuilder::new()
+        .with("orgs", select_org)
+        .with("orgs_reverse", select_org_reverse)
+        .select("*")
+        .from("orgs_reverse")
+        .order_by("id asc")
+        .as_string()
+    }
+    Direction::Forward => {
+      select_org = select_org.limit("$2");
+      params.push(limit);
+
+      if let Some(org_id) = org_id {
+        select_org = select_org.and("o.id > $3");
+        params.push(org_id);
+      }
+
+      select_org.as_string()
+    }
+  };
+
+  (query, params)
+}
+
+fn query_followed_pages_previous_and_next<'a>(
+  user_login: &'a String,
+  first_item_id: &'a i32,
+  last_item_id: &'a i32,
+) -> (String, Vec<QueryParam<'a>>) {
+  let select_base = SelectBuilder::new()
+    .from("users u")
+    .inner_join("users_following uf", "uf.following_login = u.login")
+    .where_clause("uf.user_login = $1")
+    .order_by("u.id asc")
+    .limit("1");
+
+  let select_previous = select_base
+    .clone()
+    .select("'previous' as page")
+    .and("u.id < $2 /* first_id */");
+  let select_next = select_base
+    .clone()
+    .select("'next' as page")
+    .and("u.id > $3 /* last_id */");
+  let query = select_previous.union(select_next).as_string();
+  let params: Vec<QueryParam> = vec![user_login, first_item_id, last_item_id];
+
+  (query, params)
+}
+
+fn query_followers_pages_previous_and_next<'a>(
+  user_login: &'a String,
+  first_item_id: &'a i32,
+  last_item_id: &'a i32,
+) -> (String, Vec<QueryParam<'a>>) {
+  let select_base = SelectBuilder::new()
+    .from("users u")
+    .inner_join("users_following uf", "uf.user_login = u.login")
+    .where_clause("uf.following_login = $1")
+    .order_by("u.id asc")
+    .limit("1");
+
+  let select_previous = select_base
+    .clone()
+    .select("'previous' as page")
+    .and("u.id < $2 /* first_id */");
+  let select_next = select_base
+    .clone()
+    .select("'next' as page")
+    .and("u.id > $3 /* last_id */");
+  let query = select_previous.union(select_next).as_string();
+  let params: Vec<QueryParam> = vec![user_login, first_item_id, last_item_id];
+
+  (query, params)
+}
+
+fn query_organizations_pages_previous_and_next<'a>(
+  owner_login: &'a String,
+  first_item_id: &'a i32,
+  last_item_id: &'a i32,
+) -> (String, Vec<QueryParam<'a>>) {
+  let select_base = SelectBuilder::new()
+    .from("users u")
+    .inner_join("users_organizations uo", "uo.organization_login = u.login")
+    .inner_join("organizations o", "o.login = uo.organization_login")
+    .where_clause("u.login = $1")
+    .order_by("o.id asc")
+    .limit("1");
+
+  let select_previous = select_base
+    .clone()
+    .select("'previous' as page")
+    .and("u.id < $2 /* first_id */");
+  let select_next = select_base
+    .clone()
+    .select("'next' as page")
+    .and("u.id > $3 /* last_id */");
+  let query = select_previous.union(select_next).as_string();
+  let params: Vec<QueryParam> = vec![owner_login, first_item_id, last_item_id];
+
+  (query, params)
+}
+
+fn query_find_starred_repositories_by_user_login<'a>(
+  user_login: &'a String,
+  repo_id: &'a Option<i32>,
+  direction: &'a Direction,
+  limit: &'a i64,
+) -> (String, Vec<QueryParam<'a>>) {
+  let mut select_repo = SelectBuilder::new()
+    .select("r.*")
+    .from("users u")
+    .inner_join("users_starred_repositories usr", "usr.user_login = u.login")
+    .inner_join("repositories r", "r.name = usr.repository_name")
+    .where_clause("u.login = $1")
+    .order_by("r.id asc");
+
+  let mut params: Vec<QueryParam> = vec![user_login];
+
+  let query = match direction {
+    Direction::Backward => {
+      let mut select_repo_reverse = SelectBuilder::new()
+        .select("*")
+        .from("repos")
+        .order_by("id desc")
+        .limit("$2");
+
+      params.push(limit);
+
+      if let Some(repo_id) = repo_id {
+        select_repo_reverse = select_repo_reverse.and("id < $3::int");
+        params.push(repo_id);
+      }
+
+      SelectBuilder::new()
+        .with("repos", select_repo)
+        .with("repos_reverse", select_repo_reverse)
+        .select("*")
+        .from("repos_reverse")
+        .order_by("id asc")
+        .as_string()
+    }
+    Direction::Forward => {
+      select_repo = select_repo.limit("$2");
+      params.push(limit);
+
+      if let Some(repo_id) = repo_id {
+        select_repo = select_repo.and("r.id > $3");
+        params.push(repo_id);
+      }
+
+      select_repo.as_string()
+    }
+  };
+
+  (query, params)
 }

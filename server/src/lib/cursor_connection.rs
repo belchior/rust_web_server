@@ -84,7 +84,7 @@ pub struct CursorConnection<T> {
   pub edges: Vec<Edges<T>>,
 }
 impl<T> CursorConnection<T> {
-  pub fn new(items: Vec<T>, has_previous_page: bool, has_next_page: bool, reference_from: ReferenceFrom<T>) -> Self {
+  pub fn new(items: Vec<T>, reference_from: ReferenceFrom<T>, has_previous_page: bool, has_next_page: bool) -> Self {
     Self {
       page_info: PageInfo::new(&items, has_previous_page, has_next_page, reference_from),
       edges: Edges::into_edges(items, reference_from),
@@ -100,10 +100,10 @@ pub enum Direction {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationArguments {
-  pub first: Option<u32>,
+  pub first: Option<i64>,
   #[serde(default, deserialize_with = "optional_string")]
   pub after: Option<String>,
-  pub last: Option<u32>,
+  pub last: Option<i64>,
   #[serde(default, deserialize_with = "optional_string")]
   pub before: Option<String>,
 }
@@ -126,7 +126,7 @@ impl PaginationArguments {
     }
   }
 
-  pub fn parse_args(self) -> Result<(Direction, u32, Option<String>), Error> {
+  pub fn parse_args(&self) -> Result<(Direction, i64, Option<String>), Error> {
     use Direction::*;
     let default_limit = 15;
 

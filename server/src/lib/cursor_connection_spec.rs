@@ -18,7 +18,7 @@ mod describe_cursor_connection_new {
   fn should_produce_an_cursor_connection_instance_with_edges() {
     let items = vec!["test 00".to_string(), "test 01".to_string()];
     let reference_from = |item: &String| item.clone();
-    let cursor_connection = CursorConnection::new(items, false, false, reference_from);
+    let cursor_connection = CursorConnection::new(items, reference_from, false, false);
     let expected_cursor_connection = CursorConnection {
       page_info: PageInfo {
         has_next_page: false,
@@ -45,7 +45,7 @@ mod describe_cursor_connection_new {
   fn should_produce_an_cursor_connection_instance_without_edges() {
     let items: Vec<String> = vec![];
     let reference_from = |item: &String| item.clone();
-    let cursor_connection = CursorConnection::new(items, false, false, reference_from);
+    let cursor_connection = CursorConnection::new(items, reference_from, false, false);
     let expected_cursor_connection = CursorConnection {
       page_info: PageInfo {
         has_next_page: false,

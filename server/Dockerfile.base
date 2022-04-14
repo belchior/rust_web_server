@@ -1,6 +1,6 @@
-FROM rust:1.58.1-slim
+FROM rust:1.60-slim
 WORKDIR /server
-COPY Cargo.* .
+COPY Cargo.* ./
 
 # Create fake project to build the dependencies
 RUN mkdir src && echo "fn main() {}" >> src/main.rs
@@ -11,10 +11,9 @@ RUN cargo install cargo-watch &&\
 
 # Install and compile dependencies to tests
 RUN cargo install rustfilt cargo-binutils &&\
-    rustup toolchain install nightly &&\
-    rustup +nightly component add llvm-tools-preview &&\
+    rustup component add llvm-tools-preview &&\
     cargo test --no-run &&\
-    RUSTFLAGS="-C instrument-coverage" cargo +nightly test --no-run
+    RUSTFLAGS="-C instrument-coverage" cargo test --target-dir target/coverage --no-run
 
 # Install and compile dependencies to production
 RUN apt-get update &&\
@@ -22,11 +21,12 @@ RUN apt-get update &&\
     rustup target add x86_64-unknown-linux-musl &&\
     cargo build --release --target=x86_64-unknown-linux-musl
 
-# Remove targets builded from fake project
-RUN rm -r src &&\
-    rm target/debug/deps/rust_web_server* &&\
-    rm target/x86_64-unknown-linux-musl/release/deps/rust_web_server* &&\
-    rm target/x86_64-unknown-linux-musl/release/rust_web_server*
+# # Remove targets builded from fake project
+RUN rm -fr src &&\
+    rm -f target/debug/rust_web_server* &&\
+    rm -f target/debug/deps/rust_web_server* &&\
+    rm -f target/x86_64-unknown-linux-musl/release/rust_web_server* &&\
+    rm -f target/x86_64-unknown-linux-musl/release/deps/rust_web_server*
 
 # Build
 # docker build -f Dockerfile.base -t server_base_image .

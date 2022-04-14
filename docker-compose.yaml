@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   server_base_image:
-    image: server_base_image
-    container_name: server_base_image
+    image: server_base_image_postgres
+    container_name: server_base_image_postgres
     build:
       context: ./server
       dockerfile: Dockerfile.base
@@ -17,16 +17,13 @@ services:
       - server_base_image
 
   server:
-    image: server_base_image
+    image: server_base_image_postgres
     container_name: server
     command: scripts/start_dev.sh
     ports:
       - 8080:8080
-    environment:
-      - DATABASE_URI=mongodb://database:27017
-      - DATABASE_NAME=database
+    env_file: server/.env
     volumes:
-      - ./server/release:/server/release
       - ./server/scripts:/server/scripts
       - ./server/src:/server/src
       - ./server/.env:/server/.env
@@ -35,12 +32,12 @@ services:
       - database
 
   server_test:
-    image: server_base_image
+    image: server_base_image_postgres
     container_name: server_test
     command: scripts/test_watch.sh
+    env_file: server/.env
     environment:
-      - DATABASE_URI=mongodb://database:27017
-      - DATABASE_NAME=test_database
+      - POSTGRES_DB=test_database
     volumes:
       - ./server/coverage:/server/coverage
       - ./server/scripts:/server/scripts
@@ -53,18 +50,17 @@ services:
       - database
 
   database:
-    image: mongo:5
+    image: postgres:14-alpine
     container_name: database
     ports:
-      - 27017:27017
+      - 5432:5432
+    env_file: server/.env
 
   database_seed:
-    image: mongo:5
+    image: postgres:14-alpine
     container_name: database_seed
     command: scripts/database_seed.sh
-    environment:
-      - DATABASE_HOST=database:27017
-      - DATABASE_NAME=database
+    env_file: server/.env
     depends_on:
       - database
     volumes:

@@ -6,7 +6,7 @@
 
 - Rust
 - Actix Web
-- MongoDB
+- PostgreSQL
 
 **Client**
 
@@ -26,7 +26,8 @@ docker-compose build server_base_image client_base_image
 After that you can start both using the command
 
 ```sh
-docker-compose up client server database_seed
+docker-compose run --rm database_seed
+docker-compose up server client
 ```
 
 
@@ -43,6 +44,7 @@ docker-compose build server_base_image
 To start's server in development mode
 
 ```sh
+docker-compose run --rm database_seed
 docker-compose up server
 ```
 
@@ -69,15 +71,15 @@ To debug database
 
 ```sh
 # in development environment
-docker-compose exec database mongo database
+docker-compose exec database psql -U postgres -d database
 
 # in test environment
-docker-compose exec database mongo test_database
+docker-compose exec database psql -U postgres -d test_database
 ```
 
 **Client**
 
-As the same as server the `base_image` contains all dependencies to be used in `development`, `testing` and build for `production`.
+As the same as server, the `base_image` contains all dependencies to be used in `development`, `testing` and build for `production`.
 
 You can build it manually with
 
@@ -102,16 +104,13 @@ docker-compose build client_build
 Actix Web
 
 - https://actix.rs/docs/getting-started/
-- https://docs.rs/actix-web/3.3.2/actix_web/
-- https://docs.rs/serde/1.0.126/serde/
+- https://docs.rs/actix-web/4.0.1/actix_web/index.html
+- https://docs.rs/serde/1.0.136/serde/index.html
 
-MongoDB
+PostgreSQL
 
-- https://developer.mongodb.com/quickstart/rust-crud-tutorial/
-- https://developer.mongodb.com/article/serde-improvements/
-- https://docs.rs/bson/0.14.1/bson/index.html
-- https://docs.rs/mongodb/1.2.1/mongodb
-- https://docs.rs/bson/1.2.2/bson
+- https://docs.rs/tokio-postgres/latest/tokio_postgres/
+- https://docs.rs/deadpool-postgres/latest/deadpool_postgres/
 
 Testing Rust Code
 
@@ -123,5 +122,4 @@ Testing Rust Code
 
 Generate Code Coverage
 
-- https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/instrument-coverage.html
-- https://blog.rust-lang.org/inside-rust/2020/02/25/intro-rustc-self-profile.html
+- https://doc.rust-lang.org/stable/rustc/instrument-coverage.html

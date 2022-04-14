@@ -13,7 +13,7 @@ pub fn config_route(cfg: &mut web::ServiceConfig) {
 }
 
 pub fn not_found() -> Route {
-  web::route().to(|| {
+  web::route().to(|| async {
     let result_error = HttpError::new("Resource not found".to_string());
     HttpResponse::BadRequest().json(result_error)
   })

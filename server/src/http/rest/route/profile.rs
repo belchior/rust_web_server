@@ -1,6 +1,7 @@
-use crate::http::http_handler::HttpError;
-use crate::http::rest::AppState;
-use crate::model::{organization::find_organization_by_login, user::find_user_by_login};
+use crate::{
+  http::{http_handler::HttpError, rest::AppState},
+  model::{organization::find_organization_by_login, user::find_user_by_login},
+};
 use actix_web::{web, HttpResponse, Responder, Scope};
 use futures::join;
 use log;
@@ -9,10 +10,12 @@ pub fn scope() -> Scope {
   web::scope("/profile/{login}").route("", web::get().to(profile))
 }
 
-async fn profile(state: web::Data<AppState>, web::Path(login): web::Path<String>) -> impl Responder {
+async fn profile(path: web::Path<String>, state: web::Data<AppState>) -> impl Responder {
+  let login = path.into_inner();
+  let db_client = state.poll.get().await.unwrap();
   let (user, organization) = join!(
-    find_user_by_login(&state.db, &login),
-    find_organization_by_login(&state.db, &login)
+    find_user_by_login(&db_client, &login),
+    find_organization_by_login(&db_client, &login)
   );
 
   match (user, organization) {

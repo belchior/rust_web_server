@@ -24,7 +24,7 @@ pub async fn main() -> std::io::Result<()> {
   HttpServer::new(move || {
     App::new()
       .wrap(get_cors())
-      .data(AppState { db: db.clone() })
+      .app_data(web::Data::new(AppState { poll: poll.clone() }))
       .configure(route::config_route)
       .wrap(actix_web::middleware::Logger::new("%U"))
       .default_service(route::not_found())

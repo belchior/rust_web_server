@@ -24,12 +24,12 @@ services:
       - 8080:8080
     env_file: server/.env
     volumes:
-      - ./server/scripts:/server/scripts
-      - ./server/src:/server/src
-      - ./server/.env:/server/.env
+      - ./server/scripts:/server/scripts:ro
+      - ./server/src:/server/src:ro
+      - ./server/.env:/server/.env:ro
     depends_on:
       - server_base_image
-      - database
+      - database_seed
 
   server_test:
     image: server_base_image_postgres
@@ -37,17 +37,17 @@ services:
     command: scripts/test_watch.sh
     env_file: server/.env
     environment:
-      - POSTGRES_DB=test_database
+      - RUST_ENV=test
     volumes:
-      - ./server/coverage:/server/coverage
-      - ./server/scripts:/server/scripts
-      - ./server/src:/server/src
-      - ./server/.env:/server/.env
-      - ./server/Cargo.toml:/server/Cargo.toml
-      - ./server/Cargo.lock:/server/Cargo.lock
+      - ./server/coverage:/server/coverage:rw
+      - ./server/scripts:/server/scripts:ro
+      - ./server/src:/server/src:ro
+      - ./server/.env:/server/.env:ro
+      - ./server/Cargo.toml:/server/Cargo.toml:ro
+      - ./server/Cargo.lock:/server/Cargo.lock:ro
     depends_on:
       - server_base_image
-      - database
+      - database_schema
 
   database:
     image: postgres:14-alpine
@@ -56,16 +56,27 @@ services:
       - 5432:5432
     env_file: server/.env
 
+  database_schema:
+    image: postgres:14-alpine
+    container_name: database_schema
+    command: scripts/database_schema.sh
+    env_file: server/.env
+    depends_on:
+      - database
+    volumes:
+      - ./server/database:/database:ro
+      - ./server/scripts:/scripts:ro
+
   database_seed:
     image: postgres:14-alpine
     container_name: database_seed
     command: scripts/database_seed.sh
     env_file: server/.env
     depends_on:
-      - database
+      - database_schema
     volumes:
-      - ./server/database_seed:/data/seed
-      - ./server/scripts:/scripts
+      - ./server/database:/database:ro
+      - ./server/scripts:/scripts:ro
 
   client_base_image:
     image: client_base_image
@@ -92,13 +103,13 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./client/coverage:/client/coverage
-      - ./client/public:/client/public
-      - ./client/src:/client/src
-      - ./client/.env.development:/client/.env.development
-      - ./client/.eslintrc.js:/client/.eslintrc.js
-      - ./client/package.json:/client/package.json
-      - ./client/package-lock.json:/client/package-lock.json
-      - ./client/tsconfig.json:/client/tsconfig.json
+      - ./client/coverage:/client/coverage:rw
+      - ./client/public:/client/public:ro
+      - ./client/src:/client/src:ro
+      - ./client/.env.development:/client/.env.development:ro
+      - ./client/.eslintrc.js:/client/.eslintrc.js:ro
+      - ./client/package.json:/client/package.json:ro
+      - ./client/package-lock.json:/client/package-lock.json:ro
+      - ./client/tsconfig.json:/client/tsconfig.json:ro
     depends_on:
       - client_base_image

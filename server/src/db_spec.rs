@@ -8,5 +8,5 @@ async fn should_connect_to_database() {
   let result = db_client.query_one("SELECT current_database()", &[]).await.unwrap();
   let db_name: &str = result.get(0);
 
-  assert_eq!(db_name, "test_database");
+  assert_eq!(db_name, "database");
 }

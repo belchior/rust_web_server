@@ -24,5 +24,6 @@ CMD ["./release/rust_web_server"]
 #   --env=POSTGRES_PASSWORD=postgres \
 #   --env=POSTGRES_PORT=5432 \
 #   --env=POSTGRES_USER=postgres \
+#   --env=POSTGRES_CONNECTIONS_NUMBER=4 \
 #   --env=CORS_ALLOWED_ORIGINS=http://localhost:3000 \
 #   server

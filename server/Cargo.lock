@@ -1166,6 +1166,7 @@ dependencies = [
  "pretty_assertions",
  "rand",
  "serde",
+ "sql_query_builder",
  "tokio",
  "tokio-postgres",
  "tokio-stream",
@@ -1311,6 +1312,12 @@ dependencies = [
  "libc",
  "winapi",
 ]
+
+[[package]]
+name = "sql_query_builder"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a2ef6c20a9779ef5ef2803be77ad09b56daaa086afda319b4722de74ea8de36"
 
 [[package]]
 name = "stringprep"

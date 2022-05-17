@@ -1,11 +1,9 @@
 use crate::{
-  lib::{
-    cursor_connection::{CursorConnection, Direction, PaginationArguments},
-    sql_query_builder::SelectBuilder,
-  },
+  lib::cursor_connection::{CursorConnection, Direction, PaginationArguments},
   model::{organization::Organization, repository::Repository, utils, QueryParam},
 };
 use serde::{Deserialize, Serialize};
+use sql_query_builder::SelectBuilder;
 use tokio_postgres::{Client, Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -199,7 +197,7 @@ fn query_find_followers_by_login<'a>(
   let mut select_followers = SelectBuilder::new()
     .select("u.*")
     .from("users u")
-    .inner_join("users_following uf", "uf.user_login = u.login")
+    .inner_join("users_following uf on uf.user_login = u.login")
     .where_clause("uf.following_login = $1")
     .order_by("u.id asc");
 
@@ -253,7 +251,7 @@ fn query_find_followed_by_login<'a>(
   let mut select_following = SelectBuilder::new()
     .select("u.*")
     .from("users u")
-    .inner_join("users_following uf", "uf.following_login = u.login")
+    .inner_join("users_following uf on uf.following_login = u.login")
     .where_clause("uf.user_login = $1")
     .order_by("u.id asc");
 
@@ -307,8 +305,8 @@ fn query_find_organizations_by_user_login<'a>(
   let mut select_org = SelectBuilder::new()
     .select("o.*, uo.created_at as joined_at")
     .from("users u")
-    .inner_join("users_organizations uo", "uo.user_login = u.login")
-    .inner_join("organizations o", "o.login = uo.organization_login")
+    .inner_join("users_organizations uo on uo.user_login = u.login")
+    .inner_join("organizations o on o.login = uo.organization_login")
     .where_clause("u.login = $1")
     .order_by("o.id asc");
 
@@ -360,7 +358,7 @@ fn query_followed_pages_previous_and_next<'a>(
 ) -> (String, Vec<QueryParam<'a>>) {
   let select_base = SelectBuilder::new()
     .from("users u")
-    .inner_join("users_following uf", "uf.following_login = u.login")
+    .inner_join("users_following uf on uf.following_login = u.login")
     .where_clause("uf.user_login = $1")
     .order_by("u.id asc")
     .limit("1");
@@ -373,7 +371,7 @@ fn query_followed_pages_previous_and_next<'a>(
     .clone()
     .select("'next' as page")
     .and("u.id > $3 /* last_id */");
-  let query = select_previous.union(select_next).as_string();
+  let query = select_previous.union(select_next).debug().as_string();
   let params: Vec<QueryParam> = vec![user_login, first_item_id, last_item_id];
 
   (query, params)
@@ -386,7 +384,7 @@ fn query_followers_pages_previous_and_next<'a>(
 ) -> (String, Vec<QueryParam<'a>>) {
   let select_base = SelectBuilder::new()
     .from("users u")
-    .inner_join("users_following uf", "uf.user_login = u.login")
+    .inner_join("users_following uf on uf.user_login = u.login")
     .where_clause("uf.following_login = $1")
     .order_by("u.id asc")
     .limit("1");
@@ -412,8 +410,8 @@ fn query_organizations_pages_previous_and_next<'a>(
 ) -> (String, Vec<QueryParam<'a>>) {
   let select_base = SelectBuilder::new()
     .from("users u")
-    .inner_join("users_organizations uo", "uo.organization_login = u.login")
-    .inner_join("organizations o", "o.login = uo.organization_login")
+    .inner_join("users_organizations uo on uo.organization_login = u.login")
+    .inner_join("organizations o on o.login = uo.organization_login")
     .where_clause("u.login = $1")
     .order_by("o.id asc")
     .limit("1");
@@ -441,8 +439,8 @@ fn query_find_starred_repositories_by_user_login<'a>(
   let mut select_repo = SelectBuilder::new()
     .select("r.*")
     .from("users u")
-    .inner_join("users_starred_repositories usr", "usr.user_login = u.login")
-    .inner_join("repositories r", "r.name = usr.repository_name")
+    .inner_join("users_starred_repositories usr on usr.user_login = u.login")
+    .inner_join("repositories r on r.name = usr.repository_name")
     .where_clause("u.login = $1")
     .order_by("r.id asc");
 

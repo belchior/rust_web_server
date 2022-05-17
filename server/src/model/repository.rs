@@ -1,11 +1,9 @@
 use crate::{
-  lib::{
-    cursor_connection::{CursorConnection, Direction, PaginationArguments},
-    sql_query_builder::SelectBuilder,
-  },
+  lib::cursor_connection::{CursorConnection, Direction, PaginationArguments},
   model::{utils, QueryParam},
 };
 use serde::{Deserialize, Serialize};
+use sql_query_builder::SelectBuilder;
 use tokio_postgres::{Client, Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]

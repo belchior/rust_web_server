@@ -4,8 +4,6 @@ version = "0.1.0"
 authors = ["Belchior Oliveira <belchior@outlook.com>"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 actix-cors = "0.6.1"
 actix-service = "2.0.2"
@@ -22,6 +20,7 @@ serde = { version = "1.0.136", features = ["derive"] }
 tokio = "1.15.0"
 tokio-postgres = "0.7.5"
 tokio-stream = "0.1.7"
+sql_query_builder = "0.1.2"
 
 [dev-dependencies]
 pretty_assertions = "1.2.1"

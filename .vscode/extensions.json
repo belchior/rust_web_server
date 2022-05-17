@@ -2,8 +2,8 @@
   "recommendations": [
     "bungcip.better-toml",
     "vadimcn.vscode-lldb",
-    "matklad.rust-analyzer",
     "dbaeumer.vscode-eslint",
-    "ms-azuretools.vscode-docker"
+    "ms-azuretools.vscode-docker",
+    "rust-lang.rust-analyzer"
   ]
 }

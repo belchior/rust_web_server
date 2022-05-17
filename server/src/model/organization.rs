@@ -1,11 +1,9 @@
 use crate::{
-  lib::{
-    cursor_connection::{CursorConnection, Direction, PaginationArguments},
-    sql_query_builder::SelectBuilder,
-  },
+  lib::cursor_connection::{CursorConnection, Direction, PaginationArguments},
   model::{user::User, utils, QueryParam},
 };
 use serde::{Deserialize, Serialize};
+use sql_query_builder::SelectBuilder;
 use tokio_postgres::{Client, Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -114,8 +112,8 @@ fn query_find_people_by_login<'a>(
   let mut select_people = SelectBuilder::new()
     .select("u.*, uo.created_at as joined_at")
     .from("organizations org")
-    .inner_join("users_organizations uo", "uo.organization_login = org.login")
-    .inner_join("users u", "u.login = uo.user_login")
+    .inner_join("users_organizations uo on uo.organization_login = org.login")
+    .inner_join("users u on u.login = uo.user_login")
     .where_clause("org.login = $1")
     .order_by("u.id asc");
 
@@ -167,8 +165,8 @@ fn query_pages_previous_and_next<'a>(
 ) -> (String, Vec<QueryParam<'a>>) {
   let select_base = SelectBuilder::new()
     .from("organizations o")
-    .inner_join("users_organizations uo", "uo.organization_login = o.login")
-    .inner_join("users u", "u.login = uo.user_login")
+    .inner_join("users_organizations uo on uo.organization_login = o.login")
+    .inner_join("users u on u.login = uo.user_login")
     .where_clause("o.login = $1")
     .order_by("u.id ASC")
     .limit("1");

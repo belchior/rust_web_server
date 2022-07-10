@@ -1315,9 +1315,9 @@ dependencies = [
 
 [[package]]
 name = "sql_query_builder"
-version = "0.1.2"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a2ef6c20a9779ef5ef2803be77ad09b56daaa086afda319b4722de74ea8de36"
+checksum = "e6a4ba4919af9a7edbedd2f2284c47e05ef56a1de68dd83fec791476ccea83ec"
 
 [[package]]
 name = "stringprep"

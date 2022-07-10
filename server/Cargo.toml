@@ -20,7 +20,7 @@ serde = { version = "1.0.136", features = ["derive"] }
 tokio = "1.15.0"
 tokio-postgres = "0.7.5"
 tokio-stream = "0.1.7"
-sql_query_builder = "0.1.2"
+sql_query_builder = { version = "0.7.4", features = ["postgresql"] }
 
 [dev-dependencies]
 pretty_assertions = "1.2.1"

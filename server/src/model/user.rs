@@ -371,7 +371,7 @@ fn query_followed_pages_previous_and_next<'a>(
     .clone()
     .select("'next' as page")
     .and("u.id > $3 /* last_id */");
-  let query = select_previous.union(select_next).debug().as_string();
+  let query = select_previous.union(select_next).as_string();
   let params: Vec<QueryParam> = vec![user_login, first_item_id, last_item_id];
 
   (query, params)

@@ -27,6 +27,8 @@ services:
       - ./server/scripts:/server/scripts:ro
       - ./server/src:/server/src:ro
       - ./server/.env:/server/.env:ro
+      - ./server/Cargo.toml:/server/Cargo.toml:ro
+      - ./server/Cargo.lock:/server/Cargo.lock:ro
     depends_on:
       - server_base_image
       - database_seed

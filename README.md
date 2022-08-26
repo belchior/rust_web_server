@@ -26,7 +26,7 @@ docker-compose build server_base_image client_base_image
 After that you can start both using the command
 
 ```sh
-docker-compose up client server database_seed
+docker-compose up client server
 ```
 
 

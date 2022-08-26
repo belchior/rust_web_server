@@ -3,41 +3,41 @@
 # Prerequisites
 # cargo clean;
 # cargo install rustfilt cargo-binutils
-# rustup toolchain install $nightly
-# rustup +nightly component add llvm-tools-preview
+# rustup component add llvm-tools-preview
 
 PKG_NAME="$(grep 'name\s*=\s*"' Cargo.toml | sed -E 's/.*"(.*)"/\1/')"
 COVERAGE_OUTPUT="coverage"
-COVERAGE_DATA="target/debug/coverage"
+COVERAGE_TARGET="target/coverage"
 
 mkdir -p "$COVERAGE_OUTPUT"
-mkdir -p "$COVERAGE_DATA"
-rm -f "target/debug/deps/$PKG_NAME"*
+mkdir -p "$COVERAGE_TARGET"
+rm -f "$COVERAGE_TARGET/debug/deps/$PKG_NAME"*
 
-RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="$COVERAGE_DATA/$PKG_NAME-%m.profraw" cargo +nightly test -- --test-threads=1;
-cargo +nightly profdata -- merge -sparse $COVERAGE_DATA/$PKG_NAME-*.profraw -o $COVERAGE_DATA/$PKG_NAME.profdata;
+RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="$COVERAGE_TARGET/$PKG_NAME-%m.profraw" cargo test --target-dir $COVERAGE_TARGET -- --test-threads=1;
 
-COVERAGE_ID="$(ls target/debug/deps/$PKG_NAME-*.d | head -n1 | cut -d " " -f1 | sed -E 's/.*-(.*)\.d$/\1/')"
+cargo profdata -- merge -sparse $COVERAGE_TARGET/$PKG_NAME-*.profraw -o $COVERAGE_TARGET/$PKG_NAME.profdata;
 
-cargo +nightly cov -- report \
+COVERAGE_ID="$(ls $COVERAGE_TARGET/debug/deps/$PKG_NAME-*.d | head -n1 | cut -d " " -f1 | sed -E 's/.*-(.*)\.d$/\1/')"
+
+cargo cov -- report \
     --use-color \
     --ignore-filename-regex='/rustc' \
     --ignore-filename-regex='/cargo/registry' \
     --ignore-filename-regex='./*/mock' \
     --ignore-filename-regex='./*_spec.rs$' \
     --ignore-filename-regex='./main.rs' \
-    --instr-profile=$COVERAGE_DATA/$PKG_NAME.profdata \
-    --object target/debug/deps/$PKG_NAME-$COVERAGE_ID;
+    --instr-profile=$COVERAGE_TARGET/$PKG_NAME.profdata \
+    --object $COVERAGE_TARGET/debug/deps/$PKG_NAME-$COVERAGE_ID;
 
-cargo +nightly cov -- show \
+cargo cov -- show \
     --use-color \
     --ignore-filename-regex='/rustc' \
     --ignore-filename-regex='/cargo/registry' \
     --ignore-filename-regex='./*/mock' \
     --ignore-filename-regex='./*_spec.rs$' \
     --ignore-filename-regex='./main.rs' \
-    --instr-profile=$COVERAGE_DATA/$PKG_NAME.profdata \
-    --object target/debug/deps/$PKG_NAME-$COVERAGE_ID \
+    --instr-profile=$COVERAGE_TARGET/$PKG_NAME.profdata \
+    --object $COVERAGE_TARGET/debug/deps/$PKG_NAME-$COVERAGE_ID \
     --show-instantiations \
     --show-line-counts-or-regions \
     --Xdemangler=rustfilt \
@@ -47,4 +47,4 @@ cargo +nightly cov -- show \
 echo "\n\nAll files can be found at:\n$(pwd)/$COVERAGE_OUTPUT/index.html\n\n";
 
 # Reference
-# https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/instrument-coverage.html
+# https://doc.rust-lang.org/stable/rustc/instrument-coverage.html

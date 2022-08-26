@@ -26,13 +26,14 @@ services:
       - DATABASE_URI=mongodb://database:27017
       - DATABASE_NAME=database
     volumes:
-      - ./server/release:/server/release
-      - ./server/scripts:/server/scripts
-      - ./server/src:/server/src
-      - ./server/.env:/server/.env
+      - ./server/.env:/server/.env:ro
+      - ./server/Cargo.lock:/server/Cargo.lock:ro
+      - ./server/Cargo.toml:/server/Cargo.toml:ro
+      - ./server/scripts:/server/scripts:ro
+      - ./server/src:/server/src:ro
     depends_on:
       - server_base_image
-      - database
+      - database_seed
 
   server_test:
     image: server_base_image
@@ -42,12 +43,12 @@ services:
       - DATABASE_URI=mongodb://database:27017
       - DATABASE_NAME=test_database
     volumes:
-      - ./server/coverage:/server/coverage
-      - ./server/scripts:/server/scripts
-      - ./server/src:/server/src
-      - ./server/.env:/server/.env
-      - ./server/Cargo.toml:/server/Cargo.toml
-      - ./server/Cargo.lock:/server/Cargo.lock
+      - ./server/.env:/server/.env:ro
+      - ./server/Cargo.lock:/server/Cargo.lock:ro
+      - ./server/Cargo.toml:/server/Cargo.toml:ro
+      - ./server/coverage:/server/coverage:rw
+      - ./server/scripts:/server/scripts:ro
+      - ./server/src:/server/src:ro
     depends_on:
       - server_base_image
       - database
@@ -68,8 +69,8 @@ services:
     depends_on:
       - database
     volumes:
-      - ./server/database_seed:/data/seed
-      - ./server/scripts:/scripts
+      - ./server/database_seed:/data/seed:ro
+      - ./server/scripts:/scripts:ro
 
   client_base_image:
     image: client_base_image
@@ -96,13 +97,13 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./client/coverage:/client/coverage
-      - ./client/public:/client/public
-      - ./client/src:/client/src
-      - ./client/.env.development:/client/.env.development
-      - ./client/.eslintrc.js:/client/.eslintrc.js
-      - ./client/package.json:/client/package.json
-      - ./client/package-lock.json:/client/package-lock.json
-      - ./client/tsconfig.json:/client/tsconfig.json
+      - ./client/.env.development:/client/.env.development:ro
+      - ./client/.eslintrc.js:/client/.eslintrc.js:ro
+      - ./client/coverage:/client/coverage:rw
+      - ./client/package-lock.json:/client/package-lock.json:ro
+      - ./client/package.json:/client/package.json:ro
+      - ./client/public:/client/public:ro
+      - ./client/src:/client/src:ro
+      - ./client/tsconfig.json:/client/tsconfig.json:ro
     depends_on:
       - client_base_image

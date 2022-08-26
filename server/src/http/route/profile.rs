@@ -8,7 +8,7 @@ pub fn scope() -> Scope {
   web::scope("/profile/{login}").route("", web::get().to(profile))
 }
 
-async fn profile(state: web::Data<AppState>, web::Path(login): web::Path<String>) -> impl Responder {
+async fn profile(state: web::Data<AppState>, login: web::Path<String>) -> impl Responder {
   let (user, organization) = join!(
     find_user_by_login(&state.db, &login),
     find_organization_by_login(&state.db, &login)

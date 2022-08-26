@@ -43,7 +43,7 @@ pub fn scope() -> Scope {
     )
 }
 
-async fn user(state: web::Data<AppState>, web::Path(login): web::Path<String>) -> impl Responder {
+async fn user(state: web::Data<AppState>, login: web::Path<String>) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
 
   into_response_object(result, "User")
@@ -51,7 +51,7 @@ async fn user(state: web::Data<AppState>, web::Path(login): web::Path<String>) -
 
 async fn organizations(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
@@ -69,7 +69,7 @@ async fn organizations(
 
 async fn repositories(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
@@ -87,7 +87,7 @@ async fn repositories(
 
 async fn starred_repositories(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
@@ -105,7 +105,7 @@ async fn starred_repositories(
 
 async fn followers(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;
@@ -123,7 +123,7 @@ async fn followers(
 
 async fn following(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_user_by_login(&state.db, &login).await;

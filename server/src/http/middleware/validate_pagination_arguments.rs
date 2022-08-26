@@ -1,26 +1,20 @@
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::future::{ready, Ready};
 
-use crate::http::http_handler::HttpError;
-use crate::lib::cursor_connection::PaginationArguments;
-use actix_service::{Service, Transform};
-use actix_web::web::Query;
-use actix_web::HttpResponse;
 use actix_web::{
-  dev::{ServiceRequest, ServiceResponse},
-  Error,
+  dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+  web, Error, HttpResponse,
 };
-use futures::future::{ok, Ready};
-use std::future::Future;
+use futures_util::future::LocalBoxFuture;
+
+use crate::{http::http_handler::HttpError, lib::cursor_connection::PaginationArguments};
 
 pub struct ValidatePaginationArguments;
 
-impl<S> Transform<S> for ValidatePaginationArguments
+impl<S> Transform<S, ServiceRequest> for ValidatePaginationArguments
 where
-  S: Service<Request = ServiceRequest, Response = ServiceResponse, Error = Error>,
+  S: Service<ServiceRequest, Response = ServiceResponse, Error = Error>,
   S::Future: 'static,
 {
-  type Request = ServiceRequest;
   type Response = ServiceResponse;
   type Error = Error;
   type InitError = ();
@@ -28,53 +22,47 @@ where
   type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
   fn new_transform(&self, service: S) -> Self::Future {
-    ok(ValidatePaginationArgumentsMiddleware { service })
+    ready(Ok(ValidatePaginationArgumentsMiddleware { service }))
   }
 }
 
 pub struct ValidatePaginationArgumentsMiddleware<S> {
   service: S,
 }
-impl<S> Service for ValidatePaginationArgumentsMiddleware<S>
+
+impl<S> Service<ServiceRequest> for ValidatePaginationArgumentsMiddleware<S>
 where
-  S: Service<Request = ServiceRequest, Response = ServiceResponse, Error = Error>,
+  S: Service<ServiceRequest, Response = ServiceResponse, Error = Error>,
   S::Future: 'static,
 {
-  type Request = ServiceRequest;
   type Response = ServiceResponse;
   type Error = Error;
-  type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
+  type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
-  fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-    self.service.poll_ready(cx)
-  }
+  forward_ready!(service);
 
-  fn call(&mut self, req: ServiceRequest) -> Self::Future {
+  fn call(&self, req: ServiceRequest) -> Self::Future {
     if let Some(query) = req.uri().query() {
-      let pagination_arguments = Query::<PaginationArguments>::from_query(query);
+      let pagination_arguments = web::Query::<PaginationArguments>::from_query(query);
+      let result_error = HttpError::new("Invalid pagination arguments".to_string());
+      let response = HttpResponse::BadRequest().json(result_error);
 
-      if let Err(_) = pagination_arguments {
-        // TODO find a way to reuse this block of code without start a type dependency war
-        let (request, _) = req.into_parts();
-        let result_error = HttpError::new("Invalid pagination arguments".to_string());
-        let response = HttpResponse::BadRequest().json(result_error);
-        let service_response = ServiceResponse::new(request, response);
-        return Box::pin(async { Ok(service_response) });
-      }
-
-      let pagination_arguments = pagination_arguments.unwrap();
-
-      if PaginationArguments::is_valid(&pagination_arguments) == false {
-        let (request, _) = req.into_parts();
-        let result_error = HttpError::new("Invalid pagination arguments".to_string());
-        let response = HttpResponse::BadRequest().json(result_error);
-        let service_response = ServiceResponse::new(request, response);
-        return Box::pin(async { Ok(service_response) });
+      match pagination_arguments {
+        Err(_) => {
+          let res = req.into_response(response);
+          return Box::pin(async { Ok(res) });
+        }
+        Ok(pagination_arguments) => {
+          if PaginationArguments::is_valid(&pagination_arguments) == false {
+            let res = req.into_response(response);
+            return Box::pin(async { Ok(res) });
+          }
+        }
       }
     }
 
     let fut = self.service.call(req);
-    Box::pin(async {
+    Box::pin(async move {
       let res = fut.await?;
       Ok(res)
     })

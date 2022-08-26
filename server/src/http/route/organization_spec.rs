@@ -2,7 +2,7 @@ use crate::http::{http_handler::HttpError, route::organization, AppState};
 use crate::lib::cursor_connection::CursorConnection;
 use crate::mock;
 use crate::model::{organization::Organization, repository::Repository, user::User};
-use actix_web::{http::StatusCode, test, App};
+use actix_web::{http::StatusCode, test, web, App};
 use pretty_assertions::assert_eq;
 
 #[actix_rt::test]
@@ -10,7 +10,7 @@ async fn should_match_an_organization() {
   let db = mock::setup().await;
   let mut app = test::init_service(
     App::new()
-      .data(AppState { db: db.clone() })
+      .app_data(web::Data::new(AppState { db: db.clone() }))
       .service(organization::scope()),
   )
   .await;
@@ -30,7 +30,7 @@ async fn should_find_people_of_the_organization() {
   let db = mock::setup().await;
   let mut app = test::init_service(
     App::new()
-      .data(AppState { db: db.clone() })
+      .app_data(web::Data::new(AppState { db: db.clone() }))
       .service(organization::scope()),
   )
   .await;
@@ -50,7 +50,7 @@ async fn should_not_find_people_of_the_organization() {
   let db = mock::setup().await;
   let mut app = test::init_service(
     App::new()
-      .data(AppState { db: db.clone() })
+      .app_data(web::Data::new(AppState { db: db.clone() }))
       .service(organization::scope()),
   )
   .await;
@@ -70,7 +70,7 @@ async fn should_not_find_people_of_a_unknown_organization() {
   let db = mock::setup().await;
   let mut app = test::init_service(
     App::new()
-      .data(AppState { db: db.clone() })
+      .app_data(web::Data::new(AppState { db: db.clone() }))
       .service(organization::scope()),
   )
   .await;
@@ -90,7 +90,7 @@ async fn should_find_repositories_of_the_organization() {
   let db = mock::setup().await;
   let mut app = test::init_service(
     App::new()
-      .data(AppState { db: db.clone() })
+      .app_data(web::Data::new(AppState { db: db.clone() }))
       .service(organization::scope()),
   )
   .await;
@@ -110,7 +110,7 @@ async fn should_not_find_repositories_of_the_organization() {
   let db = mock::setup().await;
   let mut app = test::init_service(
     App::new()
-      .data(AppState { db: db.clone() })
+      .app_data(web::Data::new(AppState { db: db.clone() }))
       .service(organization::scope()),
   )
   .await;
@@ -130,7 +130,7 @@ async fn should_not_find_repositories_of_a_unknown_organization() {
   let db = mock::setup().await;
   let mut app = test::init_service(
     App::new()
-      .data(AppState { db: db.clone() })
+      .app_data(web::Data::new(AppState { db: db.clone() }))
       .service(organization::scope()),
   )
   .await;

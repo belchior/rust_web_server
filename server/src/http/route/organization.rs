@@ -25,7 +25,7 @@ pub fn scope() -> Scope {
     )
 }
 
-async fn organization(state: web::Data<AppState>, web::Path(login): web::Path<String>) -> impl Responder {
+async fn organization(state: web::Data<AppState>, login: web::Path<String>) -> impl Responder {
   let result = find_organization_by_login(&state.db, &login).await;
 
   into_response_object(result, "Organization")
@@ -33,7 +33,7 @@ async fn organization(state: web::Data<AppState>, web::Path(login): web::Path<St
 
 async fn people(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_organization_by_login(&state.db, &login).await;
@@ -51,7 +51,7 @@ async fn people(
 
 async fn repositories(
   state: web::Data<AppState>,
-  web::Path(login): web::Path<String>,
+  login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
   let result = find_organization_by_login(&state.db, &login).await;

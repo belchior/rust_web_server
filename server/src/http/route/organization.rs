@@ -1,14 +1,12 @@
-use crate::{
-  http::{
-    http_handler::{into_response_list, into_response_object},
-    rest::{middleware, AppState},
-  },
-  lib::cursor_connection::PaginationArguments,
-  model::{
-    organization::{find_organization_by_login, find_people_by_login},
-    repository::{find_repositories_by_owner_id, repositories_to_cursor_connection},
-    user::users_to_cursor_connection,
-  },
+use crate::http::{
+  http_handler::{into_response_list, into_response_object},
+  {middleware, AppState},
+};
+use crate::lib::cursor_connection::PaginationArguments;
+use crate::model::{
+  organization::{find_organization_by_login, find_people_by_login},
+  repository::{find_repositories_by_owner_id, repositories_to_cursor_connection},
+  user::users_to_cursor_connection,
 };
 use actix_web::{web, Responder, Scope};
 

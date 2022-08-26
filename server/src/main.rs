@@ -8,7 +8,7 @@ use dotenv::dotenv;
 fn main() -> () {
   dotenv().ok();
   env_logger::init();
-  http::main();
+  http::main().expect("start http server");
 }
 
 #[cfg(test)]

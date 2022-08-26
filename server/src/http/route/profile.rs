@@ -1,5 +1,4 @@
-use crate::http::http_handler::HttpError;
-use crate::http::rest::AppState;
+use crate::http::{http_handler::HttpError, AppState};
 use crate::model::{organization::find_organization_by_login, user::find_user_by_login};
 use actix_web::{web, HttpResponse, Responder, Scope};
 use futures::join;

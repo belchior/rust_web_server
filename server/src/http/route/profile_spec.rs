@@ -1,6 +1,6 @@
 use crate::http::{http_handler::HttpError, route::profile, AppState};
-use crate::mock;
 use crate::model::{organization::Organization, user::User};
+use crate::setup::mock;
 use actix_web::{http::StatusCode, test, web, App};
 use pretty_assertions::assert_eq;
 

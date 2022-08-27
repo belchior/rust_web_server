@@ -1,4 +1,4 @@
-use crate::db::*;
+use crate::setup::db::db_client_connection;
 use pretty_assertions::assert_eq;
 
 #[actix_rt::test]

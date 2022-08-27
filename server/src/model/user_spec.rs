@@ -1,8 +1,6 @@
-use crate::{
-  lib::cursor_connection::PaginationArguments,
-  mock,
-  model::{organization, user::*},
-};
+use crate::lib::cursor_connection::PaginationArguments;
+use crate::model::{organization, user::*};
+use crate::setup::mock;
 use base64;
 use pretty_assertions::assert_eq;
 

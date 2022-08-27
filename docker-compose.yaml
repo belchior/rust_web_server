@@ -25,6 +25,8 @@ services:
     environment:
       - DATABASE_URI=mongodb://database:27017
       - DATABASE_NAME=database
+      - OTEL_EXPORTER_JAEGER_AGENT_HOST=telemetry
+      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
     volumes:
       - ./server/.env:/server/.env:ro
       - ./server/Cargo.lock:/server/Cargo.lock:ro
@@ -34,6 +36,7 @@ services:
     depends_on:
       - server_base_image
       - database_seed
+      - telemetry
 
   server_test:
     image: server_base_image
@@ -71,6 +74,17 @@ services:
     volumes:
       - ./server/database_seed:/data/seed:ro
       - ./server/scripts:/scripts:ro
+
+  telemetry:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "9411:9411"
 
   client_base_image:
     image: client_base_image

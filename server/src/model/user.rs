@@ -1,7 +1,5 @@
-use crate::{
-  lib::cursor_connection::{CursorConnection, PaginationArguments},
-  model::{self, organization::Organization, repository::Repository, Pipeline},
-};
+use crate::lib::cursor_connection::{CursorConnection, PaginationArguments};
+use crate::model::{self, organization::Organization, repository::Repository, Pipeline};
 use mongodb::{
   bson::{doc, oid::ObjectId},
   error::Error as ModelError,

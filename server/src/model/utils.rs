@@ -1,7 +1,5 @@
-use crate::{
-  lib::cursor_connection::{cursor_to_reference, Direction},
-  model,
-};
+use crate::lib::cursor_connection::{cursor_to_reference, Direction};
+use crate::model;
 use mongodb::{
   bson::{self, doc, oid::ObjectId, Document},
   Cursor,

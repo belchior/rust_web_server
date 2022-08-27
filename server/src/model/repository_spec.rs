@@ -1,8 +1,6 @@
-use crate::{
-  lib::cursor_connection::PaginationArguments,
-  mock,
-  model::{organization, repository::*, user},
-};
+use crate::lib::cursor_connection::PaginationArguments;
+use crate::model::{organization, repository::*, user};
+use crate::setup::mock;
 use pretty_assertions::assert_eq;
 
 #[actix_rt::test]

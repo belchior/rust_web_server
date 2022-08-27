@@ -1,4 +1,4 @@
-use crate::db::db_client_connection;
+use crate::setup::db::db_client_connection;
 use mongodb::{
   bson::{self, doc, oid::ObjectId},
   error::Error as ModelError,

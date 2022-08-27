@@ -4,6 +4,7 @@
     "vadimcn.vscode-lldb",
     "dbaeumer.vscode-eslint",
     "ms-azuretools.vscode-docker",
-    "rust-lang.rust-analyzer"
+    "rust-lang.rust-analyzer",
+    "serayuzgur.crates"
   ]
 }

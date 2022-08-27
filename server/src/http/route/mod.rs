@@ -25,3 +25,6 @@ mod organization_spec;
 mod profile_spec;
 #[cfg(test)]
 mod user_spec;
+
+#[cfg(test)]
+mod route_spec;

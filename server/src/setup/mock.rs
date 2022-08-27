@@ -1,7 +1,5 @@
-use crate::{
-  db::db_connection_poll,
-  model::{organization::Organization, repository::Repository, user::User, utils},
-};
+use crate::model::{organization::Organization, repository::Repository, user::User, utils};
+use crate::setup::db::db_connection_poll;
 use deadpool_postgres;
 use rand;
 use tokio_postgres::{Client, Error as ClientError};

@@ -1,8 +1,10 @@
+mod cors;
+pub mod http_handler;
 mod middleware;
 mod route;
 
-use crate::db::db_connection_poll;
 use crate::http::cors::get_cors;
+use crate::setup::db::db_connection_poll;
 use actix_web::{web, App, HttpServer};
 use deadpool_postgres;
 use log;
@@ -35,6 +37,3 @@ pub async fn main() -> std::io::Result<()> {
   .run()
   .await
 }
-
-#[cfg(test)]
-mod route_spec;

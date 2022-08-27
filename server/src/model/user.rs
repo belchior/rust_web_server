@@ -1,7 +1,5 @@
-use crate::{
-  lib::cursor_connection::{CursorConnection, Direction, PaginationArguments},
-  model::{organization::Organization, repository::Repository, utils, QueryParam},
-};
+use crate::lib::cursor_connection::{CursorConnection, Direction, PaginationArguments};
+use crate::model::{organization::Organization, repository::Repository, utils, QueryParam};
 use serde::{Deserialize, Serialize};
 use sql_query_builder::SelectBuilder;
 use tokio_postgres::{Client, Error as ClientError, Row};

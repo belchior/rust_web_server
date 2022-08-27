@@ -1,4 +1,5 @@
-use crate::{lib::cursor_connection::cursor_to_reference, model};
+use crate::lib::cursor_connection::cursor_to_reference;
+use crate::model;
 use serde::{Deserialize, Serialize};
 use tokio_postgres::{Client, Error as ClientError, Row};
 

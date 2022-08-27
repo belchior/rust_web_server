@@ -1,4 +1,4 @@
-use crate::http::rest::middleware;
+use crate::http::middleware;
 use actix_web::{http::StatusCode, test, web, App, HttpResponse};
 use pretty_assertions::assert_eq;
 

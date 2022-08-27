@@ -1,4 +1,4 @@
-use super::route;
+use crate::http::route;
 use actix_web::{http::StatusCode, test, App};
 
 #[cfg(test)]

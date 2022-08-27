@@ -1,10 +1,7 @@
-use super::organization;
-use crate::{
-  http::{http_handler::HttpError, rest::AppState},
-  lib::cursor_connection::CursorConnection,
-  mock,
-  model::{organization::Organization, repository::Repository, user::User},
-};
+use crate::http::{http_handler::HttpError, route::organization, AppState};
+use crate::lib::cursor_connection::CursorConnection;
+use crate::model::{organization::Organization, repository::Repository, user::User};
+use crate::setup::mock;
 use actix_web::{http::StatusCode, test, web, App};
 use pretty_assertions::assert_eq;
 

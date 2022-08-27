@@ -1,11 +1,9 @@
-use crate::{
-  http::{
-    http_handler::{into_response_list, into_response_object},
-    rest::{middleware, AppState},
-  },
-  lib::cursor_connection::PaginationArguments,
-  model::{organization, repository},
+use crate::http::{
+  http_handler::{into_response_list, into_response_object},
+  {middleware, AppState},
 };
+use crate::lib::cursor_connection::PaginationArguments;
+use crate::model::{organization, repository};
 use actix_web::{web, Responder, Scope};
 
 pub fn scope() -> Scope {

@@ -1,7 +1,7 @@
 use crate::lib::cursor_connection::{CursorConnection, Direction, PaginationArguments};
 use crate::model::{organization::Organization, repository::Repository, utils, QueryParam};
 use serde::{Deserialize, Serialize};
-use sql_query_builder::SelectBuilder;
+use sql_query_builder as sql;
 use tokio_postgres::{Client, Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -99,7 +99,7 @@ pub async fn find_starred_repositories_by_user_login(
 }
 
 pub async fn find_user_by_login(db_client: &Client, login: &String) -> Result<Option<User>, ClientError> {
-  let query = SelectBuilder::new()
+  let query = sql::Select::new()
     .select("*")
     .from("users")
     .where_clause("login = $1")
@@ -192,7 +192,7 @@ fn query_find_followers_by_login<'a>(
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let mut select_followers = SelectBuilder::new()
+  let mut select_followers = sql::Select::new()
     .select("u.*")
     .from("users u")
     .inner_join("users_following uf on uf.user_login = u.login")
@@ -203,7 +203,7 @@ fn query_find_followers_by_login<'a>(
 
   let query = match direction {
     Direction::Backward => {
-      let mut select_followers_reverse = SelectBuilder::new()
+      let mut select_followers_reverse = sql::Select::new()
         .select("*")
         .from("followers")
         .order_by("id desc")
@@ -216,7 +216,7 @@ fn query_find_followers_by_login<'a>(
         params.push(follower_id);
       }
 
-      SelectBuilder::new()
+      sql::Select::new()
         .with("followers", select_followers)
         .with("followers_reverse", select_followers_reverse)
         .select("*")
@@ -246,7 +246,7 @@ fn query_find_followed_by_login<'a>(
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let mut select_following = SelectBuilder::new()
+  let mut select_following = sql::Select::new()
     .select("u.*")
     .from("users u")
     .inner_join("users_following uf on uf.following_login = u.login")
@@ -257,7 +257,7 @@ fn query_find_followed_by_login<'a>(
 
   let query = match direction {
     Direction::Backward => {
-      let mut select_following_reverse = SelectBuilder::new()
+      let mut select_following_reverse = sql::Select::new()
         .select("*")
         .from("following")
         .order_by("id desc")
@@ -270,7 +270,7 @@ fn query_find_followed_by_login<'a>(
         params.push(followed_id);
       }
 
-      SelectBuilder::new()
+      sql::Select::new()
         .with("following", select_following)
         .with("following_reverse", select_following_reverse)
         .select("*")
@@ -300,7 +300,7 @@ fn query_find_organizations_by_user_login<'a>(
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let mut select_org = SelectBuilder::new()
+  let mut select_org = sql::Select::new()
     .select("o.*, uo.created_at as joined_at")
     .from("users u")
     .inner_join("users_organizations uo on uo.user_login = u.login")
@@ -312,7 +312,7 @@ fn query_find_organizations_by_user_login<'a>(
 
   let query = match direction {
     Direction::Backward => {
-      let mut select_org_reverse = SelectBuilder::new()
+      let mut select_org_reverse = sql::Select::new()
         .select("*")
         .from("orgs")
         .order_by("id desc")
@@ -325,7 +325,7 @@ fn query_find_organizations_by_user_login<'a>(
         params.push(org_id);
       }
 
-      SelectBuilder::new()
+      sql::Select::new()
         .with("orgs", select_org)
         .with("orgs_reverse", select_org_reverse)
         .select("*")
@@ -354,7 +354,7 @@ fn query_followed_pages_previous_and_next<'a>(
   first_item_id: &'a i32,
   last_item_id: &'a i32,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let select_base = SelectBuilder::new()
+  let select_base = sql::Select::new()
     .from("users u")
     .inner_join("users_following uf on uf.following_login = u.login")
     .where_clause("uf.user_login = $1")
@@ -380,7 +380,7 @@ fn query_followers_pages_previous_and_next<'a>(
   first_item_id: &'a i32,
   last_item_id: &'a i32,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let select_base = SelectBuilder::new()
+  let select_base = sql::Select::new()
     .from("users u")
     .inner_join("users_following uf on uf.user_login = u.login")
     .where_clause("uf.following_login = $1")
@@ -406,7 +406,7 @@ fn query_organizations_pages_previous_and_next<'a>(
   first_item_id: &'a i32,
   last_item_id: &'a i32,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let select_base = SelectBuilder::new()
+  let select_base = sql::Select::new()
     .from("users u")
     .inner_join("users_organizations uo on uo.organization_login = u.login")
     .inner_join("organizations o on o.login = uo.organization_login")
@@ -434,7 +434,7 @@ fn query_find_starred_repositories_by_user_login<'a>(
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let mut select_repo = SelectBuilder::new()
+  let mut select_repo = sql::Select::new()
     .select("r.*")
     .from("users u")
     .inner_join("users_starred_repositories usr on usr.user_login = u.login")
@@ -446,7 +446,7 @@ fn query_find_starred_repositories_by_user_login<'a>(
 
   let query = match direction {
     Direction::Backward => {
-      let mut select_repo_reverse = SelectBuilder::new()
+      let mut select_repo_reverse = sql::Select::new()
         .select("*")
         .from("repos")
         .order_by("id desc")
@@ -459,7 +459,7 @@ fn query_find_starred_repositories_by_user_login<'a>(
         params.push(repo_id);
       }
 
-      SelectBuilder::new()
+      sql::Select::new()
         .with("repos", select_repo)
         .with("repos_reverse", select_repo_reverse)
         .select("*")

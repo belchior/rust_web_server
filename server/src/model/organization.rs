@@ -1,7 +1,7 @@
 use crate::lib::cursor_connection::{CursorConnection, Direction, PaginationArguments};
 use crate::model::{user::User, utils, QueryParam};
 use serde::{Deserialize, Serialize};
-use sql_query_builder::SelectBuilder;
+use sql_query_builder::Select;
 use tokio_postgres::{Client, Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -44,7 +44,7 @@ pub async fn find_organization_by_login(
   db_client: &Client,
   login: &String,
 ) -> Result<Option<Organization>, ClientError> {
-  let query = SelectBuilder::new()
+  let query = Select::new()
     .select("*")
     .from("organizations")
     .where_clause("login = $1")
@@ -107,7 +107,7 @@ fn query_find_people_by_login<'a>(
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let mut select_people = SelectBuilder::new()
+  let mut select_people = Select::new()
     .select("u.*, uo.created_at as joined_at")
     .from("organizations org")
     .inner_join("users_organizations uo on uo.organization_login = org.login")
@@ -119,11 +119,7 @@ fn query_find_people_by_login<'a>(
 
   let query = match direction {
     Direction::Backward => {
-      let mut select_people_reverse = SelectBuilder::new()
-        .select("*")
-        .from("people")
-        .order_by("id desc")
-        .limit("$2");
+      let mut select_people_reverse = Select::new().select("*").from("people").order_by("id desc").limit("$2");
 
       params.push(limit);
 
@@ -132,7 +128,7 @@ fn query_find_people_by_login<'a>(
         params.push(user_id);
       }
 
-      SelectBuilder::new()
+      Select::new()
         .with("people", select_people)
         .with("people_reverse", select_people_reverse)
         .select("*")
@@ -161,7 +157,7 @@ fn query_pages_previous_and_next<'a>(
   first_item_id: &'a i32,
   last_item_id: &'a i32,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let select_base = SelectBuilder::new()
+  let select_base = Select::new()
     .from("organizations o")
     .inner_join("users_organizations uo on uo.organization_login = o.login")
     .inner_join("users u on u.login = uo.user_login")

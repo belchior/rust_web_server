@@ -1,7 +1,7 @@
 use crate::lib::cursor_connection::{CursorConnection, Direction, PaginationArguments};
 use crate::model::{utils, QueryParam};
 use serde::{Deserialize, Serialize};
-use sql_query_builder::SelectBuilder;
+use sql_query_builder::Select;
 use tokio_postgres::{Client, Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -95,7 +95,7 @@ fn query_find_repositories_by_owner_login<'a>(
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let mut select_base = SelectBuilder::new()
+  let mut select_base = Select::new()
     .select("*")
     .from("repositories")
     .where_clause("owner_login = $1")
@@ -120,7 +120,7 @@ fn query_find_repositories_by_owner_login<'a>(
 
       select_base = select_base.order_by("id desc");
 
-      SelectBuilder::new()
+      Select::new()
         .with("repositories_reverse", select_base)
         .select("*")
         .from("repositories_reverse")
@@ -137,7 +137,7 @@ fn query_pages_previous_and_next<'a>(
   first_item_id: &'a i32,
   last_item_id: &'a i32,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let select_base = SelectBuilder::new()
+  let select_base = Select::new()
     .from("repositories")
     .where_clause("owner_login = $1")
     .limit("1");

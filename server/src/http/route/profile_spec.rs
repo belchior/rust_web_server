@@ -1,20 +1,12 @@
-use crate::http::{http_handler::HttpError, route::profile, AppState};
+use crate::http::{http_handler::HttpError, route::profile};
 use crate::model::{organization::Organization, user::User};
-use crate::setup::mock;
-use actix_web::{http::StatusCode, test, web, App};
+use crate::setup::mock::{make_request, HttpMethod};
+use actix_web::{http::StatusCode, test};
 use pretty_assertions::assert_eq;
 
 #[actix_rt::test]
 async fn should_match_a_user_profile() {
-  let poll = mock::setup().await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { poll }))
-      .service(profile::scope()),
-  )
-  .await;
-  let req = test::TestRequest::get().uri("/profile/user_bar").to_request();
-  let res = test::call_service(&app, req).await;
+  let res = make_request(HttpMethod::Get, "/profile/user_bar", profile::scope()).await;
   let status = res.status();
   let body: User = test::read_body_json(res).await;
 
@@ -24,15 +16,7 @@ async fn should_match_a_user_profile() {
 
 #[actix_rt::test]
 async fn should_match_an_organization_profile() {
-  let poll = mock::setup().await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { poll }))
-      .service(profile::scope()),
-  )
-  .await;
-  let req = test::TestRequest::get().uri("/profile/organization_foo").to_request();
-  let res = test::call_service(&app, req).await;
+  let res = make_request(HttpMethod::Get, "/profile/organization_foo", profile::scope()).await;
   let status = res.status();
   let body: Organization = test::read_body_json(res).await;
 
@@ -42,15 +26,7 @@ async fn should_match_an_organization_profile() {
 
 #[actix_rt::test]
 async fn should_return_profile_not_found() {
-  let poll = mock::setup().await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { poll }))
-      .service(profile::scope()),
-  )
-  .await;
-  let req = test::TestRequest::get().uri("/profile/xpto").to_request();
-  let res = test::call_service(&app, req).await;
+  let res = make_request(HttpMethod::Get, "/profile/xpto", profile::scope()).await;
   let status = res.status();
   let body: HttpError = test::read_body_json(res).await;
 

@@ -12,7 +12,7 @@ use std::env;
 
 #[derive(Clone)]
 pub struct AppState {
-  poll: deadpool_postgres::Pool,
+  pub(crate) poll: deadpool_postgres::Pool,
 }
 
 #[actix_web::main]

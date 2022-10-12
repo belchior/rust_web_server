@@ -1,23 +1,13 @@
-use crate::http::{http_handler::HttpError, route::organization, AppState};
+use crate::http::{http_handler::HttpError, route::organization};
 use crate::lib::cursor_connection::CursorConnection;
 use crate::model::{organization::Organization, repository::Repository, user::User};
-use crate::setup::mock;
-use actix_web::{http::StatusCode, test, web, App};
+use crate::setup::mock::{make_request, HttpMethod};
+use actix_web::{http::StatusCode, test};
 use pretty_assertions::assert_eq;
 
 #[actix_rt::test]
 async fn should_match_an_organization() {
-  let poll = mock::setup().await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { poll }))
-      .service(organization::scope()),
-  )
-  .await;
-  let req = test::TestRequest::get()
-    .uri("/organization/organization_foo")
-    .to_request();
-  let res = test::call_service(&app, req).await;
+  let res = make_request(HttpMethod::Get, "/organization/organization_foo", organization::scope()).await;
   let status = res.status();
   let body: Organization = test::read_body_json(res).await;
 
@@ -27,17 +17,12 @@ async fn should_match_an_organization() {
 
 #[actix_rt::test]
 async fn should_find_people_of_the_organization() {
-  let poll = mock::setup().await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { poll }))
-      .service(organization::scope()),
+  let res = make_request(
+    HttpMethod::Get,
+    "/organization/organization_foo/people",
+    organization::scope(),
   )
   .await;
-  let req = test::TestRequest::get()
-    .uri("/organization/organization_foo/people")
-    .to_request();
-  let res = test::call_service(&app, req).await;
   let status = res.status();
   let body: CursorConnection<User> = test::read_body_json(res).await;
 
@@ -47,17 +32,7 @@ async fn should_find_people_of_the_organization() {
 
 #[actix_rt::test]
 async fn should_not_find_people_of_the_organization() {
-  let poll = mock::setup().await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { poll }))
-      .service(organization::scope()),
-  )
-  .await;
-  let req = test::TestRequest::get()
-    .uri("/organization/empty_org/people")
-    .to_request();
-  let res = test::call_service(&app, req).await;
+  let res = make_request(HttpMethod::Get, "/organization/empty_org/people", organization::scope()).await;
   let status = res.status();
   let body: CursorConnection<Organization> = test::read_body_json(res).await;
 
@@ -67,17 +42,12 @@ async fn should_not_find_people_of_the_organization() {
 
 #[actix_rt::test]
 async fn should_not_find_people_of_a_unknown_organization() {
-  let poll = mock::setup().await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { poll }))
-      .service(organization::scope()),
+  let res = make_request(
+    HttpMethod::Get,
+    "/organization/organization_xxx/people",
+    organization::scope(),
   )
   .await;
-  let req = test::TestRequest::get()
-    .uri("/organization/organization_xxx/people")
-    .to_request();
-  let res = test::call_service(&app, req).await;
   let status = res.status();
   let body: HttpError = test::read_body_json(res).await;
 
@@ -87,17 +57,12 @@ async fn should_not_find_people_of_a_unknown_organization() {
 
 #[actix_rt::test]
 async fn should_find_repositories_of_the_organization() {
-  let poll = mock::setup().await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { poll }))
-      .service(organization::scope()),
+  let res = make_request(
+    HttpMethod::Get,
+    "/organization/organization_acme/repositories",
+    organization::scope(),
   )
   .await;
-  let req = test::TestRequest::get()
-    .uri("/organization/organization_acme/repositories")
-    .to_request();
-  let res = test::call_service(&app, req).await;
   let status = res.status();
   let body: CursorConnection<Repository> = test::read_body_json(res).await;
 
@@ -107,17 +72,12 @@ async fn should_find_repositories_of_the_organization() {
 
 #[actix_rt::test]
 async fn should_not_find_repositories_of_the_organization() {
-  let poll = mock::setup().await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { poll }))
-      .service(organization::scope()),
+  let res = make_request(
+    HttpMethod::Get,
+    "/organization/empty_org/repositories",
+    organization::scope(),
   )
   .await;
-  let req = test::TestRequest::get()
-    .uri("/organization/empty_org/repositories")
-    .to_request();
-  let res = test::call_service(&app, req).await;
   let status = res.status();
   let body: CursorConnection<Organization> = test::read_body_json(res).await;
 
@@ -127,17 +87,12 @@ async fn should_not_find_repositories_of_the_organization() {
 
 #[actix_rt::test]
 async fn should_not_find_repositories_of_a_unknown_organization() {
-  let poll = mock::setup().await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { poll }))
-      .service(organization::scope()),
+  let res = make_request(
+    HttpMethod::Get,
+    "/organization/organization_xxx/repositories",
+    organization::scope(),
   )
   .await;
-  let req = test::TestRequest::get()
-    .uri("/organization/organization_xxx/repositories")
-    .to_request();
-  let res = test::call_service(&app, req).await;
   let status = res.status();
   let body: HttpError = test::read_body_json(res).await;
 

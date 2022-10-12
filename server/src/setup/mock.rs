@@ -1,8 +1,25 @@
+use crate::http::AppState;
 use crate::model::{organization::Organization, repository::Repository, user::User, utils};
 use crate::setup::db::db_connection_poll;
+use actix_web::dev::ServiceResponse;
+use actix_web::Scope;
+use actix_web::{test, web, App};
 use deadpool_postgres;
 use rand;
 use tokio_postgres::{Client, Error as ClientError};
+
+pub enum HttpMethod {
+  Get,
+}
+
+pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope) -> ServiceResponse {
+  let poll = setup().await;
+  let app = test::init_service(App::new().app_data(web::Data::new(AppState { poll })).service(scope)).await;
+  let req = match method {
+    HttpMethod::Get => test::TestRequest::get().uri(uri).to_request(),
+  };
+  test::call_service(&app, req).await
+}
 
 pub async fn setup() -> deadpool_postgres::Pool {
   let poll = db_connection_poll().await.unwrap();

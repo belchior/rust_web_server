@@ -68,11 +68,8 @@ docker-compose run --rm server_test ./scripts/test_coverage.sh
 To debug database
 
 ```sh
-# in development environment
+# in development and test environment
 docker-compose exec database psql -U postgres -d database
-
-# in test environment
-docker-compose exec database psql -U postgres -d test_database
 ```
 
 **Client**

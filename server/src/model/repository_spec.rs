@@ -5,9 +5,10 @@ use pretty_assertions::assert_eq;
 
 #[actix_rt::test]
 async fn should_find_owners_repositories() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let owner_login = "organization_acme".to_owned();
+  let owner_login = format!("organization_acme_{sufix}");
   let pagination_argument = PaginationArguments {
     first: Some(1),
     after: None,
@@ -20,14 +21,15 @@ async fn should_find_owners_repositories() {
     .unwrap();
 
   assert_eq!(repositories.len(), 1);
-  assert_eq!(repositories[0].name, "repository_tux");
+  assert_eq!(repositories[0].name, format!("repository_tux_{sufix}"));
 }
 
 #[actix_rt::test]
 async fn should_dont_panic_when_repository_is_not_found() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let owner_login = "empty_user".to_owned();
+  let owner_login = format!("empty_user_{sufix}");
   let pagination_argument = PaginationArguments {
     first: Some(1),
     after: None,
@@ -44,9 +46,10 @@ async fn should_dont_panic_when_repository_is_not_found() {
 
 #[actix_rt::test]
 async fn should_convert_a_repository_list_into_cursor_connection_of_repositories() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let owner_login = "organization_acme".to_owned();
+  let owner_login = format!("organization_acme_{sufix}");
 
   let pagination_arguments = PaginationArguments {
     first: None,
@@ -75,9 +78,10 @@ async fn should_convert_a_repository_list_into_cursor_connection_of_repositories
 
 #[actix_rt::test]
 async fn should_paginating_repositories_from_start_to_end() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let owner_login = "organization_acme".to_owned();
+  let owner_login = format!("organization_acme_{sufix}");
 
   // should find the first repository
 
@@ -93,7 +97,7 @@ async fn should_paginating_repositories_from_start_to_end() {
     .unwrap();
 
   assert_eq!(repositories.len(), 1);
-  assert_eq!(repositories[0].name, "repository_tux");
+  assert_eq!(repositories[0].name, format!("repository_tux_{sufix}"));
 
   let end_cursor = Some(base64::encode(repositories[0].id.to_string()));
 
@@ -111,7 +115,7 @@ async fn should_paginating_repositories_from_start_to_end() {
     .unwrap();
 
   assert_eq!(repositories.len(), 1);
-  assert_eq!(repositories[0].name, "repository_mar");
+  assert_eq!(repositories[0].name, format!("repository_mar_{sufix}"));
 
   let end_cursor = Some(base64::encode(repositories[0].id.to_string()));
 
@@ -133,9 +137,10 @@ async fn should_paginating_repositories_from_start_to_end() {
 
 #[actix_rt::test]
 async fn should_paginating_repositories_from_end_to_start() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let owner_login = "organization_acme".to_owned();
+  let owner_login = format!("organization_acme_{sufix}");
 
   // should find the last repository
 
@@ -151,7 +156,7 @@ async fn should_paginating_repositories_from_end_to_start() {
     .unwrap();
 
   assert_eq!(repositories.len(), 1);
-  assert_eq!(repositories[0].name, "repository_mar");
+  assert_eq!(repositories[0].name, format!("repository_mar_{sufix}"));
 
   let start_cursor = Some(base64::encode(repositories[0].id.to_string()));
 
@@ -169,7 +174,7 @@ async fn should_paginating_repositories_from_end_to_start() {
     .unwrap();
 
   assert_eq!(repositories.len(), 1);
-  assert_eq!(repositories[0].name, "repository_tux");
+  assert_eq!(repositories[0].name, format!("repository_tux_{sufix}"));
 
   let start_cursor = Some(base64::encode(repositories[0].id.to_string()));
 

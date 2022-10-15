@@ -1,38 +1,57 @@
 use crate::http::{http_handler::HttpError, route::organization};
 use crate::lib::cursor_connection::CursorConnection;
 use crate::model::{organization::Organization, repository::Repository, user::User};
-use crate::setup::mock::{make_request, HttpMethod};
+use crate::setup::mock;
 use actix_web::{http::StatusCode, test};
 use pretty_assertions::assert_eq;
 
 #[actix_rt::test]
 async fn should_match_an_organization() {
-  let res = make_request(HttpMethod::Get, "/organization/organization_foo", organization::scope()).await;
+  let sufix = mock::random_sufix();
+  let login = format!("organization_foo_{sufix}");
+  let res = mock::make_request(
+    mock::HttpMethod::Get,
+    &format!("/organization/{login}"),
+    organization::scope(),
+    &sufix,
+  )
+  .await;
   let status = res.status();
   let body: Organization = test::read_body_json(res).await;
 
   assert_eq!(status, StatusCode::OK);
-  assert_eq!(body.login, "organization_foo");
+  assert_eq!(body.login, login);
 }
 
 #[actix_rt::test]
 async fn should_find_people_of_the_organization() {
-  let res = make_request(
-    HttpMethod::Get,
-    "/organization/organization_foo/people",
+  let sufix = mock::random_sufix();
+  let login = format!("organization_foo_{sufix}");
+  let res = mock::make_request(
+    mock::HttpMethod::Get,
+    &format!("/organization/{login}/people"),
     organization::scope(),
+    &sufix,
   )
   .await;
   let status = res.status();
   let body: CursorConnection<User> = test::read_body_json(res).await;
 
   assert_eq!(status, StatusCode::OK);
-  assert_eq!(body.edges[0].node.login, "user_foo");
+  assert_eq!(body.edges[0].node.login, format!("user_foo_{sufix}"));
 }
 
 #[actix_rt::test]
 async fn should_not_find_people_of_the_organization() {
-  let res = make_request(HttpMethod::Get, "/organization/empty_org/people", organization::scope()).await;
+  let sufix = mock::random_sufix();
+  let login = format!("empty_org_{sufix}");
+  let res = mock::make_request(
+    mock::HttpMethod::Get,
+    &format!("/organization/{login}/people"),
+    organization::scope(),
+    &sufix,
+  )
+  .await;
   let status = res.status();
   let body: CursorConnection<Organization> = test::read_body_json(res).await;
 
@@ -42,10 +61,13 @@ async fn should_not_find_people_of_the_organization() {
 
 #[actix_rt::test]
 async fn should_not_find_people_of_a_unknown_organization() {
-  let res = make_request(
-    HttpMethod::Get,
-    "/organization/organization_xxx/people",
+  let sufix = mock::random_sufix();
+  let login = format!("organization_xxx_{sufix}");
+  let res = mock::make_request(
+    mock::HttpMethod::Get,
+    &format!("/organization/{login}/people"),
     organization::scope(),
+    &sufix,
   )
   .await;
   let status = res.status();
@@ -57,25 +79,31 @@ async fn should_not_find_people_of_a_unknown_organization() {
 
 #[actix_rt::test]
 async fn should_find_repositories_of_the_organization() {
-  let res = make_request(
-    HttpMethod::Get,
-    "/organization/organization_acme/repositories",
+  let sufix = mock::random_sufix();
+  let login = format!("organization_acme_{sufix}");
+  let res = mock::make_request(
+    mock::HttpMethod::Get,
+    &format!("/organization/{login}/repositories"),
     organization::scope(),
+    &sufix,
   )
   .await;
   let status = res.status();
   let body: CursorConnection<Repository> = test::read_body_json(res).await;
 
   assert_eq!(status, StatusCode::OK);
-  assert_eq!(body.edges[0].node.name, "repository_tux");
+  assert_eq!(body.edges[0].node.name, format!("repository_tux_{sufix}"));
 }
 
 #[actix_rt::test]
 async fn should_not_find_repositories_of_the_organization() {
-  let res = make_request(
-    HttpMethod::Get,
-    "/organization/empty_org/repositories",
+  let sufix = mock::random_sufix();
+  let login = format!("empty_org_{sufix}");
+  let res = mock::make_request(
+    mock::HttpMethod::Get,
+    &format!("/organization/{login}/repositories"),
     organization::scope(),
+    &sufix,
   )
   .await;
   let status = res.status();
@@ -87,10 +115,13 @@ async fn should_not_find_repositories_of_the_organization() {
 
 #[actix_rt::test]
 async fn should_not_find_repositories_of_a_unknown_organization() {
-  let res = make_request(
-    HttpMethod::Get,
-    "/organization/organization_xxx/repositories",
+  let sufix = mock::random_sufix();
+  let login = format!("organization_xxx_{sufix}");
+  let res = mock::make_request(
+    mock::HttpMethod::Get,
+    &format!("/organization/{login}/repositories"),
     organization::scope(),
+    &sufix,
   )
   .await;
   let status = res.status();

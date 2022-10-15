@@ -12,8 +12,8 @@ pub enum HttpMethod {
   Get,
 }
 
-pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope) -> ServiceResponse {
-  let poll = setup().await;
+pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope, sufix: &str) -> ServiceResponse {
+  let poll = setup(sufix).await;
   let app = test::init_service(App::new().app_data(web::Data::new(AppState { poll })).service(scope)).await;
   let req = match method {
     HttpMethod::Get => test::TestRequest::get().uri(uri).to_request(),
@@ -21,26 +21,29 @@ pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope) -> Servic
   test::call_service(&app, req).await
 }
 
-pub async fn setup() -> deadpool_postgres::Pool {
+pub async fn setup(sufix: &str) -> deadpool_postgres::Pool {
   let poll = db_connection_poll().await.unwrap();
   let client = poll.get().await.unwrap();
-  drop_collections(&client).await.unwrap();
-  insert_mocked_data(&client).await.unwrap();
+  insert_mocked_data(&client, sufix).await.unwrap();
 
   poll
 }
 
-fn random_id() -> i32 {
+pub fn random_id() -> i32 {
   rand::random::<i32>()
 }
 
-async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
+pub fn random_sufix() -> String {
+  rand::random::<u32>().to_string()
+}
+
+async fn insert_mocked_data(db: &Client, sufix: &str) -> Result<(), ClientError> {
   let organization_foo = Organization {
     avatar_url: "https://foo.com/avatar.jpg".to_owned(),
     description: None,
     id: random_id(),
     location: None,
-    login: "organization_foo".to_owned(),
+    login: format!("organization_foo_{sufix}"),
     name: None,
     url: "https://github.com/foo".to_owned(),
     website_url: None,
@@ -51,7 +54,7 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
     description: None,
     id: random_id(),
     location: None,
-    login: "organization_acme".to_owned(),
+    login: format!("organization_acme_{sufix}"),
     name: None,
     url: "https://github.com/acme".to_owned(),
     website_url: None,
@@ -62,7 +65,7 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
     description: None,
     id: random_id(),
     location: None,
-    login: "empty_org".to_owned(),
+    login: format!("empty_org_{sufix}"),
     name: None,
     url: "https://github.com/empty_org".to_owned(),
     website_url: None,
@@ -74,7 +77,7 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
     bio: None,
     email: "foo@email.com".to_owned(),
     id: random_id(),
-    login: "user_foo".to_owned(),
+    login: format!("user_foo_{sufix}"),
     name: None,
     url: "https://github.com/foo".to_owned(),
     website_url: None,
@@ -85,7 +88,7 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
     bio: None,
     email: "bar@email.com".to_owned(),
     id: random_id(),
-    login: "user_bar".to_owned(),
+    login: format!("user_bar_{sufix}"),
     name: None,
     url: "https://github.com/bar".to_owned(),
     website_url: None,
@@ -96,7 +99,7 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
     bio: None,
     email: "dee@email.com".to_owned(),
     id: random_id(),
-    login: "user_dee".to_owned(),
+    login: format!("user_dee_{sufix}"),
     name: None,
     url: "https://github.com/bar".to_owned(),
     website_url: None,
@@ -107,7 +110,7 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
     bio: None,
     email: "empty_user@email.com".to_owned(),
     id: random_id(),
-    login: "empty_user".to_owned(),
+    login: format!("empty_user_{sufix}"),
     name: None,
     url: "https://github.com/empty_user".to_owned(),
     website_url: None,
@@ -119,8 +122,8 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
     fork_count: 9,
     id: random_id(),
     license_name: None,
-    name: "repository_tux".to_owned(),
-    owner_login: "organization_acme".to_owned(),
+    name: format!("repository_tux_{sufix}"),
+    owner_login: format!("organization_acme_{sufix}"),
     owner_ref: "organizations".to_owned(),
     primary_language: None,
     url: "https://github.com/user_bar/repository_tux".to_owned(),
@@ -130,8 +133,8 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
     fork_count: 12,
     id: random_id(),
     license_name: None,
-    name: "repository_mar".to_owned(),
-    owner_login: "organization_acme".to_owned(),
+    name: format!("repository_mar_{sufix}"),
+    owner_login: format!("organization_acme_{sufix}"),
     owner_ref: "organizations".to_owned(),
     primary_language: None,
     url: "https://github.com/user_bar/repository_mar".to_owned(),
@@ -141,8 +144,8 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
     fork_count: 2,
     id: random_id(),
     license_name: None,
-    name: "repository_bar".to_owned(),
-    owner_login: "user_bar".to_owned(),
+    name: format!("repository_bar_{sufix}"),
+    owner_login: format!("user_bar_{sufix}"),
     owner_ref: "users".to_owned(),
     primary_language: None,
     url: "https://github.com/user_bar/repository_bar".to_owned(),
@@ -152,8 +155,8 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
     fork_count: 2,
     id: random_id(),
     license_name: None,
-    name: "repository_dee".to_owned(),
-    owner_login: "user_dee".to_owned(),
+    name: format!("repository_dee_{sufix}"),
+    owner_login: format!("user_dee_{sufix}"),
     owner_ref: "users".to_owned(),
     primary_language: None,
     url: "https://github.com/user_dee/repository_dee".to_owned(),
@@ -183,16 +186,6 @@ async fn insert_mocked_data(db: &Client) -> Result<(), ClientError> {
   insert_user_organization(db, &user_dee, &organization_acme).await?;
   insert_user_following(db, &user_dee, &user_foo).await?;
   insert_user_following(db, &user_dee, &user_bar).await?;
-
-  Ok(())
-}
-
-async fn drop_collections(db: &Client) -> Result<(), ClientError> {
-  db.execute(
-    "TRUNCATE users_starred_repositories, languages, licenses, repositories, users_organizations, organizations, users_following, users",
-    &[],
-  )
-  .await?;
 
   Ok(())
 }

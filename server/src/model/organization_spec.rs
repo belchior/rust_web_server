@@ -5,19 +5,21 @@ use pretty_assertions::assert_eq;
 
 #[actix_rt::test]
 async fn should_find_un_existing_organization() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let login = format!("organization_foo_{sufix}");
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let login = "organization_foo".to_owned();
   let organization = find_organization_by_login(&db_client, &login).await.unwrap().unwrap();
 
-  assert_eq!(organization.login, "organization_foo");
+  assert_eq!(organization.login, login);
 }
 
 #[actix_rt::test]
 async fn should_not_panic_when_organization_is_not_found() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let login = format!("organization_xxx_{sufix}");
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let login = "organization_xxx".to_owned();
   let organization = find_organization_by_login(&db_client, &login).await.unwrap();
 
   assert_eq!(organization, None);
@@ -25,9 +27,10 @@ async fn should_not_panic_when_organization_is_not_found() {
 
 #[actix_rt::test]
 async fn should_find_organizations_people() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let login = format!("organization_acme_{sufix}");
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let login = "organization_acme".to_owned();
   let pagination_argument = PaginationArguments {
     first: Some(1),
     after: None,
@@ -40,14 +43,15 @@ async fn should_find_organizations_people() {
     .unwrap();
 
   assert_eq!(users.len(), 1);
-  assert_eq!(users[0].login, "user_foo");
+  assert_eq!(users[0].login, format!("user_foo_{sufix}"));
 }
 
 #[actix_rt::test]
 async fn should_dont_panic_when_person_is_not_found() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let login = format!("organization_empty_{sufix}");
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let login = "organization_empty".to_owned();
   let pagination_argument = PaginationArguments {
     first: Some(1),
     after: None,
@@ -64,9 +68,10 @@ async fn should_dont_panic_when_person_is_not_found() {
 
 #[actix_rt::test]
 async fn should_convert_a_organization_list_into_cursor_connection_of_organizations() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let organization_login = format!("organization_acme_{sufix}");
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let organization_login = "organization_acme".to_owned();
   let organization = find_organization_by_login(&db_client, &organization_login)
     .await
     .unwrap()
@@ -97,9 +102,10 @@ async fn should_convert_a_organization_list_into_cursor_connection_of_organizati
 
 #[actix_rt::test]
 async fn should_paginating_people_from_start_to_end() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let login = format!("organization_acme_{sufix}");
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let login = "organization_acme".to_owned();
 
   // should find the first user
 
@@ -115,7 +121,7 @@ async fn should_paginating_people_from_start_to_end() {
     .unwrap();
 
   assert_eq!(users.len(), 1);
-  assert_eq!(users[0].login, "user_foo");
+  assert_eq!(users[0].login, format!("user_foo_{sufix}"));
 
   let end_cursor = Some(base64::encode(users[0].id.to_string()));
 
@@ -133,7 +139,7 @@ async fn should_paginating_people_from_start_to_end() {
     .unwrap();
 
   assert_eq!(users.len(), 1);
-  assert_eq!(users[0].login, "user_dee");
+  assert_eq!(users[0].login, format!("user_dee_{sufix}"));
 
   let end_cursor = Some(base64::encode(users[0].id.to_string()));
 
@@ -155,9 +161,10 @@ async fn should_paginating_people_from_start_to_end() {
 
 #[actix_rt::test]
 async fn should_paginating_people_from_end_to_start() {
-  let poll = mock::setup().await;
+  let sufix = mock::random_sufix();
+  let login = format!("organization_acme_{sufix}");
+  let poll = mock::setup(&sufix).await;
   let db_client = poll.get().await.unwrap();
-  let login = "organization_acme".to_owned();
 
   // should find the last user
 
@@ -173,7 +180,7 @@ async fn should_paginating_people_from_end_to_start() {
     .unwrap();
 
   assert_eq!(users.len(), 1);
-  assert_eq!(users[0].login, "user_dee");
+  assert_eq!(users[0].login, format!("user_dee_{sufix}"));
 
   let start_cursor = Some(base64::encode(users[0].id.to_string()));
 
@@ -191,7 +198,7 @@ async fn should_paginating_people_from_end_to_start() {
     .unwrap();
 
   assert_eq!(users.len(), 1);
-  assert_eq!(users[0].login, "user_foo");
+  assert_eq!(users[0].login, format!("user_foo_{sufix}"));
 
   let start_cursor = Some(base64::encode(users[0].id.to_string()));
 

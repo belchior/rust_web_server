@@ -11,7 +11,7 @@ use tracing;
 use tracing_actix_web::TracingLogger;
 
 pub struct AppState {
-  db: mongodb::Database,
+  pub(crate) db: mongodb::Database,
 }
 
 #[actix_web::main]

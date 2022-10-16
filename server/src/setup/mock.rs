@@ -1,4 +1,5 @@
-use crate::setup::db::db_client_connection;
+use crate::{http::AppState, setup::db::db_client_connection};
+use actix_web::{dev::ServiceResponse, test, web, App, Scope};
 use mongodb::{
   bson::{self, doc, oid::ObjectId},
   error::Error as ModelError,
@@ -6,10 +7,30 @@ use mongodb::{
   Database,
 };
 
-pub async fn setup() -> Database {
+pub enum HttpMethod {
+  Get,
+}
+
+pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope, sufix: &str) -> ServiceResponse {
+  let db = setup(sufix).await;
+  let app = test::init_service(
+    App::new()
+      .app_data(web::Data::new(AppState { db: db.clone() }))
+      .service(scope),
+  )
+  .await;
+
+  let req = match method {
+    HttpMethod::Get => test::TestRequest::get().uri(uri).to_request(),
+  };
+
+  test::call_service(&app, req).await
+}
+
+pub async fn setup(sufix: &str) -> Database {
   let db = db_client_connection().await.unwrap();
-  drop_collections(&db).await;
-  insert_mocked_data(&db).await.unwrap();
+  insert_mocked_data(&db, sufix).await.unwrap();
+
   db
 }
 
@@ -17,7 +38,11 @@ fn random_id() -> ObjectId {
   ObjectId::new()
 }
 
-async fn insert_mocked_data(db: &Database) -> Result<(), ModelError> {
+pub fn random_sufix() -> String {
+  ObjectId::new().to_string()
+}
+
+async fn insert_mocked_data(db: &Database, sufix: &str) -> Result<(), ModelError> {
   let organization_foo_id = random_id();
   let organization_acme_id = random_id();
   let user_foo_id = random_id();
@@ -32,7 +57,7 @@ async fn insert_mocked_data(db: &Database) -> Result<(), ModelError> {
     "__typename": "Organization",
     "_id": organization_foo_id,
     "avatarUrl": "https://foo.com/avatar.jpg",
-    "login": "organization_foo",
+    "login": format!("organization_foo_{sufix}"),
     "people": vec![doc!{ "_id": user_foo_id, "ref": "users" }],
     "url": "https://github.com/foo",
   };
@@ -40,7 +65,7 @@ async fn insert_mocked_data(db: &Database) -> Result<(), ModelError> {
     "__typename": "Organization",
     "_id": organization_acme_id,
     "avatarUrl": "https://acme.com/avatar.jpg",
-    "login": "organization_acme",
+    "login": format!("organization_acme_{sufix}"),
     "people": vec![
       doc!{ "_id": user_foo_id, "ref": "users" },
       doc!{ "_id": user_dee_id, "ref": "users" },
@@ -51,7 +76,7 @@ async fn insert_mocked_data(db: &Database) -> Result<(), ModelError> {
     "__typename": "Organization",
     "_id": random_id(),
     "avatarUrl": "https://empty_org.com/avatar.jpg",
-    "login": "empty_org",
+    "login": format!("empty_org_{sufix}"),
     "people": vec![] as Vec<bson::Document>,
     "url": "https://github.com/empty_org",
   };
@@ -65,7 +90,7 @@ async fn insert_mocked_data(db: &Database) -> Result<(), ModelError> {
       doc! { "_id": user_bar_id },
       doc! { "_id": user_dee_id },
     ],
-    "login": "user_foo",
+    "login": format!("user_foo_{sufix}"),
     "organizations": vec![
       doc! { "_id": organization_foo_id },
       doc! { "_id": organization_acme_id },
@@ -83,7 +108,7 @@ async fn insert_mocked_data(db: &Database) -> Result<(), ModelError> {
     "followers": vec![
       doc! { "_id": user_dee_id },
     ],
-    "login": "user_bar",
+    "login": format!("user_bar_{sufix}"),
     "starredRepositories": vec![
       doc! { "_id": repository_tux_id },
       doc! { "_id": repository_dee_id },
@@ -99,7 +124,7 @@ async fn insert_mocked_data(db: &Database) -> Result<(), ModelError> {
       doc! { "_id": user_foo_id },
       doc! { "_id": user_bar_id },
     ],
-    "login": "user_dee",
+    "login": format!("user_dee_{sufix}"),
     "organizations": vec![doc! { "_id": organization_acme_id }],
     "url":"https://github.com/bar",
   };
@@ -108,32 +133,32 @@ async fn insert_mocked_data(db: &Database) -> Result<(), ModelError> {
     "_id": random_id(),
     "avatarUrl": "https://empty_user.com/avatar.jpg",
     "email": "empty_user@email.com",
-    "login": "empty_user",
+    "login": format!("empty_user_{sufix}"),
     "url":"https://github.com/empty_user",
   };
 
   let repository_tux = doc! {
     "_id": repository_tux_id,
     "forkCount": 9.0,
-    "name": "repository_tux",
+    "name": format!("repository_tux_{sufix}"),
     "owner": { "_id": organization_acme_id, "ref": "organizations" }
   };
   let repository_mar = doc! {
     "_id": repository_mar_id,
     "forkCount": 12.0,
-    "name": "repository_mar",
+    "name": format!("repository_mar_{sufix}"),
     "owner": { "_id": organization_acme_id, "ref": "organizations" }
   };
   let repository_bar = doc! {
     "_id": repository_bar_id,
     "forkCount": 2.0,
-    "name": "repository_bar",
+    "name": format!("repository_bar_{sufix}"),
     "owner": { "_id": user_bar_id, "ref": "users" }
   };
   let repository_dee = doc! {
     "_id": repository_dee_id,
     "forkCount": 2.0,
-    "name": "repository_dee",
+    "name": format!("repository_dee_{sufix}"),
     "owner": { "_id": user_dee_id, "ref": "users" }
   };
 
@@ -150,16 +175,6 @@ async fn insert_mocked_data(db: &Database) -> Result<(), ModelError> {
   insert_repository(db, repository_dee).await?;
 
   Ok(())
-}
-
-async fn drop_collections(db: &Database) {
-  let orgs_collection = db.collection::<bson::Document>("organizations");
-  let repo_collection = db.collection::<bson::Document>("repositories");
-  let users_collection = db.collection::<bson::Document>("users");
-
-  orgs_collection.drop(None).await.unwrap();
-  repo_collection.drop(None).await.unwrap();
-  users_collection.drop(None).await.unwrap();
 }
 
 async fn insert_organization(db: &Database, document: bson::Document) -> Result<InsertOneResult, ModelError> {

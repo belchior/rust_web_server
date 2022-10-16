@@ -13,7 +13,7 @@ mkdir -p "$COVERAGE_OUTPUT"
 mkdir -p "$COVERAGE_TARGET"
 rm -f "$COVERAGE_TARGET/debug/deps/$PKG_NAME"*
 
-RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="$COVERAGE_TARGET/$PKG_NAME-%m.profraw" cargo test --target-dir $COVERAGE_TARGET -- --test-threads=1;
+RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="$COVERAGE_TARGET/$PKG_NAME-%m.profraw" cargo test --target-dir $COVERAGE_TARGET;
 
 cargo profdata -- merge -sparse $COVERAGE_TARGET/$PKG_NAME-*.profraw -o $COVERAGE_TARGET/$PKG_NAME.profdata;
 

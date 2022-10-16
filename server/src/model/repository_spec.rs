@@ -5,8 +5,9 @@ use pretty_assertions::assert_eq;
 
 #[actix_rt::test]
 async fn should_find_users_repositories() {
-  let db = mock::setup().await;
-  let login = "user_bar".to_owned();
+  let sufix = mock::random_sufix();
+  let login = format!("user_bar_{sufix}");
+  let db = mock::setup(&sufix).await;
   let user = user::find_user_by_login(&db, &login).await.unwrap().unwrap();
   let pagination_argument = PaginationArguments {
     first: Some(1),
@@ -20,13 +21,14 @@ async fn should_find_users_repositories() {
     .unwrap();
 
   assert_eq!(repositories.len(), 1);
-  assert_eq!(repositories[0].name, "repository_bar");
+  assert_eq!(repositories[0].name, format!("repository_bar_{sufix}"));
 }
 
 #[actix_rt::test]
 async fn should_dont_panic_when_repository_is_not_found() {
-  let db = mock::setup().await;
-  let login = "empty_user".to_owned();
+  let sufix = mock::random_sufix();
+  let login = format!("empty_user_{sufix}");
+  let db = mock::setup(&sufix).await;
   let user = user::find_user_by_login(&db, &login).await.unwrap().unwrap();
   let pagination_argument = PaginationArguments {
     first: Some(1),
@@ -44,8 +46,9 @@ async fn should_dont_panic_when_repository_is_not_found() {
 
 #[actix_rt::test]
 async fn should_convert_a_repository_list_into_cursor_connection_of_repositories() {
-  let db = mock::setup().await;
-  let owner_login = "organization_acme".to_owned();
+  let sufix = mock::random_sufix();
+  let owner_login = format!("organization_acme_{sufix}");
+  let db = mock::setup(&sufix).await;
   let organization = organization::find_organization_by_login(&db, &owner_login)
     .await
     .unwrap()
@@ -67,7 +70,7 @@ async fn should_convert_a_repository_list_into_cursor_connection_of_repositories
     .unwrap();
 
   assert_eq!(cursor_connection.edges.len(), 1);
-  assert_eq!(cursor_connection.edges[0].node.name, "repository_tux");
+  assert_eq!(cursor_connection.edges[0].node.name, format!("repository_tux_{sufix}"));
   assert_eq!(cursor_connection.page_info.has_previous_page, false);
   assert_eq!(cursor_connection.page_info.has_next_page, true);
 }
@@ -76,8 +79,9 @@ async fn should_convert_a_repository_list_into_cursor_connection_of_repositories
 
 #[actix_rt::test]
 async fn should_paginating_repositories_from_start_to_end() {
-  let db = mock::setup().await;
-  let login = "organization_acme".to_owned();
+  let sufix = mock::random_sufix();
+  let login = format!("organization_acme_{sufix}");
+  let db = mock::setup(&sufix).await;
   let owner = organization::find_organization_by_login(&db, &login).await;
   let owner = owner.unwrap().unwrap();
 
@@ -95,7 +99,7 @@ async fn should_paginating_repositories_from_start_to_end() {
     .unwrap();
 
   assert_eq!(repositories.len(), 1);
-  assert_eq!(repositories[0].name, "repository_tux");
+  assert_eq!(repositories[0].name, format!("repository_tux_{sufix}"));
 
   let end_cursor = Some(base64::encode(repositories[0]._id.to_hex()));
 
@@ -113,7 +117,7 @@ async fn should_paginating_repositories_from_start_to_end() {
     .unwrap();
 
   assert_eq!(repositories.len(), 1);
-  assert_eq!(repositories[0].name, "repository_mar");
+  assert_eq!(repositories[0].name, format!("repository_mar_{sufix}"));
 
   let end_cursor = Some(base64::encode(repositories[0]._id.to_hex()));
 
@@ -135,8 +139,9 @@ async fn should_paginating_repositories_from_start_to_end() {
 
 #[actix_rt::test]
 async fn should_paginating_repositories_from_end_to_start() {
-  let db = mock::setup().await;
-  let login = "organization_acme".to_owned();
+  let sufix = mock::random_sufix();
+  let login = format!("organization_acme_{sufix}");
+  let db = mock::setup(&sufix).await;
   let owner = organization::find_organization_by_login(&db, &login).await;
   let owner = owner.unwrap().unwrap();
 
@@ -154,7 +159,7 @@ async fn should_paginating_repositories_from_end_to_start() {
     .unwrap();
 
   assert_eq!(repositories.len(), 1);
-  assert_eq!(repositories[0].name, "repository_mar");
+  assert_eq!(repositories[0].name, format!("repository_mar_{sufix}"));
 
   let start_cursor = Some(base64::encode(repositories[0]._id.to_hex()));
 
@@ -172,7 +177,7 @@ async fn should_paginating_repositories_from_end_to_start() {
     .unwrap();
 
   assert_eq!(repositories.len(), 1);
-  assert_eq!(repositories[0].name, "repository_tux");
+  assert_eq!(repositories[0].name, format!("repository_tux_{sufix}"));
 
   let start_cursor = Some(base64::encode(repositories[0]._id.to_hex()));
 

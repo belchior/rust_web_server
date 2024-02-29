@@ -106,7 +106,7 @@ fn query_find_repositories_by_owner_login<'a>(
   let query = match direction {
     Direction::Forward => {
       if let Some(id) = repository_id {
-        select_base = select_base.and("id > $3 /* last_id */");
+        select_base = select_base.where_clause("id > $3 /* last_id */");
         params.push(id);
       }
 
@@ -114,7 +114,7 @@ fn query_find_repositories_by_owner_login<'a>(
     }
     Direction::Backward => {
       if let Some(id) = repository_id {
-        select_base = select_base.and("id < $3 /* first_id */");
+        select_base = select_base.where_clause("id < $3 /* first_id */");
         params.push(id);
       }
 
@@ -145,11 +145,11 @@ fn query_pages_previous_and_next<'a>(
   let select_previous = select_base
     .clone()
     .select("'previous' as page")
-    .and("id < $2 /* first_id */");
+    .where_clause("id < $2 /* first_id */");
   let select_next = select_base
     .clone()
     .select("'next' as page")
-    .and("id > $3 /* last_id */");
+    .where_clause("id > $3 /* last_id */");
 
   let query = select_previous.union(select_next).as_string();
   let params: Vec<QueryParam> = vec![owner_login, first_item_id, last_item_id];

@@ -212,7 +212,7 @@ fn query_find_followers_by_login<'a>(
       params.push(limit);
 
       if let Some(follower_id) = follower_id {
-        select_followers_reverse = select_followers_reverse.and("id < $3::int");
+        select_followers_reverse = select_followers_reverse.where_clause("id < $3::int");
         params.push(follower_id);
       }
 
@@ -229,7 +229,7 @@ fn query_find_followers_by_login<'a>(
       params.push(limit);
 
       if let Some(follower_id) = follower_id {
-        select_followers = select_followers.and("u.id > $3");
+        select_followers = select_followers.where_clause("u.id > $3");
         params.push(follower_id);
       }
 
@@ -266,7 +266,7 @@ fn query_find_followed_by_login<'a>(
       params.push(limit);
 
       if let Some(followed_id) = followed_id {
-        select_following_reverse = select_following_reverse.and("id < $3::int");
+        select_following_reverse = select_following_reverse.where_clause("id < $3::int");
         params.push(followed_id);
       }
 
@@ -283,7 +283,7 @@ fn query_find_followed_by_login<'a>(
       params.push(limit);
 
       if let Some(followed_id) = followed_id {
-        select_following = select_following.and("u.id > $3");
+        select_following = select_following.where_clause("u.id > $3");
         params.push(followed_id);
       }
 
@@ -321,7 +321,7 @@ fn query_find_organizations_by_user_login<'a>(
       params.push(limit);
 
       if let Some(org_id) = org_id {
-        select_org_reverse = select_org_reverse.and("id < $3::int");
+        select_org_reverse = select_org_reverse.where_clause("id < $3::int");
         params.push(org_id);
       }
 
@@ -338,7 +338,7 @@ fn query_find_organizations_by_user_login<'a>(
       params.push(limit);
 
       if let Some(org_id) = org_id {
-        select_org = select_org.and("o.id > $3");
+        select_org = select_org.where_clause("o.id > $3");
         params.push(org_id);
       }
 
@@ -364,11 +364,11 @@ fn query_followed_pages_previous_and_next<'a>(
   let select_previous = select_base
     .clone()
     .select("'previous' as page")
-    .and("u.id < $2 /* first_id */");
+    .where_clause("u.id < $2 /* first_id */");
   let select_next = select_base
     .clone()
     .select("'next' as page")
-    .and("u.id > $3 /* last_id */");
+    .where_clause("u.id > $3 /* last_id */");
   let query = select_previous.union(select_next).as_string();
   let params: Vec<QueryParam> = vec![user_login, first_item_id, last_item_id];
 
@@ -390,11 +390,11 @@ fn query_followers_pages_previous_and_next<'a>(
   let select_previous = select_base
     .clone()
     .select("'previous' as page")
-    .and("u.id < $2 /* first_id */");
+    .where_clause("u.id < $2 /* first_id */");
   let select_next = select_base
     .clone()
     .select("'next' as page")
-    .and("u.id > $3 /* last_id */");
+    .where_clause("u.id > $3 /* last_id */");
   let query = select_previous.union(select_next).as_string();
   let params: Vec<QueryParam> = vec![user_login, first_item_id, last_item_id];
 
@@ -417,11 +417,11 @@ fn query_organizations_pages_previous_and_next<'a>(
   let select_previous = select_base
     .clone()
     .select("'previous' as page")
-    .and("u.id < $2 /* first_id */");
+    .where_clause("u.id < $2 /* first_id */");
   let select_next = select_base
     .clone()
     .select("'next' as page")
-    .and("u.id > $3 /* last_id */");
+    .where_clause("u.id > $3 /* last_id */");
   let query = select_previous.union(select_next).as_string();
   let params: Vec<QueryParam> = vec![owner_login, first_item_id, last_item_id];
 
@@ -455,7 +455,7 @@ fn query_find_starred_repositories_by_user_login<'a>(
       params.push(limit);
 
       if let Some(repo_id) = repo_id {
-        select_repo_reverse = select_repo_reverse.and("id < $3::int");
+        select_repo_reverse = select_repo_reverse.where_clause("id < $3::int");
         params.push(repo_id);
       }
 
@@ -472,7 +472,7 @@ fn query_find_starred_repositories_by_user_login<'a>(
       params.push(limit);
 
       if let Some(repo_id) = repo_id {
-        select_repo = select_repo.and("r.id > $3");
+        select_repo = select_repo.where_clause("r.id > $3");
         params.push(repo_id);
       }
 

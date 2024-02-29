@@ -9,9 +9,10 @@ PKG_NAME="$(grep 'name\s*=\s*"' Cargo.toml | sed -E 's/.*"(.*)"/\1/')"
 COVERAGE_OUTPUT="coverage"
 COVERAGE_TARGET="target/coverage"
 
+rm -fr "$COVERAGE_TARGET"
 mkdir -p "$COVERAGE_OUTPUT"
 mkdir -p "$COVERAGE_TARGET"
-rm -f "$COVERAGE_TARGET/debug/deps/$PKG_NAME"*
+clear
 
 RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="$COVERAGE_TARGET/$PKG_NAME-%m.profraw" cargo test --target-dir $COVERAGE_TARGET;
 

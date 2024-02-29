@@ -124,7 +124,7 @@ fn query_find_people_by_login<'a>(
       params.push(limit);
 
       if let Some(user_id) = user_id {
-        select_people_reverse = select_people_reverse.and("id < $3::int");
+        select_people_reverse = select_people_reverse.where_clause("id < $3::int");
         params.push(user_id);
       }
 
@@ -141,7 +141,7 @@ fn query_find_people_by_login<'a>(
       params.push(limit);
 
       if let Some(user_id) = user_id {
-        select_people = select_people.and("u.id > $3");
+        select_people = select_people.where_clause("u.id > $3");
         params.push(user_id);
       }
 
@@ -168,11 +168,11 @@ fn query_pages_previous_and_next<'a>(
   let select_previous = select_base
     .clone()
     .select("'previous' as page")
-    .and("u.id < $2 /* first_id */");
+    .where_clause("u.id < $2 /* first_id */");
   let select_next = select_base
     .clone()
     .select("'next' as page")
-    .and("u.id > $3 /* last_id */");
+    .where_clause("u.id > $3 /* last_id */");
   let query = select_previous.union(select_next).as_string();
   let params: Vec<QueryParam> = vec![owner_login, first_item_id, last_item_id];
 

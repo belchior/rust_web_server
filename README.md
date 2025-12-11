@@ -20,13 +20,13 @@
 To start developing you should build the `base_image` for `server` and `client` running the command below
 
 ```sh
-docker-compose build server_base_image client_base_image
+docker compose build server_base_image client_base_image
 ```
 
 After that you can start both using the command
 
 ```sh
-docker-compose up client server
+docker compose up client server
 ```
 
 
@@ -37,42 +37,42 @@ The `base_image` contains all compiled dependencies to be used in `development`,
 You can build it manually with
 
 ```sh
-docker-compose build server_base_image
+docker compose build server_base_image
 ```
 
 To start's server in development mode
 
 ```sh
-docker-compose up server
+docker compose up server
 ```
 
 To build server for production
 
 ```sh
-docker-compose build server_build
+docker compose build server_build
 ```
 
 To run tests
 
 ```sh
 # in watch mode
-docker-compose run --rm server_test
+docker compose run --rm server_test
 
 # for single execution
-docker-compose run --rm server_test ./scripts/test.sh
+docker compose run --rm server_test ./scripts/test.sh
 
 # for single execution with coverage
-docker-compose run --rm server_test ./scripts/test_coverage.sh
+docker compose run --rm server_test ./scripts/test_coverage.sh
 ```
 
 To debug database
 
 ```sh
 # in development environment
-docker-compose exec database mongo database
+docker compose exec database mongo database
 
 # in test environment
-docker-compose exec database mongo test_database
+docker compose exec database mongo test_database
 ```
 
 **Client**
@@ -82,19 +82,19 @@ As the same as server the `base_image` contains all dependencies to be used in `
 You can build it manually with
 
 ```sh
-docker-compose build client_base_image
+docker compose build client_base_image
 ```
 
 To start's in development mode
 
 ```sh
-docker-compose up client
+docker compose up client
 ```
 
 To build client for production
 
 ```sh
-docker-compose build client_build
+docker compose build client_build
 ```
 
 ## References

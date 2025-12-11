@@ -1,9 +1,10 @@
 #!/bin/sh
 
 # Prerequisites
-# cargo clean;
-# cargo install rustfilt cargo-binutils
+# cargo install rustfilt@0.2.1 cargo-binutils@0.3.6
 # rustup component add llvm-tools-preview
+
+clear
 
 PKG_NAME="$(grep 'name\s*=\s*"' Cargo.toml | sed -E 's/.*"(.*)"/\1/')"
 COVERAGE_OUTPUT="coverage"

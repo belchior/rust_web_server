@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   server_base_image:
-    image: server_base_image
-    container_name: server_base_image
+    image: server_base_image_mongo
+    container_name: server_base_image_mongo
     build:
       context: ./server
       dockerfile: Dockerfile.base
@@ -17,7 +15,7 @@ services:
       - server_base_image
 
   server:
-    image: server_base_image
+    image: server_base_image_mongo
     container_name: server
     command: scripts/start_dev.sh
     ports:
@@ -25,8 +23,6 @@ services:
     environment:
       - DATABASE_URI=mongodb://database:27017
       - DATABASE_NAME=database
-      - OTEL_EXPORTER_JAEGER_AGENT_HOST=telemetry
-      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
     volumes:
       - ./server/.env:/server/.env:ro
       - ./server/Cargo.lock:/server/Cargo.lock:ro
@@ -36,10 +32,9 @@ services:
     depends_on:
       - server_base_image
       - database_seed
-      - telemetry
 
   server_test:
-    image: server_base_image
+    image: server_base_image_mongo
     container_name: server_test
     command: scripts/test_watch.sh
     environment:
@@ -85,6 +80,9 @@ services:
       - "16686:16686"
       - "14268:14268"
       - "9411:9411"
+      - "4317:4317"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
 
   client_base_image:
     image: client_base_image

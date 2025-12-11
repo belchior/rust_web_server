@@ -1,8 +1,8 @@
 {
   "recommendations": [
-    "bungcip.better-toml",
     "vadimcn.vscode-lldb",
     "dbaeumer.vscode-eslint",
-    "rust-lang.rust-analyzer"
+    "rust-lang.rust-analyzer",
+    "tamasfe.even-better-toml"
   ]
 }

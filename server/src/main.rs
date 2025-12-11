@@ -1,11 +1,9 @@
-mod http;
-mod lib;
-mod model;
-mod setup;
+mod application;
+mod infrastructure;
 
 use dotenv::dotenv;
 
 fn main() -> () {
   dotenv().ok();
-  http::main().expect("start http server");
+  infrastructure::http_server::main().expect("start http server");
 }

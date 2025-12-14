@@ -1,12 +1,10 @@
-mod http;
-mod lib;
-mod model;
-mod setup;
+mod application;
+mod infrastructure;
 
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 fn main() -> () {
   dotenv().ok();
-  env_logger::init();
-  http::main().expect("start http server");
+  infrastructure::telemetry::start_tracing();
+  infrastructure::http_server::main().expect("start http server");
 }

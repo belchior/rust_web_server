@@ -1,4 +1,4 @@
-FROM rust:1.70-slim
+FROM rust:1.91-slim
 WORKDIR /server
 COPY Cargo.* ./
 
@@ -6,20 +6,20 @@ COPY Cargo.* ./
 RUN mkdir src && echo "fn main() {}" >> src/main.rs
 
 # Install and compile dependencies to development
-RUN cargo install cargo-watch &&\
+RUN cargo install cargo-watch@8.5.3 &&\
     cargo build
 
 # Install and compile dependencies to tests
-RUN cargo install rustfilt cargo-binutils &&\
+RUN cargo install rustfilt@0.2.1 cargo-binutils@0.3.6 &&\
     rustup component add llvm-tools-preview &&\
     cargo test --no-run &&\
     RUSTFLAGS="-C instrument-coverage" cargo test --target-dir target/coverage --no-run
 
 # Install and compile dependencies to production
-RUN apt-get update &&\
-    apt-get install musl-tools -y &&\
-    rustup target add x86_64-unknown-linux-musl &&\
-    cargo build --release --target=x86_64-unknown-linux-musl
+# RUN apt-get update &&\
+#     apt-get install musl-tools -y &&\
+#     rustup target add x86_64-unknown-linux-musl &&\
+#     cargo build --release --target=x86_64-unknown-linux-musl
 
 # # Remove targets builded from fake project
 RUN rm -fr src &&\

@@ -4,7 +4,7 @@
     "dbaeumer.vscode-eslint",
     "ms-azuretools.vscode-docker",
     "rust-lang.rust-analyzer",
-    "serayuzgur.crates",
-    "tamasfe.even-better-toml"
+    "tamasfe.even-better-toml",
+    "fill-labs.dependi"
   ]
 }

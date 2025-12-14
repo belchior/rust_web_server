@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   server_base_image:
     image: server_base_image_postgres

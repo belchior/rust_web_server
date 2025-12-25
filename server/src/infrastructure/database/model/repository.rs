@@ -54,10 +54,10 @@ impl From<Row> for Repository {
 // Finds
 
 pub async fn find_repositories_by_owner_login(
-  db: &database::DBConnection,
   owner_login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<Repository>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let repository_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_repositories_by_owner_login(owner_login, &repository_id, &direction, &limit);
@@ -70,10 +70,10 @@ pub async fn find_repositories_by_owner_login(
 // Cursor connections
 
 pub async fn repositories_to_cursor_connection(
-  db: &database::DBConnection,
   owner_login: &String,
   result: Result<Vec<Repository>, ClientError>,
 ) -> Result<CursorConnection<Repository>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let result = result?;
   let reference_from = |item: &Repository| item.id.to_string();
 
@@ -85,7 +85,7 @@ pub async fn repositories_to_cursor_connection(
   let first_item_id = result.first().unwrap().id;
   let last_item_id = result.last().unwrap().id;
   let (query, params) = query_pages_previous_and_next(owner_login, &first_item_id, &last_item_id);
-  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(db, query, params).await?;
+  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
   let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
 
   Ok(items)

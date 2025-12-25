@@ -1,6 +1,6 @@
 use crate::{
   application::{self, profile::Profile},
-  infrastructure::http_server::{AppState, utils::HttpError},
+  infrastructure::http_server::utils::HttpError,
 };
 use actix_web::{HttpResponse, Responder, Scope, web};
 use tracing;
@@ -9,10 +9,8 @@ pub fn scope() -> Scope {
   web::scope("/profile/{login}").route("", web::get().to(profile))
 }
 
-async fn profile(state: web::Data<AppState>, login: web::Path<String>) -> impl Responder {
-  let db = state.poll.get().await.unwrap();
-
-  let profile = application::profile::find_profile(&db, &login).await;
+async fn profile(login: web::Path<String>) -> impl Responder {
+  let profile = application::profile::find_profile(&login).await;
 
   match profile {
     Ok(Some(Profile::User(user))) => {

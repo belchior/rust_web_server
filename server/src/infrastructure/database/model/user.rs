@@ -46,10 +46,10 @@ impl From<Row> for User {
 // Finds
 
 pub async fn find_followers_by_login(
-  db: &database::DBConnection,
   user_login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<User>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let follower_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_followers_by_login(user_login, &follower_id, &direction, &limit);
@@ -60,10 +60,10 @@ pub async fn find_followers_by_login(
 }
 
 pub async fn find_following_by_login(
-  db: &database::DBConnection,
   user_login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<User>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let follower_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_following_by_login(user_login, &follower_id, &direction, &limit);
@@ -74,10 +74,10 @@ pub async fn find_following_by_login(
 }
 
 pub async fn find_organizations_by_user_login(
-  db: &database::DBConnection,
   user_login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<Organization>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let org_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_organizations_by_user_login(user_login, &org_id, &direction, &limit);
@@ -91,10 +91,10 @@ pub async fn find_organizations_by_user_login(
 }
 
 pub async fn find_starred_repositories_by_user_login(
-  db: &database::DBConnection,
   user_login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<Repository>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let repo_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_starred_repositories_by_user_login(user_login, &repo_id, &direction, &limit);
@@ -104,7 +104,8 @@ pub async fn find_starred_repositories_by_user_login(
   Ok(repositories)
 }
 
-pub async fn find_user_by_login(db: &database::DBConnection, login: &String) -> Result<Option<User>, ClientError> {
+pub async fn find_user_by_login(login: &String) -> Result<Option<User>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let query = sql::Select::new()
     .select("*")
     .from("users")
@@ -125,10 +126,10 @@ pub async fn find_user_by_login(db: &database::DBConnection, login: &String) -> 
 // Cursor connections
 
 pub async fn followers_to_cursor_connection(
-  db: &database::DBConnection,
   user_login: &String,
   result: Result<Vec<User>, ClientError>,
 ) -> Result<CursorConnection<User>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let result = result?;
   let reference_from = |item: &User| item.id.to_string();
 
@@ -140,17 +141,17 @@ pub async fn followers_to_cursor_connection(
   let first_item_id = result.first().unwrap().id;
   let last_item_id = result.last().unwrap().id;
   let (query, params) = query_followers_pages_previous_and_next(user_login, &first_item_id, &last_item_id);
-  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(db, query, params).await?;
+  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
   let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
 
   Ok(items)
 }
 
 pub async fn following_to_cursor_connection(
-  db: &database::DBConnection,
   user_login: &String,
   result: Result<Vec<User>, ClientError>,
 ) -> Result<CursorConnection<User>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let result = result?;
   let reference_from = |item: &User| item.id.to_string();
 
@@ -162,17 +163,17 @@ pub async fn following_to_cursor_connection(
   let first_item_id = result.first().unwrap().id;
   let last_item_id = result.last().unwrap().id;
   let (query, params) = query_followed_pages_previous_and_next(user_login, &first_item_id, &last_item_id);
-  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(db, query, params).await?;
+  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
   let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
 
   Ok(items)
 }
 
 pub async fn users_organizations_to_cursor_connection(
-  db: &database::DBConnection,
   owner_login: &String,
   result: Result<Vec<Organization>, ClientError>,
 ) -> Result<CursorConnection<Organization>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let result = result?;
   let reference_from = |item: &Organization| item.id.to_string();
 
@@ -184,7 +185,7 @@ pub async fn users_organizations_to_cursor_connection(
   let first_item_id = result.first().unwrap().id;
   let last_item_id = result.last().unwrap().id;
   let (query, params) = query_organizations_pages_previous_and_next(owner_login, &first_item_id, &last_item_id);
-  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(db, query, params).await?;
+  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
   let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
 
   Ok(items)

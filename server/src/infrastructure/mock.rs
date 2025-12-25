@@ -1,8 +1,7 @@
 use crate::infrastructure::database::{
   self, DBConnection, organization::Organization, repository::Repository, user::User, utils,
 };
-use crate::infrastructure::http_server::AppState;
-use actix_web::{App, Scope, dev::ServiceResponse, test, web};
+use actix_web::{App, Scope, dev::ServiceResponse, test};
 use rand;
 use tokio_postgres::Error as ClientError;
 
@@ -11,20 +10,18 @@ pub enum HttpMethod {
 }
 
 pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope, sufix: &str) -> ServiceResponse {
-  let poll = setup(sufix).await;
-  let app = test::init_service(App::new().app_data(web::Data::new(AppState { poll })).service(scope)).await;
+  let _ = setup(sufix).await;
+  let app = test::init_service(App::new().service(scope)).await;
   let req = match method {
     HttpMethod::Get => test::TestRequest::get().uri(uri).to_request(),
   };
   test::call_service(&app, req).await
 }
 
-pub async fn setup(sufix: &str) -> deadpool_postgres::Pool {
-  let poll = database::db_connection_poll().await.unwrap();
-  let client = poll.get().await.unwrap();
-  insert_mocked_data(&client, sufix).await.unwrap();
-
-  poll
+pub async fn setup(sufix: &str) {
+  let pool = database::get_connection().await;
+  let db = pool.get().await.unwrap();
+  insert_mocked_data(&db, sufix).await.unwrap();
 }
 
 pub fn random_id() -> i32 {

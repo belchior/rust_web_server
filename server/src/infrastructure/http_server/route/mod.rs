@@ -1,6 +1,6 @@
-mod organization;
-mod profile;
-mod user;
+pub mod organization;
+pub mod profile;
+pub mod user;
 
 use crate::infrastructure::http_server::utils::HttpError;
 use actix_web::{HttpResponse, Route, web};
@@ -18,13 +18,3 @@ pub fn not_found() -> Route {
     HttpResponse::BadRequest().json(result_error)
   })
 }
-
-#[cfg(test)]
-mod organization_spec;
-#[cfg(test)]
-mod profile_spec;
-#[cfg(test)]
-mod user_spec;
-
-#[cfg(test)]
-mod route_spec;

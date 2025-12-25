@@ -45,10 +45,8 @@ impl From<Row> for Organization {
 
 // Finds
 
-pub async fn find_organization_by_login(
-  db: &database::DBConnection,
-  login: &String,
-) -> Result<Option<Organization>, ClientError> {
+pub async fn find_organization_by_login(login: &String) -> Result<Option<Organization>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let query = Select::new()
     .select("*")
     .from("organizations")
@@ -67,10 +65,10 @@ pub async fn find_organization_by_login(
 }
 
 pub async fn find_people_by_login(
-  db: &database::DBConnection,
   organization_login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<User>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let user_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_people_by_login(organization_login, &user_id, &direction, &limit);
@@ -83,10 +81,10 @@ pub async fn find_people_by_login(
 // Cursor connections
 
 pub async fn organizations_users_to_cursor_connection(
-  db: &database::DBConnection,
   owner_login: &String,
   result: Result<Vec<User>, ClientError>,
 ) -> Result<CursorConnection<User>, ClientError> {
+  let db = database::get_connection().await.get().await.unwrap();
   let result = result?;
   let reference_from = |item: &User| item.id.to_string();
 
@@ -98,7 +96,7 @@ pub async fn organizations_users_to_cursor_connection(
   let first_item_id = result.first().unwrap().id;
   let last_item_id = result.last().unwrap().id;
   let (query, params) = query_pages_previous_and_next(owner_login, &first_item_id, &last_item_id);
-  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(db, query, params).await?;
+  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
   let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
 
   Ok(items)

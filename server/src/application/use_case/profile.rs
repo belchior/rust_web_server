@@ -12,10 +12,10 @@ pub enum Profile {
   Organization(Organization),
 }
 
-pub async fn find_profile(db: &database::DBConnection, login: &String) -> Result<Option<Profile>, AppError> {
+pub async fn find_profile(login: &String) -> Result<Option<Profile>, AppError> {
   let (user, organization) = join!(
-    database::user::find_user_by_login(db, login),
-    database::organization::find_organization_by_login(db, login)
+    database::user::find_user_by_login(login),
+    database::organization::find_organization_by_login(login)
   );
 
   let result = match (user, organization) {

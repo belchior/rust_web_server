@@ -2,7 +2,7 @@ use crate::{
   application,
   infrastructure::{
     database::cursor_connection::PaginationArguments,
-    http_server::{AppState, middleware, utils::into_response},
+    http_server::{middleware, utils::into_response},
   },
 };
 use actix_web::{Responder, Scope, web};
@@ -37,64 +37,53 @@ pub fn scope() -> Scope {
     )
 }
 
-async fn user(state: web::Data<AppState>, login: web::Path<String>) -> impl Responder {
-  let db = state.poll.get().await.unwrap();
-  let result = application::user::find_user(&db, &login).await;
+async fn user(login: web::Path<String>) -> impl Responder {
+  let result = application::user::find_user(&login).await;
 
   into_response(result, "User")
 }
 
 async fn organizations(
-  state: web::Data<AppState>,
   login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let db = state.poll.get().await.unwrap();
-  let result = application::user::find_organizations(&db, &login, pagination_arguments).await;
+  let result = application::user::find_organizations(&login, pagination_arguments).await;
 
   into_response(result, "User")
 }
 
 async fn repositories(
-  state: web::Data<AppState>,
   login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let db = state.poll.get().await.unwrap();
-  let result = application::user::find_repositories(&db, &login, pagination_arguments).await;
+  let result = application::user::find_repositories(&login, pagination_arguments).await;
 
   into_response(result, "User")
 }
 
 async fn starred_repositories(
-  state: web::Data<AppState>,
   login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let db = state.poll.get().await.unwrap();
-  let result = application::user::find_starred_repositories(&db, &login, pagination_arguments).await;
+  let result = application::user::find_starred_repositories(&login, pagination_arguments).await;
 
   into_response(result, "User")
 }
 
 async fn followers(
-  state: web::Data<AppState>,
   login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let db = state.poll.get().await.unwrap();
-  let result = application::user::find_followers(&db, &login, pagination_arguments).await;
+  let result = application::user::find_followers(&login, pagination_arguments).await;
 
   into_response(result, "User")
 }
 
 async fn following(
-  state: web::Data<AppState>,
   login: web::Path<String>,
   web::Query(pagination_arguments): web::Query<PaginationArguments>,
 ) -> impl Responder {
-  let db = state.poll.get().await.unwrap();
-  let result = application::user::find_following(&db, &login, pagination_arguments).await;
+  let result = application::user::find_following(&login, pagination_arguments).await;
 
   into_response(result, "User")
 }

@@ -33,7 +33,8 @@ pub struct User {
   pub typename: String,
 }
 
-pub async fn find_user_by_login(db: &database::DBConnection, login: &String) -> Result<Option<User>, ModelError> {
+pub async fn find_user_by_login(login: &String) -> Result<Option<User>, ModelError> {
+  let db = database::get_connection().await;
   let user_collection = db.collection::<User>("users");
   let filter = doc! { "login": login };
 
@@ -46,10 +47,10 @@ pub async fn find_user_by_login(db: &database::DBConnection, login: &String) -> 
 }
 
 pub async fn find_organizations_by_user_login(
-  db: &database::DBConnection,
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<Organization>, ModelError> {
+  let db = database::get_connection().await;
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_organization(&login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline).await?;
@@ -59,10 +60,10 @@ pub async fn find_organizations_by_user_login(
 }
 
 pub async fn find_starred_repositories_by_user_login(
-  db: &database::DBConnection,
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<Repository>, ModelError> {
+  let db = database::get_connection().await;
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_starred_repositories(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline).await?;
@@ -72,10 +73,10 @@ pub async fn find_starred_repositories_by_user_login(
 }
 
 pub async fn find_followers_by_login(
-  db: &database::DBConnection,
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<User>, ModelError> {
+  let db = database::get_connection().await;
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_followers(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline).await?;
@@ -85,10 +86,10 @@ pub async fn find_followers_by_login(
 }
 
 pub async fn find_following_by_login(
-  db: &database::DBConnection,
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<User>, ModelError> {
+  let db = database::get_connection().await;
   let user_collection = db.collection::<User>("users");
   let pipeline = pipeline_paginated_following(login, pagination_arguments);
   let cursor = user_collection.aggregate(pipeline).await?;
@@ -98,10 +99,10 @@ pub async fn find_following_by_login(
 }
 
 pub async fn followers_to_cursor_connection(
-  db: &database::DBConnection,
   user_login: &String,
   result: Result<Vec<User>, ModelError>,
 ) -> Result<CursorConnection<User>, ModelError> {
+  let db = database::get_connection().await;
   let result = result?;
   tracing::info!("followers_to_cursor_connection len {}", result.len());
 
@@ -111,7 +112,7 @@ pub async fn followers_to_cursor_connection(
     let first_item_id = result.first().unwrap()._id;
     let last_item_id = result.first().unwrap()._id;
 
-    model::utils::pages_previous_and_next(db, user_login, &first_item_id, &last_item_id, coll_name, field_name).await
+    model::utils::pages_previous_and_next(&db, user_login, &first_item_id, &last_item_id, coll_name, field_name).await
   } else {
     (false, false)
   };
@@ -123,10 +124,10 @@ pub async fn followers_to_cursor_connection(
 }
 
 pub async fn following_to_cursor_connection(
-  db: &database::DBConnection,
   user_login: &String,
   result: Result<Vec<User>, ModelError>,
 ) -> Result<CursorConnection<User>, ModelError> {
+  let db = database::get_connection().await;
   let result = result?;
   let (has_previous_page, has_next_page) = if result.len() > 0 {
     let coll_name = "users";
@@ -134,7 +135,7 @@ pub async fn following_to_cursor_connection(
     let first_item_id = result.first().unwrap()._id;
     let last_item_id = result.first().unwrap()._id;
 
-    model::utils::pages_previous_and_next(db, user_login, &first_item_id, &last_item_id, coll_name, field_name).await
+    model::utils::pages_previous_and_next(&db, user_login, &first_item_id, &last_item_id, coll_name, field_name).await
   } else {
     (false, false)
   };
@@ -146,10 +147,10 @@ pub async fn following_to_cursor_connection(
 }
 
 pub async fn users_organizations_to_cursor_connection(
-  db: &database::DBConnection,
   user_login: &String,
   result: Result<Vec<Organization>, ModelError>,
 ) -> Result<CursorConnection<Organization>, ModelError> {
+  let db = database::get_connection().await;
   let result = result?;
   let (has_previous_page, has_next_page) = if result.len() > 0 {
     let coll_name = "users";
@@ -157,7 +158,7 @@ pub async fn users_organizations_to_cursor_connection(
     let first_item_id = result.first().unwrap()._id;
     let last_item_id = result.first().unwrap()._id;
 
-    model::utils::pages_previous_and_next(db, user_login, &first_item_id, &last_item_id, coll_name, field_name).await
+    model::utils::pages_previous_and_next(&db, user_login, &first_item_id, &last_item_id, coll_name, field_name).await
   } else {
     (false, false)
   };

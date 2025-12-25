@@ -1,9 +1,15 @@
 mod application;
 mod infrastructure;
 
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
-fn main() -> () {
+#[tokio::main]
+async fn main() -> () {
   dotenv().ok();
-  infrastructure::http_server::main().expect("start http server");
+  infrastructure::telemetry::start_tracing();
+  infrastructure::database::get_connection().await;
+  infrastructure::http_server::main().await.expect("start http server");
 }
+
+#[cfg(test)]
+mod all_tests_that_depends_on_db;

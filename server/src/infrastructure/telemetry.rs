@@ -1,4 +1,4 @@
-pub fn start_traicing() {
+pub fn start_tracing() {
   use tracing_subscriber::{EnvFilter, Registry, fmt, layer::SubscriberExt};
 
   let subscriber = Registry::default()

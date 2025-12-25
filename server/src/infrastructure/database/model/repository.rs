@@ -42,10 +42,10 @@ pub struct Repository {
 }
 
 pub async fn find_repositories_by_owner_id(
-  db: &database::DBConnection,
   owner_id: &ObjectId,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<Repository>, ModelError> {
+  let db = database::get_connection().await;
   let repo_collection = db.collection::<Repository>("repositories");
   let pipeline = pipeline_paginated_repositories(pagination_arguments, owner_id);
   let cursor = repo_collection.aggregate(pipeline).await?;
@@ -55,16 +55,16 @@ pub async fn find_repositories_by_owner_id(
 }
 
 pub async fn repositories_to_cursor_connection(
-  db: &database::DBConnection,
   owner_id: &ObjectId,
   result: Result<Vec<Repository>, ModelError>,
 ) -> Result<CursorConnection<Repository>, ModelError> {
+  let db = database::get_connection().await;
   let result = result?;
   let (has_previous_page, has_next_page) = if result.len() > 0 {
     let first_item_id = result.first().unwrap()._id;
     let last_item_id = result.first().unwrap()._id;
 
-    pages_previous_and_next(db, owner_id, &first_item_id, &last_item_id).await
+    pages_previous_and_next(&db, owner_id, &first_item_id, &last_item_id).await
   } else {
     (false, false)
   };

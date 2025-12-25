@@ -1,5 +1,5 @@
-use crate::infrastructure::{database::db_client_connection, http_server::AppState};
-use actix_web::{App, Scope, dev::ServiceResponse, test, web};
+use crate::infrastructure::database;
+use actix_web::{App, Scope, dev::ServiceResponse, test};
 use mongodb::{
   Database,
   bson::{self, doc, oid::ObjectId},
@@ -12,13 +12,8 @@ pub enum HttpMethod {
 }
 
 pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope, sufix: &str) -> ServiceResponse {
-  let db = setup(sufix).await;
-  let app = test::init_service(
-    App::new()
-      .app_data(web::Data::new(AppState { db: db.clone() }))
-      .service(scope),
-  )
-  .await;
+  setup(sufix).await;
+  let app = test::init_service(App::new().service(scope)).await;
 
   let req = match method {
     HttpMethod::Get => test::TestRequest::get().uri(uri).to_request(),
@@ -27,11 +22,9 @@ pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope, sufix: &s
   test::call_service(&app, req).await
 }
 
-pub async fn setup(sufix: &str) -> Database {
-  let db = db_client_connection().await.unwrap();
+pub async fn setup(sufix: &str) {
+  let db = database::get_connection().await;
   insert_mocked_data(&db, sufix).await.unwrap();
-
-  db
 }
 
 fn random_id() -> ObjectId {

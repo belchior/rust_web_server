@@ -1,4 +1,5 @@
 use crate::infrastructure::database::{
+  self,
   cursor_connection::{CursorConnection, PaginationArguments},
   model::{self, user::User},
 };
@@ -30,10 +31,8 @@ pub struct Organization {
   pub typename: String,
 }
 
-pub async fn find_organization_by_login(
-  db: &mongodb::Database,
-  login: &String,
-) -> Result<Option<Organization>, ModelError> {
+pub async fn find_organization_by_login(login: &String) -> Result<Option<Organization>, ModelError> {
+  let db = database::get_connection().await;
   let organization_collection = db.collection::<Organization>("organizations");
 
   let filter = doc! { "login": login };
@@ -46,10 +45,10 @@ pub async fn find_organization_by_login(
 }
 
 pub async fn find_people_by_login(
-  db: &mongodb::Database,
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Vec<User>, ModelError> {
+  let db = database::get_connection().await;
   let organization_collection = db.collection::<Organization>("organizations");
   let pipeline = pipeline_paginated_people(login, pagination_arguments);
   let cursor = organization_collection.aggregate(pipeline).await?;
@@ -59,10 +58,10 @@ pub async fn find_people_by_login(
 }
 
 pub async fn organizations_users_to_cursor_connection(
-  db: &mongodb::Database,
   org_login: &String,
   result: Result<Vec<User>, ModelError>,
 ) -> Result<CursorConnection<User>, ModelError> {
+  let db = database::get_connection().await;
   let result = result?;
   let (has_previous_page, has_next_page) = if result.len() > 0 {
     let coll_name = "organizations";
@@ -70,7 +69,7 @@ pub async fn organizations_users_to_cursor_connection(
     let first_item_id = result.first().unwrap()._id;
     let last_item_id = result.first().unwrap()._id;
 
-    model::utils::pages_previous_and_next(db, org_login, &first_item_id, &last_item_id, coll_name, field_name).await
+    model::utils::pages_previous_and_next(&db, org_login, &first_item_id, &last_item_id, coll_name, field_name).await
   } else {
     (false, false)
   };

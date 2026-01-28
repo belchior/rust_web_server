@@ -1,8 +1,9 @@
 use crate::infrastructure::database::{
-  self, DBConnection, organization::Organization, repository::Repository, user::User, utils,
+  self, DBConnection, QueryParam, organization::Organization, repository::Repository, user::User, utils,
 };
 use actix_web::{App, Scope, dev::ServiceResponse, test};
 use rand;
+use sql_query_builder as sql;
 use tokio_postgres::Error as ClientError;
 
 pub enum HttpMethod {
@@ -24,8 +25,8 @@ pub async fn setup(sufix: &str) {
   insert_mocked_data(&db, sufix).await.unwrap();
 }
 
-pub fn random_id() -> i32 {
-  rand::random::<i32>()
+pub fn random_i64() -> i64 {
+  rand::random::<i64>()
 }
 
 pub fn random_sufix() -> String {
@@ -36,7 +37,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
   let organization_foo = Organization {
     avatar_url: "https://foo.com/avatar.jpg".to_owned(),
     description: None,
-    id: random_id(),
+    id: random_i64(),
     location: None,
     login: format!("organization_foo_{sufix}"),
     name: None,
@@ -47,7 +48,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
   let organization_acme = Organization {
     avatar_url: "https://acme.com/avatar.jpg".to_owned(),
     description: None,
-    id: random_id(),
+    id: random_i64(),
     location: None,
     login: format!("organization_acme_{sufix}"),
     name: None,
@@ -58,7 +59,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
   let organization_empty_org = Organization {
     avatar_url: "https://empty_org.com/avatar.jpg".to_owned(),
     description: None,
-    id: random_id(),
+    id: random_i64(),
     location: None,
     login: format!("empty_org_{sufix}"),
     name: None,
@@ -71,7 +72,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     avatar_url: "https://foo.com/avatar.jpg".to_owned(),
     bio: None,
     email: "foo@email.com".to_owned(),
-    id: random_id(),
+    id: random_i64(),
     login: format!("user_foo_{sufix}"),
     name: None,
     url: "https://github.com/foo".to_owned(),
@@ -82,7 +83,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     avatar_url: "https://bar.com/avatar.jpg".to_owned(),
     bio: None,
     email: "bar@email.com".to_owned(),
-    id: random_id(),
+    id: random_i64(),
     login: format!("user_bar_{sufix}"),
     name: None,
     url: "https://github.com/bar".to_owned(),
@@ -93,7 +94,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     avatar_url: "https://dee.com/avatar.jpg".to_owned(),
     bio: None,
     email: "dee@email.com".to_owned(),
-    id: random_id(),
+    id: random_i64(),
     login: format!("user_dee_{sufix}"),
     name: None,
     url: "https://github.com/bar".to_owned(),
@@ -104,7 +105,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     avatar_url: "https://empty_user.com/avatar.jpg".to_owned(),
     bio: None,
     email: "empty_user@email.com".to_owned(),
-    id: random_id(),
+    id: random_i64(),
     login: format!("empty_user_{sufix}"),
     name: None,
     url: "https://github.com/empty_user".to_owned(),
@@ -112,44 +113,44 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     profile_type: utils::ProfileType::User,
   };
 
-  let repository_tux = Repository {
+  let mut repository_tux = Repository {
     description: None,
     fork_count: 9,
-    id: random_id(),
-    license_name: None,
+    id: -1,
+    licenses: vec![],
     name: format!("repository_tux_{sufix}"),
     owner_login: format!("organization_acme_{sufix}"),
     owner_ref: "organizations".to_owned(),
     primary_language: None,
     url: "https://github.com/user_bar/repository_tux".to_owned(),
   };
-  let repository_mar = Repository {
+  let mut repository_mar = Repository {
     description: None,
     fork_count: 12,
-    id: random_id(),
-    license_name: None,
+    id: -1,
+    licenses: vec![],
     name: format!("repository_mar_{sufix}"),
     owner_login: format!("organization_acme_{sufix}"),
     owner_ref: "organizations".to_owned(),
     primary_language: None,
     url: "https://github.com/user_bar/repository_mar".to_owned(),
   };
-  let repository_bar = Repository {
+  let mut repository_bar = Repository {
     description: None,
     fork_count: 2,
-    id: random_id(),
-    license_name: None,
+    id: -1,
+    licenses: vec![],
     name: format!("repository_bar_{sufix}"),
     owner_login: format!("user_bar_{sufix}"),
     owner_ref: "users".to_owned(),
     primary_language: None,
     url: "https://github.com/user_bar/repository_bar".to_owned(),
   };
-  let repository_dee = Repository {
+  let mut repository_dee = Repository {
     description: None,
     fork_count: 2,
-    id: random_id(),
-    license_name: None,
+    id: -1,
+    licenses: vec![],
     name: format!("repository_dee_{sufix}"),
     owner_login: format!("user_dee_{sufix}"),
     owner_ref: "users".to_owned(),
@@ -161,10 +162,10 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
   insert_organization(db, &organization_foo).await?;
   insert_organization(db, &organization_empty_org).await?;
 
-  insert_repository(db, &repository_tux).await?;
-  insert_repository(db, &repository_mar).await?;
-  insert_repository(db, &repository_bar).await?;
-  insert_repository(db, &repository_dee).await?;
+  insert_repository(db, &mut repository_tux).await?;
+  insert_repository(db, &mut repository_mar).await?;
+  insert_repository(db, &mut repository_bar).await?;
+  insert_repository(db, &mut repository_dee).await?;
 
   insert_user(db, &user_empty_user).await?;
 
@@ -186,23 +187,22 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
 }
 
 async fn insert_organization(db: &DBConnection, document: &Organization) -> Result<u64, ClientError> {
-  let statement = "\
-    INSERT INTO organizations (avatar_url,  description, location,    login,       name,        url,         website_url) \
-                       VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR)\
-  ";
-  db.execute(
-    statement,
-    &[
-      &document.avatar_url,
-      &document.description,
-      &document.location,
-      &document.login,
-      &document.name,
-      &document.url,
-      &document.website_url,
-    ],
-  )
-  .await
+  let query = sql::Insert::new()
+    .insert_into("organizations (avatar_url, description, location, login, name, url, website_url)")
+    .values("($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR)")
+    .as_string();
+
+  let params: Vec<QueryParam> = vec![
+    &document.avatar_url,
+    &document.description,
+    &document.location,
+    &document.login,
+    &document.name,
+    &document.url,
+    &document.website_url,
+  ];
+
+  db.execute(&query, &params).await
 }
 
 async fn insert_user_organization(
@@ -210,60 +210,78 @@ async fn insert_user_organization(
   user: &User,
   organization: &Organization,
 ) -> Result<u64, ClientError> {
-  let statement = "\
-    INSERT INTO users_organizations (user_login,  organization_login) \
-                             VALUES ($1::VARCHAR, $2::VARCHAR)\
-  ";
-  db.execute(statement, &[&user.login, &organization.login]).await
+  let query = sql::Insert::new()
+    .insert_into("users_organizations (user_login,  organization_login)")
+    .values("($1::VARCHAR, $2::VARCHAR)")
+    .as_string();
+
+  let params: Vec<QueryParam> = vec![&user.login, &organization.login];
+
+  db.execute(&query, &params).await
 }
 
-async fn insert_repository(db: &DBConnection, document: &Repository) -> Result<u64, ClientError> {
-  let statement = "\
-    INSERT INTO repositories (description, fork_count, license_name, name,        owner_login, owner_ref,   primary_language, url) \
-                      VALUES ($1::VARCHAR, $2::INT4,   $3::VARCHAR,  $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR,      $8::VARCHAR)\
-  ";
-  db.execute(
-    statement,
-    &[
-      &document.description,
-      &document.fork_count,
-      &document.license_name,
-      &document.name,
-      &document.owner_login,
-      &document.owner_ref,
-      &document.primary_language,
-      &document.url,
-    ],
-  )
-  .await
+async fn insert_repository(db: &DBConnection, document: &mut Repository) -> Result<(), ClientError> {
+  let query = sql::Insert::new()
+    .insert_into("repositories (description, fork_count, name, owner_login, owner_ref, primary_language, url)")
+    .values("($1::VARCHAR, $2::INT4, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR)")
+    .returning("repository_id")
+    .as_string();
+
+  let primary_language = if let Some(language) = &document.primary_language {
+    Some(language.name.clone())
+  } else {
+    None
+  };
+
+  let params: Vec<QueryParam> = vec![
+    &document.description,
+    &document.fork_count,
+    &document.name,
+    &document.owner_login,
+    &document.owner_ref,
+    &primary_language,
+    &document.url,
+  ];
+
+  let result = db.query_opt(&query, &params).await;
+
+  match result {
+    Err(err) => Err(err),
+    Ok(None) => Ok(()),
+    Ok(Some(row)) => {
+      document.id = row.get("repository_id");
+      Ok(())
+    }
+  }
 }
 
 async fn insert_user(db: &DBConnection, document: &User) -> Result<u64, ClientError> {
-  let statement = "\
-    INSERT INTO users (avatar_url,  bio,         email,       login,       name,        url,         website_url) \
-               VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR)\
-  ";
-  db.execute(
-    statement,
-    &[
-      &document.avatar_url,
-      &document.bio,
-      &document.email,
-      &document.login,
-      &document.name,
-      &document.url,
-      &document.website_url,
-    ],
-  )
-  .await
+  let query = sql::Insert::new()
+    .insert_into("users (avatar_url, bio, email, login, name, url, website_url)")
+    .values("($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR,$5::VARCHAR, $6::VARCHAR, $7::VARCHAR)")
+    .as_string();
+
+  let params: Vec<QueryParam> = vec![
+    &document.avatar_url,
+    &document.bio,
+    &document.email,
+    &document.login,
+    &document.name,
+    &document.url,
+    &document.website_url,
+  ];
+  db.execute(&query, &params).await
 }
 
 async fn insert_user_following(db: &DBConnection, user: &User, following: &User) -> Result<u64, ClientError> {
-  let statement = "\
-    INSERT INTO users_following (user_login,  following_login) \
-                         VALUES ($1::VARCHAR, $2::VARCHAR)\
-  ";
-  db.execute(statement, &[&user.login, &following.login]).await
+  let query = sql::Insert::new()
+    .insert_into("users_following (user_login,  following_login)")
+    .values("($1::VARCHAR, $2::VARCHAR)")
+    .as_string();
+
+  let params: Vec<QueryParam> = vec![&user.login, &following.login];
+
+  db.execute(&query, &params).await
 }
 
 async fn insert_user_starred_repository(
@@ -271,9 +289,12 @@ async fn insert_user_starred_repository(
   user: &User,
   repository: &Repository,
 ) -> Result<u64, ClientError> {
-  let statement = "\
-    INSERT INTO users_starred_repositories (user_login,  repository_name) \
-                                    VALUES ($1::VARCHAR, $2::VARCHAR)\
-  ";
-  db.execute(statement, &[&user.login, &repository.name]).await
+  let query = sql::Insert::new()
+    .insert_into("users_starred_repositories (user_login,  repository_id)")
+    .values("($1::VARCHAR, $2::BIGINT)")
+    .as_string();
+
+  let params: Vec<QueryParam> = vec![&user.login, &repository.id];
+
+  db.execute(&query, &params).await
 }

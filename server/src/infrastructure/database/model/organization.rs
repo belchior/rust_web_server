@@ -1,12 +1,11 @@
 use crate::infrastructure::database::{
-  self,
+  self, QueryParam,
   cursor_connection::{CursorConnection, Direction, PaginationArguments},
-  model::QueryParam,
   user::User,
   utils,
 };
 use serde::{Deserialize, Serialize};
-use sql_query_builder::Select;
+use sql_query_builder as sql;
 use tokio_postgres::{Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -15,7 +14,7 @@ pub struct Organization {
   pub avatar_url: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub description: Option<String>,
-  pub id: i32,
+  pub id: i64,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub location: Option<String>,
   pub login: String,
@@ -32,7 +31,7 @@ impl From<Row> for Organization {
     Self {
       avatar_url: row.get("avatar_url"),
       description: row.try_get("description").unwrap_or(None),
-      id: row.get("id"),
+      id: row.get("organization_id"),
       location: row.try_get("location").unwrap_or(None),
       login: row.get("login"),
       name: row.try_get("name").unwrap_or(None),
@@ -47,7 +46,7 @@ impl From<Row> for Organization {
 
 pub async fn find_organization_by_login(login: &String) -> Result<Option<Organization>, ClientError> {
   let db = database::get_connection().await.get().await.unwrap();
-  let query = Select::new()
+  let query = sql::Select::new()
     .select("*")
     .from("organizations")
     .where_clause("login = $1")
@@ -72,7 +71,7 @@ pub async fn find_people_by_login(
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let user_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_people_by_login(organization_login, &user_id, &direction, &limit);
-  let result = db.query(query.as_str(), &params[..]).await?;
+  let result = db.query(&query, &params[..]).await?;
   let people = result.into_iter().map(|row| User::from(row)).collect::<Vec<_>>();
 
   Ok(people)
@@ -106,37 +105,41 @@ pub async fn organizations_users_to_cursor_connection(
 
 fn query_find_people_by_login<'a>(
   organization_login: &'a String,
-  user_id: &'a Option<i32>,
+  user_id: &'a Option<i64>,
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let mut select_people = Select::new()
+  let mut select_people = sql::Select::new()
     .select("u.*, uo.created_at as joined_at")
     .from("organizations org")
     .inner_join("users_organizations uo on uo.organization_login = org.login")
     .inner_join("users u on u.login = uo.user_login")
     .where_clause("org.login = $1")
-    .order_by("u.id asc");
+    .order_by("u.user_id asc");
 
   let mut params: Vec<QueryParam> = vec![organization_login];
 
   let query = match direction {
     Direction::Backward => {
-      let mut select_people_reverse = Select::new().select("*").from("people").order_by("id desc").limit("$2");
+      let mut select_people_reverse = sql::Select::new()
+        .select("*")
+        .from("people")
+        .order_by("user_id desc")
+        .limit("$2");
 
       params.push(limit);
 
       if let Some(user_id) = user_id {
-        select_people_reverse = select_people_reverse.where_clause("id < $3::int");
+        select_people_reverse = select_people_reverse.where_clause("user_id < $3");
         params.push(user_id);
       }
 
-      Select::new()
+      sql::Select::new()
         .with("people", select_people)
         .with("people_reverse", select_people_reverse)
         .select("*")
         .from("people_reverse")
-        .order_by("id asc")
+        .order_by("user_id asc")
         .as_string()
     }
     Direction::Forward => {
@@ -144,7 +147,7 @@ fn query_find_people_by_login<'a>(
       params.push(limit);
 
       if let Some(user_id) = user_id {
-        select_people = select_people.where_clause("u.id > $3");
+        select_people = select_people.where_clause("u.user_id > $3");
         params.push(user_id);
       }
 
@@ -157,25 +160,25 @@ fn query_find_people_by_login<'a>(
 
 fn query_pages_previous_and_next<'a>(
   owner_login: &'a String,
-  first_item_id: &'a i32,
-  last_item_id: &'a i32,
+  first_item_id: &'a i64,
+  last_item_id: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
-  let select_base = Select::new()
+  let select_base = sql::Select::new()
     .from("organizations o")
     .inner_join("users_organizations uo on uo.organization_login = o.login")
     .inner_join("users u on u.login = uo.user_login")
     .where_clause("o.login = $1")
-    .order_by("u.id ASC")
+    .order_by("u.user_id ASC")
     .limit("1");
 
   let select_previous = select_base
     .clone()
     .select("'previous' as page")
-    .where_clause("u.id < $2 /* first_id */");
+    .where_clause("u.user_id < $2 /* first_id */");
   let select_next = select_base
     .clone()
     .select("'next' as page")
-    .where_clause("u.id > $3 /* last_id */");
+    .where_clause("u.user_id > $3 /* last_id */");
   let query = select_previous.union(select_next).as_string();
   let params: Vec<QueryParam> = vec![owner_login, first_item_id, last_item_id];
 

@@ -1,7 +1,6 @@
 use crate::infrastructure::database::{
-  self,
+  self, QueryParam,
   cursor_connection::{CursorConnection, Direction, PaginationArguments},
-  model::QueryParam,
   organization::Organization,
   repository::Repository,
   utils,
@@ -17,7 +16,7 @@ pub struct User {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub bio: Option<String>,
   pub email: String,
-  pub id: i32,
+  pub id: i64,
   pub login: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub name: Option<String>,
@@ -33,7 +32,7 @@ impl From<Row> for User {
       avatar_url: row.get("avatar_url"),
       bio: row.try_get("bio").unwrap_or(None),
       email: row.get("email"),
-      id: row.get("id"),
+      id: row.get("user_id"),
       login: row.get("login"),
       name: row.try_get("name").unwrap_or(None),
       url: row.get("url"),
@@ -53,7 +52,7 @@ pub async fn find_followers_by_login(
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let follower_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_followers_by_login(user_login, &follower_id, &direction, &limit);
-  let result = db.query(query.as_str(), &params[..]).await?;
+  let result = db.query(&query, &params[..]).await?;
   let users = result.into_iter().map(|row| User::from(row)).collect::<Vec<_>>();
 
   Ok(users)
@@ -67,7 +66,7 @@ pub async fn find_following_by_login(
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let follower_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_following_by_login(user_login, &follower_id, &direction, &limit);
-  let result = db.query(query.as_str(), &params[..]).await?;
+  let result = db.query(&query, &params[..]).await?;
   let users = result.into_iter().map(|row| User::from(row)).collect::<Vec<_>>();
 
   Ok(users)
@@ -81,7 +80,7 @@ pub async fn find_organizations_by_user_login(
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let org_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_organizations_by_user_login(user_login, &org_id, &direction, &limit);
-  let result = db.query(query.as_str(), &params[..]).await?;
+  let result = db.query(&query, &params[..]).await?;
   let organizations = result
     .into_iter()
     .map(|row| Organization::from(row))
@@ -98,7 +97,7 @@ pub async fn find_starred_repositories_by_user_login(
   let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
   let repo_id = utils::parse_cursor(cursor);
   let (query, params) = query_find_starred_repositories_by_user_login(user_login, &repo_id, &direction, &limit);
-  let result = db.query(query.as_str(), &params[..]).await?;
+  let result = db.query(&query, &params[..]).await?;
   let repositories = result.into_iter().map(|row| Repository::from(row)).collect::<Vec<_>>();
 
   Ok(repositories)
@@ -195,7 +194,7 @@ pub async fn users_organizations_to_cursor_connection(
 
 fn query_find_followers_by_login<'a>(
   user_login: &'a String,
-  follower_id: &'a Option<i32>,
+  follower_id: &'a Option<i64>,
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
@@ -204,7 +203,7 @@ fn query_find_followers_by_login<'a>(
     .from("users u")
     .inner_join("users_following uf on uf.user_login = u.login")
     .where_clause("uf.following_login = $1")
-    .order_by("u.id asc");
+    .order_by("u.user_id asc");
 
   let mut params: Vec<QueryParam> = vec![user_login];
 
@@ -213,13 +212,13 @@ fn query_find_followers_by_login<'a>(
       let mut select_followers_reverse = sql::Select::new()
         .select("*")
         .from("followers")
-        .order_by("id desc")
+        .order_by("user_id desc")
         .limit("$2");
 
       params.push(limit);
 
       if let Some(follower_id) = follower_id {
-        select_followers_reverse = select_followers_reverse.where_clause("id < $3::int");
+        select_followers_reverse = select_followers_reverse.where_clause("user_id < $3");
         params.push(follower_id);
       }
 
@@ -228,7 +227,7 @@ fn query_find_followers_by_login<'a>(
         .with("followers_reverse", select_followers_reverse)
         .select("*")
         .from("followers_reverse")
-        .order_by("id asc")
+        .order_by("user_id asc")
         .as_string()
     }
     Direction::Forward => {
@@ -236,7 +235,7 @@ fn query_find_followers_by_login<'a>(
       params.push(limit);
 
       if let Some(follower_id) = follower_id {
-        select_followers = select_followers.where_clause("u.id > $3");
+        select_followers = select_followers.where_clause("u.user_id > $3");
         params.push(follower_id);
       }
 
@@ -249,7 +248,7 @@ fn query_find_followers_by_login<'a>(
 
 fn query_find_following_by_login<'a>(
   user_login: &'a String,
-  followed_id: &'a Option<i32>,
+  followed_id: &'a Option<i64>,
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
@@ -258,7 +257,7 @@ fn query_find_following_by_login<'a>(
     .from("users u")
     .inner_join("users_following uf on uf.following_login = u.login")
     .where_clause("uf.user_login = $1")
-    .order_by("u.id asc");
+    .order_by("u.user_id asc");
 
   let mut params: Vec<QueryParam> = vec![user_login];
 
@@ -267,13 +266,13 @@ fn query_find_following_by_login<'a>(
       let mut select_following_reverse = sql::Select::new()
         .select("*")
         .from("following")
-        .order_by("id desc")
+        .order_by("user_id desc")
         .limit("$2");
 
       params.push(limit);
 
       if let Some(followed_id) = followed_id {
-        select_following_reverse = select_following_reverse.where_clause("id < $3::int");
+        select_following_reverse = select_following_reverse.where_clause("user_id < $3");
         params.push(followed_id);
       }
 
@@ -282,7 +281,7 @@ fn query_find_following_by_login<'a>(
         .with("following_reverse", select_following_reverse)
         .select("*")
         .from("following_reverse")
-        .order_by("id asc")
+        .order_by("user_id asc")
         .as_string()
     }
     Direction::Forward => {
@@ -290,7 +289,7 @@ fn query_find_following_by_login<'a>(
       params.push(limit);
 
       if let Some(followed_id) = followed_id {
-        select_following = select_following.where_clause("u.id > $3");
+        select_following = select_following.where_clause("u.user_id > $3");
         params.push(followed_id);
       }
 
@@ -303,7 +302,7 @@ fn query_find_following_by_login<'a>(
 
 fn query_find_organizations_by_user_login<'a>(
   user_login: &'a String,
-  org_id: &'a Option<i32>,
+  org_id: &'a Option<i64>,
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
@@ -313,7 +312,7 @@ fn query_find_organizations_by_user_login<'a>(
     .inner_join("users_organizations uo on uo.user_login = u.login")
     .inner_join("organizations o on o.login = uo.organization_login")
     .where_clause("u.login = $1")
-    .order_by("o.id asc");
+    .order_by("o.organization_id asc");
 
   let mut params: Vec<QueryParam> = vec![user_login];
 
@@ -322,13 +321,13 @@ fn query_find_organizations_by_user_login<'a>(
       let mut select_org_reverse = sql::Select::new()
         .select("*")
         .from("orgs")
-        .order_by("id desc")
+        .order_by("organization_id desc")
         .limit("$2");
 
       params.push(limit);
 
       if let Some(org_id) = org_id {
-        select_org_reverse = select_org_reverse.where_clause("id < $3::int");
+        select_org_reverse = select_org_reverse.where_clause("organization_id < $3");
         params.push(org_id);
       }
 
@@ -337,7 +336,7 @@ fn query_find_organizations_by_user_login<'a>(
         .with("orgs_reverse", select_org_reverse)
         .select("*")
         .from("orgs_reverse")
-        .order_by("id asc")
+        .order_by("organization_id asc")
         .as_string()
     }
     Direction::Forward => {
@@ -345,7 +344,7 @@ fn query_find_organizations_by_user_login<'a>(
       params.push(limit);
 
       if let Some(org_id) = org_id {
-        select_org = select_org.where_clause("o.id > $3");
+        select_org = select_org.where_clause("o.organization_id > $3");
         params.push(org_id);
       }
 
@@ -358,24 +357,24 @@ fn query_find_organizations_by_user_login<'a>(
 
 fn query_followed_pages_previous_and_next<'a>(
   user_login: &'a String,
-  first_item_id: &'a i32,
-  last_item_id: &'a i32,
+  first_item_id: &'a i64,
+  last_item_id: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
   let select_base = sql::Select::new()
     .from("users u")
     .inner_join("users_following uf on uf.following_login = u.login")
     .where_clause("uf.user_login = $1")
-    .order_by("u.id asc")
+    .order_by("u.user_id asc")
     .limit("1");
 
   let select_previous = select_base
     .clone()
     .select("'previous' as page")
-    .where_clause("u.id < $2 /* first_id */");
+    .where_clause("u.user_id < $2 /* first_id */");
   let select_next = select_base
     .clone()
     .select("'next' as page")
-    .where_clause("u.id > $3 /* last_id */");
+    .where_clause("u.user_id > $3 /* last_id */");
   let query = select_previous.union(select_next).as_string();
   let params: Vec<QueryParam> = vec![user_login, first_item_id, last_item_id];
 
@@ -384,24 +383,24 @@ fn query_followed_pages_previous_and_next<'a>(
 
 fn query_followers_pages_previous_and_next<'a>(
   user_login: &'a String,
-  first_item_id: &'a i32,
-  last_item_id: &'a i32,
+  first_item_id: &'a i64,
+  last_item_id: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
   let select_base = sql::Select::new()
     .from("users u")
     .inner_join("users_following uf on uf.user_login = u.login")
     .where_clause("uf.following_login = $1")
-    .order_by("u.id asc")
+    .order_by("u.user_id asc")
     .limit("1");
 
   let select_previous = select_base
     .clone()
     .select("'previous' as page")
-    .where_clause("u.id < $2 /* first_id */");
+    .where_clause("u.user_id < $2 /* first_id */");
   let select_next = select_base
     .clone()
     .select("'next' as page")
-    .where_clause("u.id > $3 /* last_id */");
+    .where_clause("u.user_id > $3 /* last_id */");
   let query = select_previous.union(select_next).as_string();
   let params: Vec<QueryParam> = vec![user_login, first_item_id, last_item_id];
 
@@ -410,25 +409,25 @@ fn query_followers_pages_previous_and_next<'a>(
 
 fn query_organizations_pages_previous_and_next<'a>(
   owner_login: &'a String,
-  first_item_id: &'a i32,
-  last_item_id: &'a i32,
+  first_item_id: &'a i64,
+  last_item_id: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
   let select_base = sql::Select::new()
     .from("users u")
     .inner_join("users_organizations uo on uo.organization_login = u.login")
     .inner_join("organizations o on o.login = uo.organization_login")
     .where_clause("u.login = $1")
-    .order_by("o.id asc")
+    .order_by("o.organization_id asc")
     .limit("1");
 
   let select_previous = select_base
     .clone()
     .select("'previous' as page")
-    .where_clause("u.id < $2 /* first_id */");
+    .where_clause("u.user_id < $2 /* first_id */");
   let select_next = select_base
     .clone()
     .select("'next' as page")
-    .where_clause("u.id > $3 /* last_id */");
+    .where_clause("u.user_id > $3 /* last_id */");
   let query = select_previous.union(select_next).as_string();
   let params: Vec<QueryParam> = vec![owner_login, first_item_id, last_item_id];
 
@@ -437,7 +436,7 @@ fn query_organizations_pages_previous_and_next<'a>(
 
 fn query_find_starred_repositories_by_user_login<'a>(
   user_login: &'a String,
-  repo_id: &'a Option<i32>,
+  repo_id: &'a Option<i64>,
   direction: &'a Direction,
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
@@ -445,9 +444,9 @@ fn query_find_starred_repositories_by_user_login<'a>(
     .select("r.*")
     .from("users u")
     .inner_join("users_starred_repositories usr on usr.user_login = u.login")
-    .inner_join("repositories r on r.name = usr.repository_name")
+    .inner_join("repositories r using(repository_id)")
     .where_clause("u.login = $1")
-    .order_by("r.id asc");
+    .order_by("r.repository_id asc");
 
   let mut params: Vec<QueryParam> = vec![user_login];
 
@@ -456,13 +455,13 @@ fn query_find_starred_repositories_by_user_login<'a>(
       let mut select_repo_reverse = sql::Select::new()
         .select("*")
         .from("repos")
-        .order_by("id desc")
+        .order_by("repository_id desc")
         .limit("$2");
 
       params.push(limit);
 
       if let Some(repo_id) = repo_id {
-        select_repo_reverse = select_repo_reverse.where_clause("id < $3::int");
+        select_repo_reverse = select_repo_reverse.where_clause("repository_id < $3");
         params.push(repo_id);
       }
 
@@ -471,7 +470,7 @@ fn query_find_starred_repositories_by_user_login<'a>(
         .with("repos_reverse", select_repo_reverse)
         .select("*")
         .from("repos_reverse")
-        .order_by("id asc")
+        .order_by("repository_id asc")
         .as_string()
     }
     Direction::Forward => {
@@ -479,7 +478,7 @@ fn query_find_starred_repositories_by_user_login<'a>(
       params.push(limit);
 
       if let Some(repo_id) = repo_id {
-        select_repo = select_repo.where_clause("r.id > $3");
+        select_repo = select_repo.where_clause("r.repository_id > $3");
         params.push(repo_id);
       }
 

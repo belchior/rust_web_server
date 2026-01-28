@@ -14,7 +14,6 @@ deadpool-postgres = "0.14.1"
 dotenvy = "0.15.7"
 futures = "0.3.31"
 futures-util = "0.3.31"
-rand = "0.9.2"
 serde = { version = "1.0.144", features = ["derive"] }
 sql_query_builder = { version = "2.5.2", features = ["postgresql"] }
 thiserror = "2.0.17"
@@ -28,5 +27,6 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter", "json"] }
 tracing-actix-web = { version = "0.7.19" }
 
 [dev-dependencies]
-pretty_assertions = "1.4.1"
 actix-rt = "2.11.0"
+pretty_assertions = "1.4.1"
+rand = "0.9.2"

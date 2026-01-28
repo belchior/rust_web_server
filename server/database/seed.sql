@@ -22,15 +22,28 @@ INSERT INTO languages (language_name, language_color) VALUES
   ('Shell','#89e051'),
   ('TypeScript','#2b7489');
 
-INSERT INTO licenses (license_name) VALUES
-  ('MIT License');
+INSERT INTO licenses (license_key, name) VALUES
+  ('unlicense', 'The Unlicense'),
+  ('mit', 'MIT License'),
+  ('apache-2.0', 'Apache-2.0'),
+  ('gpl-2.0', 'GPL-2.0'),
+  ('gpl-3.0', 'GPL-3.0');
 
-INSERT INTO repositories (name, fork_count, owner_login, owner_ref, primary_language, url, description) VALUES
-  ('rust', 8612, 'rust-lang', 'organizations', 'Rust', 'https://github.com/rust-lang/rust', 'Empowering everyone to build reliable and efficient software.'),
-  ('cargo', 1583, 'rust-lang', 'organizations', 'Rust', 'https://github.com/rust-lang/cargo', 'The Rust package manager'),
-  ('rust_web_server', 0, 'belchior', 'users', 'Rust', 'https://github.com/belchior/rust_web_server', null);
+INSERT INTO repositories (name, repository_id, fork_count, owner_login, owner_ref, primary_language, url, description) VALUES
+  ('rust', 1, 8612, 'rust-lang', 'organizations', 'Rust', 'https://github.com/rust-lang/rust', 'Empowering everyone to build reliable and efficient software.'),
+  ('cargo', 2, 1583, 'rust-lang', 'organizations', 'Rust', 'https://github.com/rust-lang/cargo', 'The Rust package manager'),
+  ('rust_web_server', 3, 0, 'belchior', 'users', 'Rust', 'https://github.com/belchior/rust_web_server', null);
 
-INSERT INTO users_starred_repositories (user_login, repository_name) VALUES
-  ('belchior', 'rust'),
-  ('belchior', 'cargo'),
-  ('bar', 'cargo');
+INSERT INTO repositories_licenses (repository_id, license_key) VALUES
+  (1, 'mit'),
+  (1, 'apache-2.0'),
+  (1, 'gpl-2.0'),
+  (1, 'gpl-3.0'),
+  (2, 'mit'),
+  (2, 'gpl-2.0'),
+  (3, 'mit');
+
+INSERT INTO users_starred_repositories (user_login, repository_id) VALUES
+  ('belchior', 1),
+  ('belchior', 2),
+  ('bar', 2);

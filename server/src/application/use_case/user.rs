@@ -42,19 +42,12 @@ pub async fn find_repositories(
   login: &String,
   pagination_arguments: PaginationArguments,
 ) -> Result<Option<CursorConnection<Repository>>, AppError> {
-  let result = database::user::find_user_by_login(login).await;
+  let result = database::repository::find_repositories_by_owner_login(login, pagination_arguments).await;
+  let cursor = database::repository::repositories_to_cursor_connection(login, result).await;
 
-  match result {
+  match cursor {
     Err(err) => Err(AppError::Database(err)),
-    Ok(None) => Ok(None),
-    Ok(Some(owner)) => {
-      let result = database::repository::find_repositories_by_owner_login(&owner.login, pagination_arguments).await;
-      let cursor = database::repository::repositories_to_cursor_connection(&owner.login, result).await;
-      match cursor {
-        Err(err) => Err(AppError::Database(err)),
-        Ok(cursor) => Ok(Some(cursor)),
-      }
-    }
+    Ok(cursor) => Ok(Some(cursor)),
   }
 }
 

@@ -16,6 +16,7 @@ pub async fn get_connection() -> Pool {
       pg_config.port(env::var("POSTGRES_PORT").unwrap().parse().unwrap());
       pg_config.user(env::var("POSTGRES_USER").unwrap().as_str());
       pg_config.connect_timeout(Duration::from_secs(5));
+      pg_config.options("-c statement_timeout=30s");
 
       let conn_number: usize = env::var("POSTGRES_CONNECTIONS_NUMBER").unwrap().parse().unwrap();
 

@@ -1,4 +1,4 @@
-use crate::infrastructure::database::{DBConnection, cursor_connection::cursor_to_reference, model};
+use crate::infrastructure::database::{DBConnection, QueryParam, cursor_connection::cursor_to_reference};
 use serde::{Deserialize, Serialize};
 use tokio_postgres::{Error as ClientError, Row};
 
@@ -8,7 +8,7 @@ pub enum ProfileType {
   Organization,
 }
 
-pub fn parse_cursor(cursor: Option<String>) -> Option<i32> {
+pub fn parse_cursor(cursor: Option<String>) -> Option<i64> {
   if cursor.is_none() {
     return None;
   }
@@ -16,7 +16,7 @@ pub fn parse_cursor(cursor: Option<String>) -> Option<i32> {
   if reference.is_err() {
     return None;
   }
-  let id = reference.unwrap().parse::<i32>();
+  let id = reference.unwrap().parse::<i64>();
   if id.is_err() {
     return None;
   }
@@ -28,9 +28,9 @@ pub fn parse_cursor(cursor: Option<String>) -> Option<i32> {
 pub async fn pages_previous_and_next<'a>(
   db: &DBConnection,
   query: String,
-  params: Vec<model::QueryParam<'a>>,
+  params: Vec<QueryParam<'a>>,
 ) -> Result<(bool, bool), ClientError> {
-  let result = db.query(query.as_str(), &params[..]).await?;
+  let result = db.query(&query, &params[..]).await?;
   let handler = |acc: (bool, bool), row: Row| match row.try_get::<'_, _, &str>("page") {
     Ok("previous") => (true, acc.1),
     Ok("next") => (acc.0, true),

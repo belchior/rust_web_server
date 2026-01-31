@@ -134,25 +134,29 @@ async fn insert_mocked_data(db: &Database, sufix: &str) -> Result<(), ModelError
     "_id": repository_tux_id,
     "forkCount": 9.0,
     "name": format!("repository_tux_{sufix}"),
-    "owner": { "_id": organization_acme_id, "ref": "organizations" }
+    "owner": { "_id": organization_acme_id, "ref": "organizations" },
+    "url": "https://github.com/user_bar/repository_tux".to_owned(),
   };
   let repository_mar = doc! {
     "_id": repository_mar_id,
     "forkCount": 12.0,
     "name": format!("repository_mar_{sufix}"),
-    "owner": { "_id": organization_acme_id, "ref": "organizations" }
+    "owner": { "_id": organization_acme_id, "ref": "organizations" },
+    "url": "https://github.com/user_bar/repository_mar".to_owned(),
   };
   let repository_bar = doc! {
     "_id": repository_bar_id,
     "forkCount": 2.0,
     "name": format!("repository_bar_{sufix}"),
-    "owner": { "_id": user_bar_id, "ref": "users" }
+    "owner": { "_id": user_bar_id, "ref": "users" },
+    "url": "https://github.com/user_bar/repository_bar".to_owned(),
   };
   let repository_dee = doc! {
     "_id": repository_dee_id,
     "forkCount": 2.0,
     "name": format!("repository_dee_{sufix}"),
-    "owner": { "_id": user_dee_id, "ref": "users" }
+    "owner": { "_id": user_dee_id, "ref": "users" },
+    "url": "https://github.com/user_dee/repository_dee".to_owned(),
   };
 
   insert_organization(db, organization_acme).await?;

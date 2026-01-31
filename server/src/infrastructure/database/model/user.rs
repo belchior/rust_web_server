@@ -6,7 +6,7 @@ use crate::infrastructure::database::{
   repository::Repository,
 };
 use mongodb::{
-  bson::{doc, oid::ObjectId},
+  bson::{doc, oid::ObjectId, serde_helpers::serialize_object_id_as_hex_string},
   error::Error as ModelError,
 };
 use serde::{Deserialize, Serialize};
@@ -14,8 +14,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
-  // TODO find a way to serialize _id into id with hex version
   #[serde(rename = "_id")]
+  #[serde(serialize_with = "serialize_object_id_as_hex_string")]
   pub _id: ObjectId,
   pub avatar_url: String,
   #[serde(skip_serializing_if = "Option::is_none")]

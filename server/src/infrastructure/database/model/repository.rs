@@ -4,7 +4,7 @@ use crate::infrastructure::database::{
   model,
 };
 use mongodb::{
-  bson::{Document, doc, oid::ObjectId},
+  bson::{Document, doc, oid::ObjectId, serde_helpers::serialize_object_id_as_hex_string},
   error::Error as ModelError,
 };
 use serde::{Deserialize, Serialize};
@@ -18,6 +18,7 @@ pub struct Language {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct License {
+  pub license_key: String,
   pub name: String,
 }
 
@@ -30,11 +31,11 @@ pub struct Owner {
 #[serde(rename_all = "camelCase")]
 pub struct Repository {
   #[serde(rename = "_id")]
+  #[serde(serialize_with = "serialize_object_id_as_hex_string")]
   pub _id: ObjectId,
   pub description: Option<String>,
   pub fork_count: f64,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub license_info: Option<License>,
+  pub licenses: Vec<License>,
   pub name: String,
   pub owner: Owner,
   #[serde(skip_serializing_if = "Option::is_none")]

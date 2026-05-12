@@ -1479,9 +1479,9 @@ dependencies = [
 
 [[package]]
 name = "sql_query_builder"
-version = "2.5.2"
+version = "2.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2651412ae7213fc4eb36349c204614c0aee7d7cef23328e10101413781b4b200"
+checksum = "4db7d9d29eda204b563cff60daf6c35d6cccbef3213aad3b73be096aa5cc6fd2"
 
 [[package]]
 name = "stable_deref_trait"

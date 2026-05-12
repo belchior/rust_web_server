@@ -11,6 +11,7 @@ services:
     container_name: server
     build:
       context: ./server
+    env_file: ./.env
     depends_on:
       - server_base_image
 
@@ -19,63 +20,73 @@ services:
     container_name: server
     command: scripts/start_dev.sh
     ports:
-      - 8080:8080
-    env_file: server/.env
-    volumes:
-      - ./server/scripts:/server/scripts:ro
-      - ./server/src:/server/src:ro
-      - ./server/.env:/server/.env:ro
-      - ./server/Cargo.toml:/server/Cargo.toml:ro
-      - ./server/Cargo.lock:/server/Cargo.lock:ro
+      - ${SERVER_PORT}:${SERVER_PORT}
+    env_file: ./.env
+    networks:
+      - mynetwork
     depends_on:
       - server_base_image
       - database_seed
+    volumes:
+      - ./server/scripts:/server/scripts:ro
+      - ./server/src:/server/src:ro
+      - ./server/Cargo.toml:/server/Cargo.toml:ro
+      - ./server/Cargo.lock:/server/Cargo.lock:ro
 
   server_test:
     image: server_base_image_postgres
     container_name: server_test
     command: scripts/test_watch.sh
-    env_file: server/.env
+    env_file: ./.env
     environment:
       - RUST_ENV=test
+    networks:
+      - mynetwork
+    depends_on:
+      - server_base_image
+      - database_schema
     volumes:
       - ./server/coverage:/server/coverage:rw
       - ./server/scripts:/server/scripts:ro
       - ./server/src:/server/src:ro
-      - ./server/.env:/server/.env:ro
       - ./server/Cargo.toml:/server/Cargo.toml:ro
       - ./server/Cargo.lock:/server/Cargo.lock:ro
-    depends_on:
-      - server_base_image
-      - database_schema
 
   database:
-    image: postgres:14-alpine
+    image: postgres:18
     container_name: database
+    env_file: ./.env
+    environment:
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_DB}
     ports:
-      - 5432:5432
-    env_file: server/.env
+      - ${DATABASE_PORT}:${DATABASE_PORT}
+    networks:
+      - mynetwork
+    restart: always
 
   database_schema:
-    image: postgres:14-alpine
+    image: postgres:18
     container_name: database_schema
     command: scripts/database_schema.sh
-    env_file: server/.env
+    env_file: ./.env
+    networks:
+      - mynetwork
     depends_on:
       - database
     volumes:
-      - ./server/database:/database:ro
       - ./server/scripts:/scripts:ro
 
   database_seed:
-    image: postgres:14-alpine
+    image: postgres:18
     container_name: database_seed
     command: scripts/database_seed.sh
-    env_file: server/.env
+    env_file: ./.env
+    networks:
+      - mynetwork
     depends_on:
       - database_schema
     volumes:
-      - ./server/database:/database:ro
       - ./server/scripts:/scripts:ro
 
   client_base_image:
@@ -100,8 +111,11 @@ services:
     container_name: client
     command: npm start
     working_dir: /client
+    env_file: ./.env
     ports:
-      - 3000:3000
+      - ${CLIENT_PORT}:${CLIENT_PORT}
+    networks:
+      - mynetwork
     volumes:
       - ./client/coverage:/client/coverage:rw
       - ./client/public:/client/public:ro
@@ -113,3 +127,7 @@ services:
       - ./client/tsconfig.json:/client/tsconfig.json:ro
     depends_on:
       - client_base_image
+
+networks:
+  mynetwork:
+    driver: bridge

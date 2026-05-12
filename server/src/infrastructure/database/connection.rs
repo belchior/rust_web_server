@@ -10,15 +10,15 @@ pub async fn get_connection() -> Pool {
   DATABASE
     .get_or_init(|| async {
       let mut pg_config = tokio_postgres::Config::new();
-      pg_config.dbname(env::var("POSTGRES_DB").unwrap().as_str());
-      pg_config.host(env::var("POSTGRES_HOST").unwrap().as_str());
-      pg_config.password(env::var("POSTGRES_PASSWORD").unwrap().as_str());
-      pg_config.port(env::var("POSTGRES_PORT").unwrap().parse().unwrap());
-      pg_config.user(env::var("POSTGRES_USER").unwrap().as_str());
+      pg_config.dbname(env::var("DATABASE_DB").unwrap().as_str());
+      pg_config.host(env::var("DATABASE_HOST").unwrap().as_str());
+      pg_config.password(env::var("DATABASE_PASSWORD").unwrap().as_str());
+      pg_config.port(env::var("DATABASE_PORT").unwrap().parse().unwrap());
+      pg_config.user(env::var("DATABASE_USER").unwrap().as_str());
       pg_config.connect_timeout(Duration::from_secs(5));
       pg_config.options("-c statement_timeout=30s");
 
-      let conn_number: usize = env::var("POSTGRES_CONNECTIONS_NUMBER").unwrap().parse().unwrap();
+      let conn_number: usize = env::var("DATABASE_CONNECTIONS_NUMBER").unwrap().parse().unwrap();
 
       let mgr_config = ManagerConfig {
         recycling_method: RecyclingMethod::Fast,

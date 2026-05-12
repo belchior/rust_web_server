@@ -1,5 +1,4 @@
 #!/bin/sh
 
-while ! nc -z $POSTGRES_HOST $POSTGRES_PORT; do sleep 1; done;
-
-PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -h $POSTGRES_HOST -p $POSTGRES_PORT -d $POSTGRES_DB -f /database/schema.sql
+sleep 5;
+PGPASSWORD=$DATABASE_PASSWORD psql -U $DATABASE_USER -h $DATABASE_HOST -p $DATABASE_PORT -d $DATABASE_DB -f scripts/database/schema.sql

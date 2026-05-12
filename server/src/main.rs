@@ -14,4 +14,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[cfg(test)]
-mod all_tests_that_depends_on_db;
+mod all_tests_that_depends_on_db_spec;

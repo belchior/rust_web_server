@@ -10,8 +10,8 @@ pub enum HttpMethod {
   Get,
 }
 
-pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope, sufix: &str) -> ServiceResponse {
-  let _ = setup(sufix).await;
+pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope, suffix: &str) -> ServiceResponse {
+  let _ = setup(suffix).await;
   let app = test::init_service(App::new().service(scope)).await;
   let req = match method {
     HttpMethod::Get => test::TestRequest::get().uri(uri).to_request(),
@@ -19,27 +19,27 @@ pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope, sufix: &s
   test::call_service(&app, req).await
 }
 
-pub async fn setup(sufix: &str) {
+pub async fn setup(suffix: &str) {
   let pool = database::get_connection().await;
   let db = pool.get().await.unwrap();
-  insert_mocked_data(&db, sufix).await.unwrap();
+  insert_mocked_data(&db, suffix).await.unwrap();
 }
 
 pub fn random_i64() -> i64 {
   rand::random::<i64>()
 }
 
-pub fn random_sufix() -> String {
+pub fn random_suffix() -> String {
   rand::random::<u32>().to_string()
 }
 
-async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), ClientError> {
+async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), ClientError> {
   let organization_foo = Organization {
     avatar_url: "https://foo.com/avatar.jpg".to_owned(),
     description: None,
     id: random_i64(),
     location: None,
-    login: format!("organization_foo_{sufix}"),
+    login: format!("organization_foo_{suffix}"),
     name: None,
     url: "https://github.com/foo".to_owned(),
     website_url: None,
@@ -50,7 +50,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     description: None,
     id: random_i64(),
     location: None,
-    login: format!("organization_acme_{sufix}"),
+    login: format!("organization_acme_{suffix}"),
     name: None,
     url: "https://github.com/acme".to_owned(),
     website_url: None,
@@ -61,7 +61,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     description: None,
     id: random_i64(),
     location: None,
-    login: format!("empty_org_{sufix}"),
+    login: format!("empty_org_{suffix}"),
     name: None,
     url: "https://github.com/empty_org".to_owned(),
     website_url: None,
@@ -73,7 +73,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     bio: None,
     email: "foo@email.com".to_owned(),
     id: random_i64(),
-    login: format!("user_foo_{sufix}"),
+    login: format!("user_foo_{suffix}"),
     name: None,
     url: "https://github.com/foo".to_owned(),
     website_url: None,
@@ -84,7 +84,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     bio: None,
     email: "bar@email.com".to_owned(),
     id: random_i64(),
-    login: format!("user_bar_{sufix}"),
+    login: format!("user_bar_{suffix}"),
     name: None,
     url: "https://github.com/bar".to_owned(),
     website_url: None,
@@ -95,7 +95,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     bio: None,
     email: "dee@email.com".to_owned(),
     id: random_i64(),
-    login: format!("user_dee_{sufix}"),
+    login: format!("user_dee_{suffix}"),
     name: None,
     url: "https://github.com/bar".to_owned(),
     website_url: None,
@@ -106,7 +106,7 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     bio: None,
     email: "empty_user@email.com".to_owned(),
     id: random_i64(),
-    login: format!("empty_user_{sufix}"),
+    login: format!("empty_user_{suffix}"),
     name: None,
     url: "https://github.com/empty_user".to_owned(),
     website_url: None,
@@ -118,8 +118,8 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     fork_count: 9,
     id: -1,
     licenses: vec![],
-    name: format!("repository_tux_{sufix}"),
-    owner_login: format!("organization_acme_{sufix}"),
+    name: format!("repository_tux_{suffix}"),
+    owner_login: format!("organization_acme_{suffix}"),
     owner_ref: "organizations".to_owned(),
     primary_language: None,
     url: "https://github.com/user_bar/repository_tux".to_owned(),
@@ -129,8 +129,8 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     fork_count: 12,
     id: -1,
     licenses: vec![],
-    name: format!("repository_mar_{sufix}"),
-    owner_login: format!("organization_acme_{sufix}"),
+    name: format!("repository_mar_{suffix}"),
+    owner_login: format!("organization_acme_{suffix}"),
     owner_ref: "organizations".to_owned(),
     primary_language: None,
     url: "https://github.com/user_bar/repository_mar".to_owned(),
@@ -140,8 +140,8 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     fork_count: 2,
     id: -1,
     licenses: vec![],
-    name: format!("repository_bar_{sufix}"),
-    owner_login: format!("user_bar_{sufix}"),
+    name: format!("repository_bar_{suffix}"),
+    owner_login: format!("user_bar_{suffix}"),
     owner_ref: "users".to_owned(),
     primary_language: None,
     url: "https://github.com/user_bar/repository_bar".to_owned(),
@@ -151,8 +151,8 @@ async fn insert_mocked_data(db: &DBConnection, sufix: &str) -> Result<(), Client
     fork_count: 2,
     id: -1,
     licenses: vec![],
-    name: format!("repository_dee_{sufix}"),
-    owner_login: format!("user_dee_{sufix}"),
+    name: format!("repository_dee_{suffix}"),
+    owner_login: format!("user_dee_{suffix}"),
     owner_ref: "users".to_owned(),
     primary_language: None,
     url: "https://github.com/user_dee/repository_dee".to_owned(),

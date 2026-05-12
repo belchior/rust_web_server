@@ -1,4 +1,4 @@
-FROM server_base_image_postgres as builder
+FROM server_base_image_postgres AS builder
 WORKDIR /server
 COPY . .
 RUN ./scripts/build.sh
@@ -19,11 +19,11 @@ CMD ["./release/rust_web_server"]
 #   --publish=8080:8080 \
 #   --env=SERVER_PORT=8080 \
 #   --env=SERVER_HOST=0.0.0.0 \
-#   --env=POSTGRES_DB=database \
-#   --env=POSTGRES_HOST=172.17.0.2 \
-#   --env=POSTGRES_PASSWORD=postgres \
-#   --env=POSTGRES_PORT=5432 \
-#   --env=POSTGRES_USER=postgres \
-#   --env=POSTGRES_CONNECTIONS_NUMBER=4 \
+#   --env=DATABASE_DB=database \
+#   --env=DATABASE_HOST=172.17.0.2 \
+#   --env=DATABASE_PASSWORD=postgres \
+#   --env=DATABASE_PORT=5432 \
+#   --env=DATABASE_USER=postgres \
+#   --env=DATABASE_CONNECTIONS_NUMBER=4 \
 #   --env=CORS_ALLOWED_ORIGINS=http://localhost:3000 \
 #   server

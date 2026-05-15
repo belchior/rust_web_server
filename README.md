@@ -17,18 +17,19 @@
 
 ## Development
 
-To start developing you should build the `base_image` for `server` and `client` running the command below
+To start developing you should build the `base_image` for `server` running the command below
 
 ```sh
-docker compose build server_base_image client_base_image
+docker compose build server_base_image
 ```
 
-After that you can start both using the command
+After that you can start both `server` and `client` using the command
 
 ```sh
 docker compose up server client
 ```
 
+Now you can access http://localhost:5173/ to use the app
 
 **Server**
 
@@ -46,12 +47,6 @@ To start's server in development mode
 docker compose up server
 ```
 
-To build server for production
-
-```sh
-docker compose build server_build
-```
-
 To run tests
 
 ```sh
@@ -65,6 +60,12 @@ docker compose run --rm server_test ./scripts/test.sh
 docker compose run --rm server_test ./scripts/test_coverage.sh
 ```
 
+To build server for production
+
+```sh
+docker compose build server_build
+```
+
 To debug database
 
 ```sh
@@ -73,14 +74,6 @@ docker compose exec database psql -U postgres -d database
 ```
 
 **Client**
-
-As the same as server, the `base_image` contains all dependencies to be used in `development`, `testing` and build for `production`.
-
-You can build it manually with
-
-```sh
-docker compose build client_base_image
-```
 
 To start's in development mode
 
@@ -104,6 +97,7 @@ Actix Web
 
 PostgreSQL
 
+- [Postgres - Don't Do This](https://wiki.postgresql.org/wiki/Don%27t_Do_This)
 - https://docs.rs/tokio-postgres/latest/tokio_postgres/
 - https://docs.rs/deadpool-postgres/latest/deadpool_postgres/
 

@@ -4,6 +4,7 @@ use crate::{
     self,
     cursor_connection::{CursorConnection, PaginationArguments},
     organization::Organization,
+    profile::Follower,
     repository::Repository,
     user::User,
   },
@@ -15,6 +16,26 @@ pub async fn find_organization(login: &String) -> Result<Option<Organization>, A
   match result {
     Err(err) => Err(AppError::Database(err)),
     Ok(some) => Ok(some),
+  }
+}
+
+pub async fn find_followers(
+  login: &String,
+  pagination_arguments: PaginationArguments,
+) -> Result<Option<CursorConnection<Follower>>, AppError> {
+  let result = database::organization::find_organization_by_login(login).await;
+
+  match result {
+    Err(err) => Err(AppError::Database(err)),
+    Ok(None) => Ok(None),
+    Ok(Some(_)) => {
+      let result = database::profile::find_followers_by_login(login, pagination_arguments).await;
+      let cursor = database::profile::followers_to_cursor_connection(login, result).await;
+      match cursor {
+        Err(err) => Err(AppError::Database(err)),
+        Ok(cursor) => Ok(Some(cursor)),
+      }
+    }
   }
 }
 

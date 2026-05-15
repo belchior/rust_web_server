@@ -10,6 +10,7 @@ actix-cors = "0.7.1"
 actix-service = "2.0.3"
 actix-web = "4.12.1"
 base64 = "0.13.0"
+chrono = { version = "0.4.44", features = ["serde"] }
 dotenvy = "0.15.7"
 futures = "0.3.31"
 futures-util = "0.3.31"
@@ -20,7 +21,7 @@ tokio-stream = "0.1.17"
 # used for database access
 deadpool-postgres = "0.14.1"
 sql_query_builder = { version = "2.6.2", features = ["postgresql"] }
-tokio-postgres = "0.7.15"
+tokio-postgres = { version = "0.7.15", features = ["with-chrono-0_4"] }
 # used for create trancing and logs
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "json"] }

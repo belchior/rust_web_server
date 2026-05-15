@@ -11,6 +11,11 @@ pub fn scope() -> Scope {
   web::scope("/organization/{login}")
     .route("", web::get().to(organization))
     .service(
+      web::resource("/followers")
+        .wrap(middleware::ValidatePaginationArguments)
+        .route(web::get().to(followers)),
+    )
+    .service(
       web::resource("/people")
         .wrap(middleware::ValidatePaginationArguments)
         .route(web::get().to(people)),
@@ -26,6 +31,15 @@ async fn organization(login: web::Path<String>) -> impl Responder {
   let result = application::organization::find_organization(&login).await;
 
   into_response(result, "Organization")
+}
+
+async fn followers(
+  login: web::Path<String>,
+  web::Query(pagination_arguments): web::Query<PaginationArguments>,
+) -> impl Responder {
+  let result = application::organization::find_followers(&login, pagination_arguments).await;
+
+  into_response(result, "User")
 }
 
 async fn people(

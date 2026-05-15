@@ -21,7 +21,7 @@ pub fn scope() -> Scope {
         .route(web::get().to(repositories)),
     )
     .service(
-      web::resource("/starred-repositories")
+      web::resource("/stars")
         .wrap(middleware::ValidatePaginationArguments)
         .route(web::get().to(starred_repositories)),
     )

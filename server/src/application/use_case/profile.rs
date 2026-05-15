@@ -6,7 +6,6 @@ use futures::join;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
 pub enum Profile {
   User(User),
   Organization(Organization),

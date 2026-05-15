@@ -10,13 +10,12 @@ use sql_query_builder as sql;
 use tokio_postgres::{Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct User {
   pub avatar_url: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub bio: Option<String>,
   pub email: String,
-  pub id: i64,
+  pub user_id: i64,
   pub login: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub name: Option<String>,
@@ -32,7 +31,7 @@ impl From<Row> for User {
       avatar_url: row.get("avatar_url"),
       bio: row.try_get("bio").unwrap_or(None),
       email: row.get("email"),
-      id: row.get("user_id"),
+      user_id: row.get("user_id"),
       login: row.get("login"),
       name: row.try_get("name").unwrap_or(None),
       url: row.get("url"),
@@ -43,20 +42,6 @@ impl From<Row> for User {
 }
 
 // Finds
-
-pub async fn find_followers_by_login(
-  user_login: &String,
-  pagination_arguments: PaginationArguments,
-) -> Result<Vec<User>, ClientError> {
-  let db = database::get_connection().await.get().await.unwrap();
-  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let follower_id = utils::parse_cursor(cursor);
-  let (query, params) = query_find_followers_by_login(user_login, &follower_id, &direction, &limit);
-  let result = db.query(&query, &params[..]).await?;
-  let users = result.into_iter().map(|row| User::from(row)).collect::<Vec<_>>();
-
-  Ok(users)
-}
 
 pub async fn find_following_by_login(
   user_login: &String,
@@ -124,43 +109,21 @@ pub async fn find_user_by_login(login: &String) -> Result<Option<User>, ClientEr
 
 // Cursor connections
 
-pub async fn followers_to_cursor_connection(
-  user_login: &String,
-  result: Result<Vec<User>, ClientError>,
-) -> Result<CursorConnection<User>, ClientError> {
-  let db = database::get_connection().await.get().await.unwrap();
-  let result = result?;
-  let reference_from = |item: &User| item.id.to_string();
-
-  if result.len() == 0 {
-    let items = CursorConnection::new(result, reference_from, false, false);
-    return Ok(items);
-  }
-
-  let first_item_id = result.first().unwrap().id;
-  let last_item_id = result.last().unwrap().id;
-  let (query, params) = query_followers_pages_previous_and_next(user_login, &first_item_id, &last_item_id);
-  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
-  let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
-
-  Ok(items)
-}
-
 pub async fn following_to_cursor_connection(
   user_login: &String,
   result: Result<Vec<User>, ClientError>,
 ) -> Result<CursorConnection<User>, ClientError> {
   let db = database::get_connection().await.get().await.unwrap();
   let result = result?;
-  let reference_from = |item: &User| item.id.to_string();
+  let reference_from = |item: &User| item.user_id.to_string();
 
   if result.len() == 0 {
     let items = CursorConnection::new(result, reference_from, false, false);
     return Ok(items);
   }
 
-  let first_item_id = result.first().unwrap().id;
-  let last_item_id = result.last().unwrap().id;
+  let first_item_id = result.first().unwrap().user_id;
+  let last_item_id = result.last().unwrap().user_id;
   let (query, params) = query_followed_pages_previous_and_next(user_login, &first_item_id, &last_item_id);
   let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
   let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
@@ -168,21 +131,21 @@ pub async fn following_to_cursor_connection(
   Ok(items)
 }
 
-pub async fn users_organizations_to_cursor_connection(
+pub async fn organizations_members_to_cursor_connection(
   owner_login: &String,
   result: Result<Vec<Organization>, ClientError>,
 ) -> Result<CursorConnection<Organization>, ClientError> {
   let db = database::get_connection().await.get().await.unwrap();
   let result = result?;
-  let reference_from = |item: &Organization| item.id.to_string();
+  let reference_from = |item: &Organization| item.organization_id.to_string();
 
   if result.len() == 0 {
     let items = CursorConnection::new(result, reference_from, false, false);
     return Ok(items);
   }
 
-  let first_item_id = result.first().unwrap().id;
-  let last_item_id = result.last().unwrap().id;
+  let first_item_id = result.first().unwrap().organization_id;
+  let last_item_id = result.last().unwrap().organization_id;
   let (query, params) = query_organizations_pages_previous_and_next(owner_login, &first_item_id, &last_item_id);
   let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
   let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
@@ -191,60 +154,6 @@ pub async fn users_organizations_to_cursor_connection(
 }
 
 // Queries
-
-fn query_find_followers_by_login<'a>(
-  user_login: &'a String,
-  follower_id: &'a Option<i64>,
-  direction: &'a Direction,
-  limit: &'a i64,
-) -> (String, Vec<QueryParam<'a>>) {
-  let mut select_followers = sql::Select::new()
-    .select("u.*")
-    .from("users u")
-    .inner_join("users_following uf on uf.user_login = u.login")
-    .where_clause("uf.following_login = $1")
-    .order_by("u.user_id asc");
-
-  let mut params: Vec<QueryParam> = vec![user_login];
-
-  let query = match direction {
-    Direction::Backward => {
-      let mut select_followers_reverse = sql::Select::new()
-        .select("*")
-        .from("followers")
-        .order_by("user_id desc")
-        .limit("$2");
-
-      params.push(limit);
-
-      if let Some(follower_id) = follower_id {
-        select_followers_reverse = select_followers_reverse.where_clause("user_id < $3");
-        params.push(follower_id);
-      }
-
-      sql::Select::new()
-        .with("followers", select_followers)
-        .with("followers_reverse", select_followers_reverse)
-        .select("*")
-        .from("followers_reverse")
-        .order_by("user_id asc")
-        .as_string()
-    }
-    Direction::Forward => {
-      select_followers = select_followers.limit("$2");
-      params.push(limit);
-
-      if let Some(follower_id) = follower_id {
-        select_followers = select_followers.where_clause("u.user_id > $3");
-        params.push(follower_id);
-      }
-
-      select_followers.as_string()
-    }
-  };
-
-  (query, params)
-}
 
 fn query_find_following_by_login<'a>(
   user_login: &'a String,
@@ -307,10 +216,10 @@ fn query_find_organizations_by_user_login<'a>(
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
   let mut select_org = sql::Select::new()
-    .select("o.*, uo.created_at as joined_at")
+    .select("o.*, om.created_at as joined_at")
     .from("users u")
-    .inner_join("users_organizations uo on uo.user_login = u.login")
-    .inner_join("organizations o on o.login = uo.organization_login")
+    .inner_join("organizations_members om on om.user_login = u.login")
+    .inner_join("organizations o on o.login = om.organization_login")
     .where_clause("u.login = $1")
     .order_by("o.organization_id asc");
 
@@ -381,32 +290,6 @@ fn query_followed_pages_previous_and_next<'a>(
   (query, params)
 }
 
-fn query_followers_pages_previous_and_next<'a>(
-  user_login: &'a String,
-  first_item_id: &'a i64,
-  last_item_id: &'a i64,
-) -> (String, Vec<QueryParam<'a>>) {
-  let select_base = sql::Select::new()
-    .from("users u")
-    .inner_join("users_following uf on uf.user_login = u.login")
-    .where_clause("uf.following_login = $1")
-    .order_by("u.user_id asc")
-    .limit("1");
-
-  let select_previous = select_base
-    .clone()
-    .select("'previous' as page")
-    .where_clause("u.user_id < $2 /* first_id */");
-  let select_next = select_base
-    .clone()
-    .select("'next' as page")
-    .where_clause("u.user_id > $3 /* last_id */");
-  let query = select_previous.union(select_next).as_string();
-  let params: Vec<QueryParam> = vec![user_login, first_item_id, last_item_id];
-
-  (query, params)
-}
-
 fn query_organizations_pages_previous_and_next<'a>(
   owner_login: &'a String,
   first_item_id: &'a i64,
@@ -414,8 +297,8 @@ fn query_organizations_pages_previous_and_next<'a>(
 ) -> (String, Vec<QueryParam<'a>>) {
   let select_base = sql::Select::new()
     .from("users u")
-    .inner_join("users_organizations uo on uo.organization_login = u.login")
-    .inner_join("organizations o on o.login = uo.organization_login")
+    .inner_join("organizations_members om on om.organization_login = u.login")
+    .inner_join("organizations o on o.login = om.organization_login")
     .where_clause("u.login = $1")
     .order_by("o.organization_id asc")
     .limit("1");
@@ -442,9 +325,11 @@ fn query_find_starred_repositories_by_user_login<'a>(
 ) -> (String, Vec<QueryParam<'a>>) {
   let mut select_repo = sql::Select::new()
     .select("r.*")
+    .select("l.*")
     .from("users u")
-    .inner_join("users_starred_repositories usr on usr.user_login = u.login")
+    .inner_join("repositories_stars rs on rs.owner_login = u.login")
     .inner_join("repositories r using(repository_id)")
+    .left_join("languages l on l.language_name = r.primary_language")
     .where_clause("u.login = $1")
     .order_by("r.repository_id asc");
 

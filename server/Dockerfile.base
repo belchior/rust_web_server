@@ -16,12 +16,12 @@ RUN cargo install rustfilt@0.2.1 cargo-binutils@0.3.6 &&\
     RUSTFLAGS="-C instrument-coverage" cargo test --target-dir target/coverage --no-run
 
 # Install and compile dependencies to production
-# RUN apt-get update &&\
-#     apt-get install musl-tools -y &&\
-#     rustup target add x86_64-unknown-linux-musl &&\
-#     cargo build --release --target=x86_64-unknown-linux-musl
+RUN apt-get update &&\
+    apt-get install musl-tools -y &&\
+    rustup target add x86_64-unknown-linux-musl &&\
+    cargo build --release --target=x86_64-unknown-linux-musl
 
-# # Remove targets builded from fake project
+# Remove targets builded from fake project
 RUN rm -fr src &&\
     rm -f target/debug/rust_web_server* &&\
     rm -f target/debug/deps/rust_web_server* &&\

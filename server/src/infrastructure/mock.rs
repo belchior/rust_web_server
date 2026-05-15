@@ -37,7 +37,7 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
   let organization_foo = Organization {
     avatar_url: "https://foo.com/avatar.jpg".to_owned(),
     description: None,
-    id: random_i64(),
+    organization_id: random_i64(),
     location: None,
     login: format!("organization_foo_{suffix}"),
     name: None,
@@ -48,7 +48,7 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
   let organization_acme = Organization {
     avatar_url: "https://acme.com/avatar.jpg".to_owned(),
     description: None,
-    id: random_i64(),
+    organization_id: random_i64(),
     location: None,
     login: format!("organization_acme_{suffix}"),
     name: None,
@@ -59,7 +59,7 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
   let organization_empty_org = Organization {
     avatar_url: "https://empty_org.com/avatar.jpg".to_owned(),
     description: None,
-    id: random_i64(),
+    organization_id: random_i64(),
     location: None,
     login: format!("empty_org_{suffix}"),
     name: None,
@@ -72,7 +72,7 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
     avatar_url: "https://foo.com/avatar.jpg".to_owned(),
     bio: None,
     email: "foo@email.com".to_owned(),
-    id: random_i64(),
+    user_id: random_i64(),
     login: format!("user_foo_{suffix}"),
     name: None,
     url: "https://github.com/foo".to_owned(),
@@ -83,7 +83,7 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
     avatar_url: "https://bar.com/avatar.jpg".to_owned(),
     bio: None,
     email: "bar@email.com".to_owned(),
-    id: random_i64(),
+    user_id: random_i64(),
     login: format!("user_bar_{suffix}"),
     name: None,
     url: "https://github.com/bar".to_owned(),
@@ -94,7 +94,7 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
     avatar_url: "https://dee.com/avatar.jpg".to_owned(),
     bio: None,
     email: "dee@email.com".to_owned(),
-    id: random_i64(),
+    user_id: random_i64(),
     login: format!("user_dee_{suffix}"),
     name: None,
     url: "https://github.com/bar".to_owned(),
@@ -105,7 +105,7 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
     avatar_url: "https://empty_user.com/avatar.jpg".to_owned(),
     bio: None,
     email: "empty_user@email.com".to_owned(),
-    id: random_i64(),
+    user_id: random_i64(),
     login: format!("empty_user_{suffix}"),
     name: None,
     url: "https://github.com/empty_user".to_owned(),
@@ -116,7 +116,8 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
   let mut repository_tux = Repository {
     description: None,
     fork_count: 9,
-    id: -1,
+    star_count: 0,
+    repository_id: -1,
     licenses: vec![],
     name: format!("repository_tux_{suffix}"),
     owner_login: format!("organization_acme_{suffix}"),
@@ -127,7 +128,8 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
   let mut repository_mar = Repository {
     description: None,
     fork_count: 12,
-    id: -1,
+    star_count: 0,
+    repository_id: -1,
     licenses: vec![],
     name: format!("repository_mar_{suffix}"),
     owner_login: format!("organization_acme_{suffix}"),
@@ -138,7 +140,8 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
   let mut repository_bar = Repository {
     description: None,
     fork_count: 2,
-    id: -1,
+    star_count: 0,
+    repository_id: -1,
     licenses: vec![],
     name: format!("repository_bar_{suffix}"),
     owner_login: format!("user_bar_{suffix}"),
@@ -149,7 +152,8 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
   let mut repository_dee = Repository {
     description: None,
     fork_count: 2,
-    id: -1,
+    star_count: 0,
+    repository_id: -1,
     licenses: vec![],
     name: format!("repository_dee_{suffix}"),
     owner_login: format!("user_dee_{suffix}"),
@@ -170,18 +174,20 @@ async fn insert_mocked_data(db: &DBConnection, suffix: &str) -> Result<(), Clien
   insert_user(db, &user_empty_user).await?;
 
   insert_user(db, &user_foo).await?;
-  insert_user_organization(db, &user_foo, &organization_foo).await?;
-  insert_user_organization(db, &user_foo, &organization_acme).await?;
+  insert_organization_member(db, &user_foo, &organization_foo).await?;
+  insert_organization_member(db, &user_foo, &organization_acme).await?;
+  insert_user_following(db, &user_foo, &organization_foo.login).await?;
 
   insert_user(db, &user_bar).await?;
-  insert_user_following(db, &user_bar, &user_foo).await?;
+  insert_user_following(db, &user_bar, &user_foo.login).await?;
+  insert_user_following(db, &user_bar, &organization_foo.login).await?;
   insert_user_starred_repository(db, &user_bar, &repository_tux).await?;
   insert_user_starred_repository(db, &user_bar, &repository_dee).await?;
 
   insert_user(db, &user_dee).await?;
-  insert_user_organization(db, &user_dee, &organization_acme).await?;
-  insert_user_following(db, &user_dee, &user_foo).await?;
-  insert_user_following(db, &user_dee, &user_bar).await?;
+  insert_organization_member(db, &user_dee, &organization_acme).await?;
+  insert_user_following(db, &user_dee, &user_foo.login).await?;
+  insert_user_following(db, &user_dee, &user_bar.login).await?;
 
   Ok(())
 }
@@ -205,13 +211,13 @@ async fn insert_organization(db: &DBConnection, document: &Organization) -> Resu
   db.execute(&query, &params).await
 }
 
-async fn insert_user_organization(
+async fn insert_organization_member(
   db: &DBConnection,
   user: &User,
   organization: &Organization,
 ) -> Result<u64, ClientError> {
   let query = sql::Insert::new()
-    .insert_into("users_organizations (user_login,  organization_login)")
+    .insert_into("organizations_members (user_login,  organization_login)")
     .values("($1::VARCHAR, $2::VARCHAR)")
     .as_string();
 
@@ -222,8 +228,10 @@ async fn insert_user_organization(
 
 async fn insert_repository(db: &DBConnection, document: &mut Repository) -> Result<(), ClientError> {
   let query = sql::Insert::new()
-    .insert_into("repositories (description, fork_count, name, owner_login, owner_ref, primary_language, url)")
-    .values("($1::VARCHAR, $2::INT4, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR)")
+    .insert_into(
+      "repositories (description, fork_count, star_count, name, owner_login, owner_ref, primary_language, url)",
+    )
+    .values("($1::VARCHAR, $2::INT4, $3::INT4, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR)")
     .returning("repository_id")
     .as_string();
 
@@ -236,6 +244,7 @@ async fn insert_repository(db: &DBConnection, document: &mut Repository) -> Resu
   let params: Vec<QueryParam> = vec![
     &document.description,
     &document.fork_count,
+    &document.star_count,
     &document.name,
     &document.owner_login,
     &document.owner_ref,
@@ -249,7 +258,7 @@ async fn insert_repository(db: &DBConnection, document: &mut Repository) -> Resu
     Err(err) => Err(err),
     Ok(None) => Ok(()),
     Ok(Some(row)) => {
-      document.id = row.get("repository_id");
+      document.repository_id = row.get("repository_id");
       Ok(())
     }
   }
@@ -273,13 +282,13 @@ async fn insert_user(db: &DBConnection, document: &User) -> Result<u64, ClientEr
   db.execute(&query, &params).await
 }
 
-async fn insert_user_following(db: &DBConnection, user: &User, following: &User) -> Result<u64, ClientError> {
+async fn insert_user_following(db: &DBConnection, user: &User, following_login: &str) -> Result<u64, ClientError> {
   let query = sql::Insert::new()
     .insert_into("users_following (user_login,  following_login)")
     .values("($1::VARCHAR, $2::VARCHAR)")
     .as_string();
 
-  let params: Vec<QueryParam> = vec![&user.login, &following.login];
+  let params: Vec<QueryParam> = vec![&user.login, &following_login];
 
   db.execute(&query, &params).await
 }
@@ -290,11 +299,11 @@ async fn insert_user_starred_repository(
   repository: &Repository,
 ) -> Result<u64, ClientError> {
   let query = sql::Insert::new()
-    .insert_into("users_starred_repositories (user_login,  repository_id)")
+    .insert_into("repositories_stars (owner_login,  repository_id)")
     .values("($1::VARCHAR, $2::BIGINT)")
     .as_string();
 
-  let params: Vec<QueryParam> = vec![&user.login, &repository.id];
+  let params: Vec<QueryParam> = vec![&user.login, &repository.repository_id];
 
   db.execute(&query, &params).await
 }

@@ -9,18 +9,15 @@ pub enum ProfileType {
 }
 
 pub fn parse_cursor(cursor: Option<String>) -> Option<i64> {
-  if cursor.is_none() {
+  let Some(cursor) = cursor else {
     return None;
-  }
-  let reference = cursor_to_reference(cursor.unwrap());
-  if reference.is_err() {
+  };
+  let Ok(reference) = cursor_to_reference(cursor) else {
     return None;
-  }
-  let id = reference.unwrap().parse::<i64>();
-  if id.is_err() {
+  };
+  let Ok(id) = reference.parse::<i64>() else {
     return None;
-  }
-  let id = id.unwrap();
+  };
 
   Some(id)
 }

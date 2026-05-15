@@ -1,5 +1,5 @@
 use base64;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 ///
 ///   forward pagination argument
@@ -47,7 +47,6 @@ impl<T> Edges<T> {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
 pub struct PageInfo {
   pub has_previous_page: bool,
   pub has_next_page: bool,
@@ -78,7 +77,6 @@ impl PageInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
 pub struct CursorConnection<T> {
   pub page_info: PageInfo,
   pub edges: Vec<Edges<T>>,
@@ -101,10 +99,8 @@ pub enum Direction {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationArguments {
   pub first: Option<i64>,
-  #[serde(default, deserialize_with = "optional_string")]
   pub after: Option<String>,
   pub last: Option<i64>,
-  #[serde(default, deserialize_with = "optional_string")]
   pub before: Option<String>,
 }
 impl PaginationArguments {
@@ -202,12 +198,4 @@ pub fn cursor_to_reference(cursor: String) -> Result<String, Error> {
 
 fn reference_to_cursor(reference: String) -> String {
   base64::encode(reference)
-}
-
-fn optional_string<'de, D: Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
-  Deserialize::deserialize(d).map(|value: Option<_>| match value {
-    None => None,
-    Some("" | "null") => None,
-    Some(value) => Some(value.to_string()),
-  })
 }

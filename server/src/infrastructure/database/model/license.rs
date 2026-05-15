@@ -14,7 +14,7 @@ impl From<Row> for License {
   fn from(row: Row) -> Self {
     Self {
       license_key: row.get("license_key"),
-      name: row.get("name"),
+      name: row.get("license_name"),
     }
   }
 }

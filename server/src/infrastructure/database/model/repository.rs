@@ -24,11 +24,11 @@ impl From<Row> for Language {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct Repository {
   pub description: Option<String>,
   pub fork_count: i32,
-  pub id: i64,
+  pub star_count: i32,
+  pub repository_id: i64,
   pub licenses: Vec<License>,
   pub name: String,
   pub owner_login: String,
@@ -43,7 +43,8 @@ impl From<Row> for Repository {
     Self {
       description: row.try_get("description").unwrap_or(None),
       fork_count: row.get("fork_count"),
-      id: row.get("repository_id"),
+      star_count: row.get("star_count"),
+      repository_id: row.get("repository_id"),
       licenses: vec![],
       name: row.get("name"),
       owner_login: row.get("owner_login"),
@@ -74,12 +75,12 @@ pub async fn find_repositories_by_owner_login(
   let result = db.query(&query, &params[..]).await?;
   let repositories = result.into_iter().map(|row| Repository::from(row)).collect::<Vec<_>>();
 
-  let repository_ids = repositories.iter().map(|repo| repo.id).collect::<Vec<_>>();
+  let repository_ids = repositories.iter().map(|repo| repo.repository_id).collect::<Vec<_>>();
   let mut licenses = find_licenses_by_repository_ids(&repository_ids).await?;
   let repositories = repositories
     .into_iter()
     .map(|mut repo| {
-      if let Some(list) = licenses.remove(&repo.id) {
+      if let Some(list) = licenses.remove(&repo.repository_id) {
         repo.licenses = list;
       }
       repo
@@ -97,15 +98,15 @@ pub async fn repositories_to_cursor_connection(
 ) -> Result<CursorConnection<Repository>, ClientError> {
   let db = database::get_connection().await.get().await.unwrap();
   let result = result?;
-  let reference_from = |item: &Repository| item.id.to_string();
+  let reference_from = |item: &Repository| item.repository_id.to_string();
 
   if result.len() == 0 {
     let items = CursorConnection::new(result, reference_from, false, false);
     return Ok(items);
   }
 
-  let first_item_id = result.first().unwrap().id;
-  let last_item_id = result.last().unwrap().id;
+  let first_item_id = result.first().unwrap().repository_id;
+  let last_item_id = result.last().unwrap().repository_id;
   let (query, params) = query_pages_previous_and_next(owner_login, &first_item_id, &last_item_id);
   let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
   let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
@@ -122,11 +123,11 @@ fn query_find_repositories_by_owner_login<'a>(
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
   let mut select_base = sql::Select::new()
-    .select("repository_id, name, owner_login, description, fork_count, owner_ref, primary_language, url, created_at")
+    .select("repository_id, name, owner_login, description, fork_count, star_count, owner_ref, primary_language, url, created_at")
     .select("l.*")
     .from("repositories r")
     .left_join("languages l on l.language_name = r.primary_language")
-    .where_clause("owner_login = $1")
+    .where_clause("r.owner_login = $1")
     .limit("$2");
 
   let mut params: Vec<QueryParam> = vec![owner_login, limit];

@@ -9,12 +9,11 @@ use sql_query_builder as sql;
 use tokio_postgres::{Error as ClientError, Row};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct Organization {
   pub avatar_url: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub description: Option<String>,
-  pub id: i64,
+  pub organization_id: i64,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub location: Option<String>,
   pub login: String,
@@ -31,7 +30,7 @@ impl From<Row> for Organization {
     Self {
       avatar_url: row.get("avatar_url"),
       description: row.try_get("description").unwrap_or(None),
-      id: row.get("organization_id"),
+      organization_id: row.get("organization_id"),
       location: row.try_get("location").unwrap_or(None),
       login: row.get("login"),
       name: row.try_get("name").unwrap_or(None),
@@ -85,15 +84,15 @@ pub async fn organizations_users_to_cursor_connection(
 ) -> Result<CursorConnection<User>, ClientError> {
   let db = database::get_connection().await.get().await.unwrap();
   let result = result?;
-  let reference_from = |item: &User| item.id.to_string();
+  let reference_from = |item: &User| item.user_id.to_string();
 
   if result.len() == 0 {
     let items = CursorConnection::new(result, reference_from, false, false);
     return Ok(items);
   }
 
-  let first_item_id = result.first().unwrap().id;
-  let last_item_id = result.last().unwrap().id;
+  let first_item_id = result.first().unwrap().user_id;
+  let last_item_id = result.last().unwrap().user_id;
   let (query, params) = query_pages_previous_and_next(owner_login, &first_item_id, &last_item_id);
   let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
   let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
@@ -110,10 +109,10 @@ fn query_find_people_by_login<'a>(
   limit: &'a i64,
 ) -> (String, Vec<QueryParam<'a>>) {
   let mut select_people = sql::Select::new()
-    .select("u.*, uo.created_at as joined_at")
+    .select("u.*, om.created_at as joined_at")
     .from("organizations org")
-    .inner_join("users_organizations uo on uo.organization_login = org.login")
-    .inner_join("users u on u.login = uo.user_login")
+    .inner_join("organizations_members om on om.organization_login = org.login")
+    .inner_join("users u on u.login = om.user_login")
     .where_clause("org.login = $1")
     .order_by("u.user_id asc");
 
@@ -165,8 +164,8 @@ fn query_pages_previous_and_next<'a>(
 ) -> (String, Vec<QueryParam<'a>>) {
   let select_base = sql::Select::new()
     .from("organizations o")
-    .inner_join("users_organizations uo on uo.organization_login = o.login")
-    .inner_join("users u on u.login = uo.user_login")
+    .inner_join("organizations_members om on om.organization_login = o.login")
+    .inner_join("users u on u.login = om.user_login")
     .where_clause("o.login = $1")
     .order_by("u.user_id ASC")
     .limit("1");

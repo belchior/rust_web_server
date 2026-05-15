@@ -4,6 +4,7 @@ use crate::{
     self,
     cursor_connection::{CursorConnection, PaginationArguments},
     organization::Organization,
+    profile::Follower,
     repository::Repository,
     user::User,
   },
@@ -29,7 +30,7 @@ pub async fn find_organizations(
     Ok(None) => Ok(None),
     Ok(Some(_)) => {
       let result = database::user::find_organizations_by_user_login(login, pagination_arguments).await;
-      let cursor = database::user::users_organizations_to_cursor_connection(login, result).await;
+      let cursor = database::user::organizations_members_to_cursor_connection(login, result).await;
       match cursor {
         Err(err) => Err(AppError::Database(err)),
         Ok(cursor) => Ok(Some(cursor)),
@@ -74,15 +75,15 @@ pub async fn find_starred_repositories(
 pub async fn find_followers(
   login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<User>>, AppError> {
+) -> Result<Option<CursorConnection<Follower>>, AppError> {
   let result = database::user::find_user_by_login(login).await;
 
   match result {
     Err(err) => Err(AppError::Database(err)),
     Ok(None) => Ok(None),
     Ok(Some(_)) => {
-      let result = database::user::find_followers_by_login(login, pagination_arguments).await;
-      let cursor = database::user::followers_to_cursor_connection(login, result).await;
+      let result = database::profile::find_followers_by_login(login, pagination_arguments).await;
+      let cursor = database::profile::followers_to_cursor_connection(login, result).await;
       match cursor {
         Err(err) => Err(AppError::Database(err)),
         Ok(cursor) => Ok(Some(cursor)),

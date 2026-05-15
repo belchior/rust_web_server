@@ -1,3 +1,6 @@
+// Issue How to use a global runtime for all tests
+// ref: https://github.com/tokio-rs/tokio/issues/2374
+
 #[tokio::test]
 async fn main() {
   connection_spec::should_connect_to_database().await;
@@ -6,6 +9,8 @@ async fn main() {
   model_organization::should_dont_panic_when_person_is_not_found().await;
   model_organization::should_find_organizations_people().await;
   model_organization::should_find_un_existing_organization().await;
+  model_organization::should_paginating_followers_from_start_to_end().await;
+  model_organization::should_paginating_followers_from_end_to_start().await;
   model_organization::should_paginating_people_from_end_to_start().await;
   model_organization::should_paginating_people_from_start_to_end().await;
   model_repository::should_convert_a_repository_list_into_cursor_connection_of_repositories().await;
@@ -23,8 +28,8 @@ async fn main() {
   model_user::should_find_an_existing_user().await;
   model_user::should_find_users_followers().await;
   model_user::should_find_users_following().await;
-  model_user::should_find_users_organizations().await;
-  model_user::should_find_users_starred_repositories().await;
+  model_user::should_find_organizations_members().await;
+  model_user::should_find_repositories_stars().await;
   model_user::should_paginating_followers_from_end_to_start().await;
   model_user::should_paginating_followers_from_start_to_end().await;
   model_user::should_paginating_following_from_end_to_start().await;
@@ -176,6 +181,122 @@ mod model_organization {
     assert_eq!(cursor_connection.page_info.has_next_page, true);
   }
 
+  /// Paginating Followers
+
+  pub async fn should_paginating_followers_from_start_to_end() {
+    let suffix = mock::random_suffix();
+    mock::setup(&suffix).await;
+    let login = format!("organization_foo_{suffix}");
+
+    // should find the first user
+
+    let pagination_arguments = PaginationArguments {
+      first: Some(1),
+      after: None,
+      last: None,
+      before: None,
+    };
+
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+      .await
+      .unwrap();
+
+    assert_eq!(followers.len(), 1);
+    assert_eq!(followers[0].user.login, format!("user_foo_{suffix}"));
+
+    // should find the last user
+
+    let end_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+
+    let pagination_arguments = PaginationArguments {
+      first: Some(1),
+      after: end_cursor,
+      last: None,
+      before: None,
+    };
+
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+      .await
+      .unwrap();
+
+    assert_eq!(followers.len(), 1);
+    assert_eq!(followers[0].user.login, format!("user_bar_{suffix}"));
+
+    let end_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+
+    // should return an empty list
+
+    let pagination_arguments = PaginationArguments {
+      first: Some(1),
+      after: end_cursor,
+      last: None,
+      before: None,
+    };
+
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+      .await
+      .unwrap();
+
+    assert_eq!(followers.len(), 0);
+  }
+
+  pub async fn should_paginating_followers_from_end_to_start() {
+    let suffix = mock::random_suffix();
+    mock::setup(&suffix).await;
+    let login = format!("organization_foo_{suffix}");
+
+    // should find the last user
+
+    let pagination_arguments = PaginationArguments {
+      first: None,
+      after: None,
+      last: Some(1),
+      before: None,
+    };
+
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+      .await
+      .unwrap();
+
+    assert_eq!(followers.len(), 1);
+    assert_eq!(followers[0].user.login, format!("user_bar_{suffix}"));
+
+    let start_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+
+    // should find the first user
+
+    let pagination_arguments = PaginationArguments {
+      first: None,
+      after: None,
+      last: Some(1),
+      before: start_cursor,
+    };
+
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+      .await
+      .unwrap();
+
+    assert_eq!(followers.len(), 1);
+    assert_eq!(followers[0].user.login, format!("user_foo_{suffix}"));
+
+    let start_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+
+    // should return an empty list
+
+    let pagination_arguments = PaginationArguments {
+      first: None,
+      after: None,
+      last: Some(1),
+      before: start_cursor,
+    };
+
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+      .await
+      .unwrap();
+
+    assert_eq!(followers.len(), 0);
+  }
+
   /// Paginating People
 
   pub async fn should_paginating_people_from_start_to_end() {
@@ -199,7 +320,7 @@ mod model_organization {
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].login, format!("user_foo_{suffix}"));
 
-    let end_cursor = Some(base64::encode(users[0].id.to_string()));
+    let end_cursor = Some(base64::encode(users[0].user_id.to_string()));
 
     // should find the last user
 
@@ -217,7 +338,7 @@ mod model_organization {
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].login, format!("user_dee_{suffix}"));
 
-    let end_cursor = Some(base64::encode(users[0].id.to_string()));
+    let end_cursor = Some(base64::encode(users[0].user_id.to_string()));
 
     // should return an empty list
 
@@ -256,7 +377,7 @@ mod model_organization {
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].login, format!("user_dee_{suffix}"));
 
-    let start_cursor = Some(base64::encode(users[0].id.to_string()));
+    let start_cursor = Some(base64::encode(users[0].user_id.to_string()));
 
     // should find the first user
 
@@ -274,7 +395,7 @@ mod model_organization {
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].login, format!("user_foo_{suffix}"));
 
-    let start_cursor = Some(base64::encode(users[0].id.to_string()));
+    let start_cursor = Some(base64::encode(users[0].user_id.to_string()));
 
     // should return an empty list
 
@@ -388,7 +509,7 @@ mod model_repository {
     assert_eq!(repositories.len(), 1);
     assert_eq!(repositories[0].name, format!("repository_tux_{suffix}"));
 
-    let end_cursor = Some(base64::encode(repositories[0].id.to_string()));
+    let end_cursor = Some(base64::encode(repositories[0].repository_id.to_string()));
 
     // should find the last repository
 
@@ -406,7 +527,7 @@ mod model_repository {
     assert_eq!(repositories.len(), 1);
     assert_eq!(repositories[0].name, format!("repository_mar_{suffix}"));
 
-    let end_cursor = Some(base64::encode(repositories[0].id.to_string()));
+    let end_cursor = Some(base64::encode(repositories[0].repository_id.to_string()));
 
     // should return an empty list
 
@@ -445,7 +566,7 @@ mod model_repository {
     assert_eq!(repositories.len(), 1);
     assert_eq!(repositories[0].name, format!("repository_mar_{suffix}"));
 
-    let start_cursor = Some(base64::encode(repositories[0].id.to_string()));
+    let start_cursor = Some(base64::encode(repositories[0].repository_id.to_string()));
 
     // should find the first repository
 
@@ -463,7 +584,7 @@ mod model_repository {
     assert_eq!(repositories.len(), 1);
     assert_eq!(repositories[0].name, format!("repository_tux_{suffix}"));
 
-    let start_cursor = Some(base64::encode(repositories[0].id.to_string()));
+    let start_cursor = Some(base64::encode(repositories[0].repository_id.to_string()));
 
     // should return an empty list
 
@@ -509,7 +630,7 @@ mod model_user {
     assert_eq!(user, None);
   }
 
-  pub async fn should_find_users_organizations() {
+  pub async fn should_find_organizations_members() {
     let suffix = mock::random_suffix();
     mock::setup(&suffix).await;
     let login = format!("user_foo_{suffix}");
@@ -546,7 +667,7 @@ mod model_user {
     assert_eq!(organizations.len(), 0);
   }
 
-  pub async fn should_find_users_starred_repositories() {
+  pub async fn should_find_repositories_stars() {
     let suffix = mock::random_suffix();
     mock::setup(&suffix).await;
     let login = format!("user_bar_{suffix}");
@@ -594,13 +715,13 @@ mod model_user {
       before: None,
     };
 
-    let users = database::user::find_followers_by_login(&login, pagination_argument)
+    let followers = database::profile::find_followers_by_login(&login, pagination_argument)
       .await
       .unwrap();
 
-    assert_eq!(users.len(), 2);
-    assert_eq!(users[0].login, format!("user_bar_{suffix}"));
-    assert_eq!(users[1].login, format!("user_dee_{suffix}"));
+    assert_eq!(followers.len(), 2);
+    assert_eq!(followers[0].user.login, format!("user_bar_{suffix}"));
+    assert_eq!(followers[1].user.login, format!("user_dee_{suffix}"));
   }
 
   pub async fn should_dont_panic_when_follower_is_not_found() {
@@ -614,11 +735,11 @@ mod model_user {
       before: None,
     };
 
-    let repositories = database::user::find_followers_by_login(&login, pagination_argument)
+    let followers = database::profile::find_followers_by_login(&login, pagination_argument)
       .await
       .unwrap();
 
-    assert_eq!(repositories.len(), 0);
+    assert_eq!(followers.len(), 0);
   }
 
   pub async fn should_find_users_following() {
@@ -632,13 +753,13 @@ mod model_user {
       before: None,
     };
 
-    let users = database::user::find_following_by_login(&login, pagination_argument)
+    let followers = database::user::find_following_by_login(&login, pagination_argument)
       .await
       .unwrap();
 
-    assert_eq!(users.len(), 2);
-    assert_eq!(users[0].login, format!("user_foo_{suffix}"));
-    assert_eq!(users[1].login, format!("user_bar_{suffix}"));
+    assert_eq!(followers.len(), 2);
+    assert_eq!(followers[0].login, format!("user_foo_{suffix}"));
+    assert_eq!(followers[1].login, format!("user_bar_{suffix}"));
   }
 
   pub async fn should_dont_panic_when_following_is_not_found() {
@@ -669,16 +790,16 @@ mod model_user {
       last: None,
       before: None,
     };
-    let users = database::user::find_followers_by_login(&user_login, pagination_argument)
+    let followers = database::profile::find_followers_by_login(&user_login, pagination_argument)
       .await
       .unwrap();
 
-    let cursor_connection = database::user::followers_to_cursor_connection(&user_login, Ok(users))
+    let cursor_connection = database::profile::followers_to_cursor_connection(&user_login, Ok(followers))
       .await
       .unwrap();
 
     assert_eq!(cursor_connection.edges.len(), 1);
-    assert_eq!(cursor_connection.edges[0].node.login, format!("user_bar_{suffix}"));
+    assert_eq!(cursor_connection.edges[0].node.user.login, format!("user_bar_{suffix}"));
     assert_eq!(cursor_connection.page_info.has_previous_page, false);
     assert_eq!(cursor_connection.page_info.has_next_page, true);
   }
@@ -730,7 +851,7 @@ mod model_user {
     assert_eq!(organizations.len(), 1);
     assert_eq!(organizations[0].login, format!("organization_acme_{suffix}"));
 
-    let end_cursor = Some(base64::encode(organizations[0].id.to_string()));
+    let end_cursor = Some(base64::encode(organizations[0].organization_id.to_string()));
 
     // should find the last organization
 
@@ -748,7 +869,7 @@ mod model_user {
     assert_eq!(organizations.len(), 1);
     assert_eq!(organizations[0].login, format!("organization_foo_{suffix}"));
 
-    let end_cursor = Some(base64::encode(organizations[0].id.to_string()));
+    let end_cursor = Some(base64::encode(organizations[0].organization_id.to_string()));
 
     // should return an empty list
 
@@ -787,7 +908,7 @@ mod model_user {
     assert_eq!(organizations.len(), 1);
     assert_eq!(organizations[0].login, format!("organization_foo_{suffix}"));
 
-    let start_cursor = Some(base64::encode(organizations[0].id.to_string()));
+    let start_cursor = Some(base64::encode(organizations[0].organization_id.to_string()));
 
     // should find the first organization
 
@@ -805,7 +926,7 @@ mod model_user {
     assert_eq!(organizations.len(), 1);
     assert_eq!(organizations[0].login, format!("organization_acme_{suffix}"));
 
-    let start_cursor = Some(base64::encode(organizations[0].id.to_string()));
+    let start_cursor = Some(base64::encode(organizations[0].organization_id.to_string()));
 
     // should return an empty list
 
@@ -846,7 +967,7 @@ mod model_user {
     assert_eq!(repositories.len(), 1);
     assert_eq!(repositories[0].name, format!("repository_tux_{suffix}"));
 
-    let end_cursor = Some(base64::encode(repositories[0].id.to_string()));
+    let end_cursor = Some(base64::encode(repositories[0].repository_id.to_string()));
 
     // should find the last starred repository
 
@@ -864,7 +985,7 @@ mod model_user {
     assert_eq!(repositories.len(), 1);
     assert_eq!(repositories[0].name, format!("repository_dee_{suffix}"));
 
-    let end_cursor = Some(base64::encode(repositories[0].id.to_string()));
+    let end_cursor = Some(base64::encode(repositories[0].repository_id.to_string()));
 
     // should return an empty list
 
@@ -903,7 +1024,7 @@ mod model_user {
     assert_eq!(repositories.len(), 1);
     assert_eq!(repositories[0].name, format!("repository_dee_{suffix}"));
 
-    let start_cursor = Some(base64::encode(repositories[0].id.to_string()));
+    let start_cursor = Some(base64::encode(repositories[0].repository_id.to_string()));
 
     // should find the first starred repository
 
@@ -921,7 +1042,7 @@ mod model_user {
     assert_eq!(repositories.len(), 1);
     assert_eq!(repositories[0].name, format!("repository_tux_{suffix}"));
 
-    let start_cursor = Some(base64::encode(repositories[0].id.to_string()));
+    let start_cursor = Some(base64::encode(repositories[0].repository_id.to_string()));
 
     // should return an empty list
 
@@ -955,16 +1076,16 @@ mod model_user {
       before: None,
     };
 
-    let users = database::user::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
-    assert_eq!(users.len(), 1);
-    assert_eq!(users[0].login, format!("user_bar_{suffix}"));
-
-    let end_cursor = Some(base64::encode(users[0].id.to_string()));
+    assert_eq!(followers.len(), 1);
+    assert_eq!(followers[0].user.login, format!("user_bar_{suffix}"));
 
     // should find the last user
+
+    let end_cursor = Some(base64::encode(followers[0].following_at.to_string()));
 
     let pagination_arguments = PaginationArguments {
       first: Some(1),
@@ -973,14 +1094,14 @@ mod model_user {
       before: None,
     };
 
-    let users = database::user::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
-    assert_eq!(users.len(), 1);
-    assert_eq!(users[0].login, format!("user_dee_{suffix}"));
+    assert_eq!(followers.len(), 1);
+    assert_eq!(followers[0].user.login, format!("user_dee_{suffix}"));
 
-    let end_cursor = Some(base64::encode(users[0].id.to_string()));
+    let end_cursor = Some(base64::encode(followers[0].following_at.to_string()));
 
     // should return an empty list
 
@@ -991,11 +1112,11 @@ mod model_user {
       before: None,
     };
 
-    let users = database::user::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
-    assert_eq!(users.len(), 0);
+    assert_eq!(followers.len(), 0);
   }
 
   pub async fn should_paginating_followers_from_end_to_start() {
@@ -1012,14 +1133,14 @@ mod model_user {
       before: None,
     };
 
-    let users = database::user::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
-    assert_eq!(users.len(), 1);
-    assert_eq!(users[0].login, format!("user_dee_{suffix}"));
+    assert_eq!(followers.len(), 1);
+    assert_eq!(followers[0].user.login, format!("user_dee_{suffix}"));
 
-    let start_cursor = Some(base64::encode(users[0].id.to_string()));
+    let start_cursor = Some(base64::encode(followers[0].following_at.to_string()));
 
     // should find the first user
 
@@ -1030,14 +1151,14 @@ mod model_user {
       before: start_cursor,
     };
 
-    let users = database::user::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
-    assert_eq!(users.len(), 1);
-    assert_eq!(users[0].login, format!("user_bar_{suffix}"));
+    assert_eq!(followers.len(), 1);
+    assert_eq!(followers[0].user.login, format!("user_bar_{suffix}"));
 
-    let start_cursor = Some(base64::encode(users[0].id.to_string()));
+    let start_cursor = Some(base64::encode(followers[0].following_at.to_string()));
 
     // should return an empty list
 
@@ -1048,11 +1169,11 @@ mod model_user {
       before: start_cursor,
     };
 
-    let users = database::user::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
-    assert_eq!(users.len(), 0);
+    assert_eq!(followers.len(), 0);
   }
 
   /// Paginating Following
@@ -1078,7 +1199,7 @@ mod model_user {
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].login, format!("user_foo_{suffix}"));
 
-    let end_cursor = Some(base64::encode(users[0].id.to_string()));
+    let end_cursor = Some(base64::encode(users[0].user_id.to_string()));
 
     // should find the last user
 
@@ -1096,7 +1217,7 @@ mod model_user {
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].login, format!("user_bar_{suffix}"));
 
-    let end_cursor = Some(base64::encode(users[0].id.to_string()));
+    let end_cursor = Some(base64::encode(users[0].user_id.to_string()));
 
     // should return an empty list
 
@@ -1135,7 +1256,7 @@ mod model_user {
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].login, format!("user_bar_{suffix}"));
 
-    let start_cursor = Some(base64::encode(users[0].id.to_string()));
+    let start_cursor = Some(base64::encode(users[0].user_id.to_string()));
 
     // should find the first user
 
@@ -1153,7 +1274,7 @@ mod model_user {
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].login, format!("user_foo_{suffix}"));
 
-    let start_cursor = Some(base64::encode(users[0].id.to_string()));
+    let start_cursor = Some(base64::encode(users[0].user_id.to_string()));
 
     // should return an empty list
 
@@ -1527,7 +1648,7 @@ mod route_user {
     let login = format!("user_bar_{suffix}");
     let res = mock::make_request(
       mock::HttpMethod::Get,
-      &format!("/user/{login}/starred-repositories"),
+      &format!("/user/{login}/stars"),
       http_server::route::user::scope(),
       &suffix,
     )
@@ -1545,7 +1666,7 @@ mod route_user {
     let login = format!("user_dee_{suffix}");
     let res = mock::make_request(
       mock::HttpMethod::Get,
-      &format!("/user/{login}/starred-repositories"),
+      &format!("/user/{login}/stars"),
       http_server::route::user::scope(),
       &suffix,
     )
@@ -1562,7 +1683,7 @@ mod route_user {
     let login = format!("user_???_{suffix}");
     let res = mock::make_request(
       mock::HttpMethod::Get,
-      &format!("/user/{login}/starred-repositories"),
+      &format!("/user/{login}/stars"),
       http_server::route::user::scope(),
       &suffix,
     )

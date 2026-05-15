@@ -1,0 +1,7 @@
+
+FROM node:24-alpine AS dependencies
+USER node
+WORKDIR /usr/app
+COPY package*.json ./
+RUN ["npm", "ci"]
+CMD ["npm", "run", "dev"]

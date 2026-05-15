@@ -1,0 +1,12 @@
+.Language {
+  display: inline-flex;
+  align-items: center;
+
+  .circle {
+    border-radius: 50%;
+    display: inline-block;
+    height: 0.7rem;
+    margin-right: 0.4rem;
+    width: 0.7rem;
+  }
+}

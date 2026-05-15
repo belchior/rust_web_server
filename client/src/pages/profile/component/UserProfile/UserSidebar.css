@@ -1,0 +1,36 @@
+.UserSidebar {
+  width: 16rem;
+
+  .avatar {
+    max-width: 100%;
+  }
+
+  .vcard {
+    padding: 1rem 0;
+    line-height: normal;
+  }
+
+  .name {
+    font-size: 1.625rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .location,
+  .company {
+    color: var(--color-1);
+
+    & svg:first-of-type {
+      margin-right: 0.4rem;
+    }
+  }
+
+  .login {
+    font-size: 1.25rem;
+    color: var(--color-1)
+  }
+
+  .bio {
+    margin-bottom: 1rem;
+  }
+}

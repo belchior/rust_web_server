@@ -89,44 +89,38 @@ services:
     volumes:
       - ./server/scripts:/scripts:ro
 
-  client_base_image:
-    image: client_base_image
-    container_name: client_base_image
-    build:
-      context: ./client
-      dockerfile: Dockerfile.base
-
   client_build:
     image: client
     container_name: client
     build:
       context: ./client
       args:
-        - SERVER_URL=http://localhost:8080
-    depends_on:
-      - client_base_image
+        - SERVER_URL=http://localhost:${SERVER_PORT}
+    env_file: ./.env
 
   client:
-    image: client_base_image
+    image: client
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
     container_name: client
-    command: npm start
-    working_dir: /client
     env_file: ./.env
     ports:
       - ${CLIENT_PORT}:${CLIENT_PORT}
     networks:
       - mynetwork
     volumes:
-      - ./client/coverage:/client/coverage:rw
-      - ./client/public:/client/public:ro
-      - ./client/src:/client/src:ro
-      - ./client/.env.development:/client/.env.development:ro
-      - ./client/.eslintrc.js:/client/.eslintrc.js:ro
-      - ./client/package.json:/client/package.json:ro
-      - ./client/package-lock.json:/client/package-lock.json:ro
-      - ./client/tsconfig.json:/client/tsconfig.json:ro
-    depends_on:
-      - client_base_image
+      - ./client/eslint.config.js:/usr/app/eslint.config.js:ro
+      - ./client/index.html:/usr/app/index.html:ro
+      - ./client/package-lock.json:/usr/app/package-lock.json:ro
+      - ./client/package.json:/usr/app/package.json:ro
+      - ./client/public:/usr/app/public:ro
+      - ./client/src:/usr/app/src
+      - ./client/tsconfig.app.json:/usr/app/tsconfig.app.json:ro
+      - ./client/tsconfig.json:/usr/app/tsconfig.json:ro
+      - ./client/tsconfig.node.json:/usr/app/tsconfig.node.json:ro
+      - ./client/vite.config.ts:/usr/app/vite.config.ts:ro
+    restart: always
 
 networks:
   mynetwork:

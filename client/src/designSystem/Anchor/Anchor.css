@@ -1,0 +1,46 @@
+.Anchor {
+  align-items: center;
+  display: inline-flex;
+  text-decoration: none;
+
+  &.primary {
+    color: var(--color-2);
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &.secondary {
+    color: inherit;
+
+    &:hover {
+      color: var(--color-2);
+      text-decoration: none;
+    }
+  }
+
+  &.contained {
+    background-color: #f1f8ff;
+    border-radius: var(--border-radius);
+    color: var(--color-2);
+    font-size: 12px;
+    margin: 4px 6px;
+    margin-left: 0;
+    padding: 0.2rem 0.6rem;
+    text-transform: lowercase;
+
+    &:hover {
+      background-color: #def;
+      text-decoration: none;
+    }
+  }
+
+  svg:first-of-type {
+    margin-right: 0.4rem;
+  }
+
+  svg:last-of-type:not(:first-of-type) {
+    margin-left: 0.4rem;
+  }
+}

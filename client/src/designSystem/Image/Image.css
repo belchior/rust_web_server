@@ -1,0 +1,26 @@
+.Image {
+  &.rounded {
+    border-radius: 0.375rem;
+  }
+
+  &.circle {
+    border-radius: 50%;
+    height: auto;
+  }
+}
+
+.Fallback {
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.3);
+  display: flex;
+  justify-content: center;
+
+  &.rounded {
+    border-radius: 0.375rem;
+  }
+
+  &.circle {
+    border-radius: 50%;
+    height: auto;
+  }
+}

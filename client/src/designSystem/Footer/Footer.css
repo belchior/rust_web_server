@@ -1,0 +1,13 @@
+.Footer {
+  background-color: #010409;
+  bottom: 0;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 1rem;
+  position: fixed;
+  text-align: center;
+  width: 100%;
+
+  .text {
+    font-size: 0.8rem;
+  }
+}

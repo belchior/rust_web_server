@@ -1,0 +1,26 @@
+.List {
+  display: grid;
+
+  ul {
+    border: 1px solid var(--divider);
+    border-radius: var(--border-radius);
+  }
+  li {
+    padding: 1rem;
+
+    &:last-of-type {
+      border-color: transparent;
+    }
+  }
+
+  .empty {
+    padding: 1rem;
+    border: 1px solid var(--divider);
+    border-radius: var(--border-radius);
+  }
+
+  .action-container {
+    margin-top: 1rem;
+    text-align: center;
+  }
+}

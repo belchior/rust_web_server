@@ -1,0 +1,37 @@
+.RepositoryItem {
+  border-bottom: 1px solid var(--divider);
+  padding: 1.75rem 0;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  .name {
+    font-size: 20px;
+    margin-bottom: 0.5rem;
+  }
+
+  .description {
+    margin-bottom: 0.5rem;
+    color: var(--color-1)
+  }
+
+  .details {
+    align-items: center;
+    display: flex;
+    margin: 0.5rem 0 0 0;
+    color: var(--color-1);
+
+    &>* {
+      align-items: center;
+      display: flex;
+      font-size: 12px;
+      margin: 4px 1rem;
+      margin-left: 0;
+    }
+
+    &>*>svg {
+      margin-right: 0.4rem;
+    }
+  }
+}

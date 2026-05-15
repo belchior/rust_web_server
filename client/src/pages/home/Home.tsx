@@ -1,21 +1,17 @@
-import Anchor from 'components/Anchor/Anchor';
-import Title from 'components/Title/Title';
-import Typography from '@material-ui/core/Typography';
-import { useStyles } from './Home.styles';
+import Anchor from '../../designSystem/Anchor/Anchor'
+import Title from '../../designSystem/Title/Title'
+import './Home.css'
 
-const Home = () => {
-  const classes = useStyles();
+export default function Home() {
   return (
-    <main className={classes.root}>
+    <main className="Home">
       <Title>
         Hi <span role="img" aria-label="hi">👋</span> friend!
       </Title>
-      <Typography>
+      <p>
         This app will be better if you choose a user.
         Try <Anchor href="/belchior">belchior</Anchor>
-      </Typography>
+      </p>
     </main>
-  );
-};
-
-export default Home;
+  )
+}

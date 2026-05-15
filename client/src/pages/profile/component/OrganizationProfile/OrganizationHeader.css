@@ -1,0 +1,33 @@
+.OrganizationHeader {
+  display: grid;
+  grid-auto-columns: max-content;
+  grid-auto-flow: column;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--divider);
+
+  .logo {
+    margin-right: 1.5rem;
+    max-width: 100%;
+  }
+
+  .description {
+    color: var(--color-1);
+    margin-bottom: 1rem;
+  }
+
+  .label {
+    align-items: center;
+    color: var(--color-1);
+    display: inline-flex;
+    margin-right: 1rem;
+
+    & svg:first-of-type {
+      margin-right: 0.4rem;
+    }
+
+    & svg:last-of-type:not(:first-of-type) {
+      margin-left: 0.4rem;
+    }
+  }
+}

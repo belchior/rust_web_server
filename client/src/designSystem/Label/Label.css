@@ -1,0 +1,13 @@
+.Label {
+  display: inline-flex;
+
+  & svg:first-of-type {
+    margin-right: 0.4rem;
+    align-self: center;
+
+    & svg:last-of-type:not(:first-of-type) {
+      margin-left: 0.4rem;
+      align-self: center;
+    }
+  }
+}

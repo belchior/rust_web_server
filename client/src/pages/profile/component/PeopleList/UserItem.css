@@ -1,0 +1,50 @@
+.UserItem {
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  padding: 2rem 0;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  .avatar {
+    align-self: flex-start;
+    border-radius: var(--border-radius);
+    flex: 0 0 auto;
+    margin-right: 1rem;
+  }
+
+  .title {
+    display: flex;
+    line-height: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .name {
+    color: var(--color-0);
+    margin-right: 0.5rem;
+  }
+
+  .login {
+    color: var(--color-1);
+  }
+
+  .bio {
+    margin-bottom: 1rem;
+  }
+
+  .label {
+    align-items: center;
+    display: inline-flex;
+    margin-right: 1rem;
+    color: var(--color-1);
+
+    & svg:first-of-type {
+      margin-right: 0.4rem;
+    }
+
+    & svg:last-of-type:not(:first-of-type) {
+      margin-left: 0.4rem;
+    }
+  }
+}

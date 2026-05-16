@@ -10,8 +10,7 @@ pub enum HttpMethod {
   Get,
 }
 
-pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope, suffix: &str) -> ServiceResponse {
-  let _ = setup(suffix).await;
+pub async fn make_request(method: HttpMethod, uri: &str, scope: Scope) -> ServiceResponse {
   let app = test::init_service(App::new().service(scope)).await;
   let req = match method {
     HttpMethod::Get => test::TestRequest::get().uri(uri).to_request(),

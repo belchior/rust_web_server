@@ -3,7 +3,7 @@ pub mod cursor_connection;
 mod model;
 
 pub use connection::get_connection;
-pub use model::{organization, profile, repository, user, utils};
+pub use model::{organization, follow, repository, user, utils};
 pub type DBConnection = tokio_postgres::Client;
 pub type QueryParam<'a> = &'a (dyn tokio_postgres::types::ToSql + Sync);
 

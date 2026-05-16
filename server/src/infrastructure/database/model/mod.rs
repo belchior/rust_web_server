@@ -1,6 +1,6 @@
 pub mod license;
 pub mod organization;
-pub mod profile;
+pub mod follow;
 pub mod repository;
 pub mod user;
 pub mod utils;

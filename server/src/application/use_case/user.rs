@@ -3,8 +3,8 @@ use crate::{
   infrastructure::database::{
     self,
     cursor_connection::{CursorConnection, PaginationArguments},
+    follow::{Follower, Following},
     organization::Organization,
-    profile::Follower,
     repository::Repository,
     user::User,
   },
@@ -82,8 +82,8 @@ pub async fn find_followers(
     Err(err) => Err(AppError::Database(err)),
     Ok(None) => Ok(None),
     Ok(Some(_)) => {
-      let result = database::profile::find_followers_by_login(login, pagination_arguments).await;
-      let cursor = database::profile::followers_to_cursor_connection(login, result).await;
+      let result = database::follow::find_followers_by_login(login, pagination_arguments).await;
+      let cursor = database::follow::followers_to_cursor_connection(login, result).await;
       match cursor {
         Err(err) => Err(AppError::Database(err)),
         Ok(cursor) => Ok(Some(cursor)),
@@ -95,15 +95,15 @@ pub async fn find_followers(
 pub async fn find_following(
   login: &String,
   pagination_arguments: PaginationArguments,
-) -> Result<Option<CursorConnection<User>>, AppError> {
+) -> Result<Option<CursorConnection<Following>>, AppError> {
   let result = database::user::find_user_by_login(login).await;
 
   match result {
     Err(err) => Err(AppError::Database(err)),
     Ok(None) => Ok(None),
     Ok(Some(_)) => {
-      let result = database::user::find_following_by_login(login, pagination_arguments).await;
-      let cursor = database::user::following_to_cursor_connection(login, result).await;
+      let result = database::follow::find_following_by_login(login, pagination_arguments).await;
+      let cursor = database::follow::following_to_cursor_connection(login, result).await;
       match cursor {
         Err(err) => Err(AppError::Database(err)),
         Ok(cursor) => Ok(Some(cursor)),

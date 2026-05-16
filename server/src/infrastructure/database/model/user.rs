@@ -43,20 +43,6 @@ impl From<Row> for User {
 
 // Finds
 
-pub async fn find_following_by_login(
-  user_login: &String,
-  pagination_arguments: PaginationArguments,
-) -> Result<Vec<User>, ClientError> {
-  let db = database::get_connection().await.get().await.unwrap();
-  let (direction, limit, cursor) = pagination_arguments.parse_args().unwrap();
-  let follower_id = utils::parse_cursor(cursor);
-  let (query, params) = query_find_following_by_login(user_login, &follower_id, &direction, &limit);
-  let result = db.query(&query, &params[..]).await?;
-  let users = result.into_iter().map(|row| User::from(row)).collect::<Vec<_>>();
-
-  Ok(users)
-}
-
 pub async fn find_organizations_by_user_login(
   user_login: &String,
   pagination_arguments: PaginationArguments,
@@ -109,28 +95,6 @@ pub async fn find_user_by_login(login: &String) -> Result<Option<User>, ClientEr
 
 // Cursor connections
 
-pub async fn following_to_cursor_connection(
-  user_login: &String,
-  result: Result<Vec<User>, ClientError>,
-) -> Result<CursorConnection<User>, ClientError> {
-  let db = database::get_connection().await.get().await.unwrap();
-  let result = result?;
-  let reference_from = |item: &User| item.user_id.to_string();
-
-  if result.len() == 0 {
-    let items = CursorConnection::new(result, reference_from, false, false);
-    return Ok(items);
-  }
-
-  let first_item_id = result.first().unwrap().user_id;
-  let last_item_id = result.last().unwrap().user_id;
-  let (query, params) = query_followed_pages_previous_and_next(user_login, &first_item_id, &last_item_id);
-  let (has_previous_page, has_next_page) = utils::pages_previous_and_next(&db, query, params).await?;
-  let items = CursorConnection::new(result, reference_from, has_previous_page, has_next_page);
-
-  Ok(items)
-}
-
 pub async fn organizations_members_to_cursor_connection(
   owner_login: &String,
   result: Result<Vec<Organization>, ClientError>,
@@ -154,60 +118,6 @@ pub async fn organizations_members_to_cursor_connection(
 }
 
 // Queries
-
-fn query_find_following_by_login<'a>(
-  user_login: &'a String,
-  followed_id: &'a Option<i64>,
-  direction: &'a Direction,
-  limit: &'a i64,
-) -> (String, Vec<QueryParam<'a>>) {
-  let mut select_following = sql::Select::new()
-    .select("u.*")
-    .from("users u")
-    .inner_join("users_following uf on uf.following_login = u.login")
-    .where_clause("uf.user_login = $1")
-    .order_by("u.user_id asc");
-
-  let mut params: Vec<QueryParam> = vec![user_login];
-
-  let query = match direction {
-    Direction::Backward => {
-      let mut select_following_reverse = sql::Select::new()
-        .select("*")
-        .from("following")
-        .order_by("user_id desc")
-        .limit("$2");
-
-      params.push(limit);
-
-      if let Some(followed_id) = followed_id {
-        select_following_reverse = select_following_reverse.where_clause("user_id < $3");
-        params.push(followed_id);
-      }
-
-      sql::Select::new()
-        .with("following", select_following)
-        .with("following_reverse", select_following_reverse)
-        .select("*")
-        .from("following_reverse")
-        .order_by("user_id asc")
-        .as_string()
-    }
-    Direction::Forward => {
-      select_following = select_following.limit("$2");
-      params.push(limit);
-
-      if let Some(followed_id) = followed_id {
-        select_following = select_following.where_clause("u.user_id > $3");
-        params.push(followed_id);
-      }
-
-      select_following.as_string()
-    }
-  };
-
-  (query, params)
-}
 
 fn query_find_organizations_by_user_login<'a>(
   user_login: &'a String,
@@ -260,32 +170,6 @@ fn query_find_organizations_by_user_login<'a>(
       select_org.as_string()
     }
   };
-
-  (query, params)
-}
-
-fn query_followed_pages_previous_and_next<'a>(
-  user_login: &'a String,
-  first_item_id: &'a i64,
-  last_item_id: &'a i64,
-) -> (String, Vec<QueryParam<'a>>) {
-  let select_base = sql::Select::new()
-    .from("users u")
-    .inner_join("users_following uf on uf.following_login = u.login")
-    .where_clause("uf.user_login = $1")
-    .order_by("u.user_id asc")
-    .limit("1");
-
-  let select_previous = select_base
-    .clone()
-    .select("'previous' as page")
-    .where_clause("u.user_id < $2 /* first_id */");
-  let select_next = select_base
-    .clone()
-    .select("'next' as page")
-    .where_clause("u.user_id > $3 /* last_id */");
-  let query = select_previous.union(select_next).as_string();
-  let params: Vec<QueryParam> = vec![user_login, first_item_id, last_item_id];
 
   (query, params)
 }

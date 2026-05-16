@@ -197,7 +197,7 @@ mod model_organization {
       before: None,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
@@ -206,7 +206,7 @@ mod model_organization {
 
     // should find the last user
 
-    let end_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+    let end_cursor = Some(base64::encode(followers[0].follows_since.to_string()));
 
     let pagination_arguments = PaginationArguments {
       first: Some(1),
@@ -215,14 +215,14 @@ mod model_organization {
       before: None,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
     assert_eq!(followers.len(), 1);
     assert_eq!(followers[0].user.login, format!("user_bar_{suffix}"));
 
-    let end_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+    let end_cursor = Some(base64::encode(followers[0].follows_since.to_string()));
 
     // should return an empty list
 
@@ -233,7 +233,7 @@ mod model_organization {
       before: None,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
@@ -254,14 +254,14 @@ mod model_organization {
       before: None,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
     assert_eq!(followers.len(), 1);
     assert_eq!(followers[0].user.login, format!("user_bar_{suffix}"));
 
-    let start_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+    let start_cursor = Some(base64::encode(followers[0].follows_since.to_string()));
 
     // should find the first user
 
@@ -272,14 +272,14 @@ mod model_organization {
       before: start_cursor,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
     assert_eq!(followers.len(), 1);
     assert_eq!(followers[0].user.login, format!("user_foo_{suffix}"));
 
-    let start_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+    let start_cursor = Some(base64::encode(followers[0].follows_since.to_string()));
 
     // should return an empty list
 
@@ -290,7 +290,7 @@ mod model_organization {
       before: start_cursor,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
@@ -605,7 +605,7 @@ mod model_repository {
 
 mod model_user {
   use crate::infrastructure::{
-    database::{self, cursor_connection::PaginationArguments},
+    database::{self, cursor_connection::PaginationArguments, follow::Profile},
     mock,
   };
   use pretty_assertions::assert_eq;
@@ -715,7 +715,7 @@ mod model_user {
       before: None,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_argument)
+    let followers = database::follow::find_followers_by_login(&login, pagination_argument)
       .await
       .unwrap();
 
@@ -735,7 +735,7 @@ mod model_user {
       before: None,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_argument)
+    let followers = database::follow::find_followers_by_login(&login, pagination_argument)
       .await
       .unwrap();
 
@@ -753,13 +753,19 @@ mod model_user {
       before: None,
     };
 
-    let followers = database::user::find_following_by_login(&login, pagination_argument)
+    let followers = database::follow::find_following_by_login(&login, pagination_argument)
       .await
       .unwrap();
 
+    let Profile::User(ref user0) = followers[0].profile else {
+      panic!("user not found")
+    };
+    let Profile::User(ref user1) = followers[1].profile else {
+      panic!("user not found")
+    };
     assert_eq!(followers.len(), 2);
-    assert_eq!(followers[0].login, format!("user_foo_{suffix}"));
-    assert_eq!(followers[1].login, format!("user_bar_{suffix}"));
+    assert_eq!(user0.login, format!("user_foo_{suffix}"));
+    assert_eq!(user1.login, format!("user_bar_{suffix}"));
   }
 
   pub async fn should_dont_panic_when_following_is_not_found() {
@@ -773,7 +779,7 @@ mod model_user {
       before: None,
     };
 
-    let repositories = database::user::find_following_by_login(&login, pagination_argument)
+    let repositories = database::follow::find_following_by_login(&login, pagination_argument)
       .await
       .unwrap();
 
@@ -790,11 +796,11 @@ mod model_user {
       last: None,
       before: None,
     };
-    let followers = database::profile::find_followers_by_login(&user_login, pagination_argument)
+    let followers = database::follow::find_followers_by_login(&user_login, pagination_argument)
       .await
       .unwrap();
 
-    let cursor_connection = database::profile::followers_to_cursor_connection(&user_login, Ok(followers))
+    let cursor_connection = database::follow::followers_to_cursor_connection(&user_login, Ok(followers))
       .await
       .unwrap();
 
@@ -814,16 +820,19 @@ mod model_user {
       last: None,
       before: None,
     };
-    let users = database::user::find_following_by_login(&user_login, pagination_argument)
+    let users = database::follow::find_following_by_login(&user_login, pagination_argument)
       .await
       .unwrap();
 
-    let cursor_connection = database::user::following_to_cursor_connection(&user_login, Ok(users))
+    let cursor_connection = database::follow::following_to_cursor_connection(&user_login, Ok(users))
       .await
       .unwrap();
 
+    let Profile::User(ref user0) = cursor_connection.edges[0].node.profile else {
+      panic!("user not found")
+    };
     assert_eq!(cursor_connection.edges.len(), 1);
-    assert_eq!(cursor_connection.edges[0].node.login, format!("user_foo_{suffix}"));
+    assert_eq!(user0.login, format!("user_foo_{suffix}"));
     assert_eq!(cursor_connection.page_info.has_previous_page, false);
     assert_eq!(cursor_connection.page_info.has_next_page, true);
   }
@@ -1076,7 +1085,7 @@ mod model_user {
       before: None,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
@@ -1085,7 +1094,7 @@ mod model_user {
 
     // should find the last user
 
-    let end_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+    let end_cursor = Some(base64::encode(followers[0].follows_since.to_string()));
 
     let pagination_arguments = PaginationArguments {
       first: Some(1),
@@ -1094,14 +1103,14 @@ mod model_user {
       before: None,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
     assert_eq!(followers.len(), 1);
     assert_eq!(followers[0].user.login, format!("user_dee_{suffix}"));
 
-    let end_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+    let end_cursor = Some(base64::encode(followers[0].follows_since.to_string()));
 
     // should return an empty list
 
@@ -1112,7 +1121,7 @@ mod model_user {
       before: None,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
@@ -1133,14 +1142,14 @@ mod model_user {
       before: None,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
     assert_eq!(followers.len(), 1);
     assert_eq!(followers[0].user.login, format!("user_dee_{suffix}"));
 
-    let start_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+    let start_cursor = Some(base64::encode(followers[0].follows_since.to_string()));
 
     // should find the first user
 
@@ -1151,14 +1160,14 @@ mod model_user {
       before: start_cursor,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
     assert_eq!(followers.len(), 1);
     assert_eq!(followers[0].user.login, format!("user_bar_{suffix}"));
 
-    let start_cursor = Some(base64::encode(followers[0].following_at.to_string()));
+    let start_cursor = Some(base64::encode(followers[0].follows_since.to_string()));
 
     // should return an empty list
 
@@ -1169,7 +1178,7 @@ mod model_user {
       before: start_cursor,
     };
 
-    let followers = database::profile::find_followers_by_login(&login, pagination_arguments)
+    let followers = database::follow::find_followers_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
@@ -1192,14 +1201,17 @@ mod model_user {
       before: None,
     };
 
-    let users = database::user::find_following_by_login(&login, pagination_arguments)
+    let users = database::follow::find_following_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
+    let Profile::User(ref user0) = users[0].profile else {
+      panic!("user not found")
+    };
     assert_eq!(users.len(), 1);
-    assert_eq!(users[0].login, format!("user_foo_{suffix}"));
+    assert_eq!(user0.login, format!("user_foo_{suffix}"));
 
-    let end_cursor = Some(base64::encode(users[0].user_id.to_string()));
+    let end_cursor = Some(base64::encode(users[0].followed_since.to_string()));
 
     // should find the last user
 
@@ -1210,14 +1222,17 @@ mod model_user {
       before: None,
     };
 
-    let users = database::user::find_following_by_login(&login, pagination_arguments)
+    let users = database::follow::find_following_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
+    let Profile::User(ref user0) = users[0].profile else {
+      panic!("user not found")
+    };
     assert_eq!(users.len(), 1);
-    assert_eq!(users[0].login, format!("user_bar_{suffix}"));
+    assert_eq!(user0.login, format!("user_bar_{suffix}"));
 
-    let end_cursor = Some(base64::encode(users[0].user_id.to_string()));
+    let end_cursor = Some(base64::encode(users[0].followed_since.to_string()));
 
     // should return an empty list
 
@@ -1228,7 +1243,7 @@ mod model_user {
       before: None,
     };
 
-    let users = database::user::find_following_by_login(&login, pagination_arguments)
+    let users = database::follow::find_following_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
@@ -1249,14 +1264,17 @@ mod model_user {
       before: None,
     };
 
-    let users = database::user::find_following_by_login(&login, pagination_arguments)
+    let users = database::follow::find_following_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
+    let Profile::User(ref user0) = users[0].profile else {
+      panic!("user not found")
+    };
     assert_eq!(users.len(), 1);
-    assert_eq!(users[0].login, format!("user_bar_{suffix}"));
+    assert_eq!(user0.login, format!("user_bar_{suffix}"));
 
-    let start_cursor = Some(base64::encode(users[0].user_id.to_string()));
+    let start_cursor = Some(base64::encode(users[0].followed_since.to_string()));
 
     // should find the first user
 
@@ -1267,14 +1285,17 @@ mod model_user {
       before: start_cursor,
     };
 
-    let users = database::user::find_following_by_login(&login, pagination_arguments)
+    let users = database::follow::find_following_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
+    let Profile::User(ref user0) = users[0].profile else {
+      panic!("user not found")
+    };
     assert_eq!(users.len(), 1);
-    assert_eq!(users[0].login, format!("user_foo_{suffix}"));
+    assert_eq!(user0.login, format!("user_foo_{suffix}"));
 
-    let start_cursor = Some(base64::encode(users[0].user_id.to_string()));
+    let start_cursor = Some(base64::encode(users[0].followed_since.to_string()));
 
     // should return an empty list
 
@@ -1285,7 +1306,7 @@ mod model_user {
       before: start_cursor,
     };
 
-    let users = database::user::find_following_by_login(&login, pagination_arguments)
+    let users = database::follow::find_following_by_login(&login, pagination_arguments)
       .await
       .unwrap();
 
@@ -1305,11 +1326,11 @@ mod route_organization {
   pub async fn should_match_an_organization() {
     let suffix = mock::random_suffix();
     let login = format!("organization_foo_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/organization/{login}"),
       http_server::route::organization::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1322,11 +1343,11 @@ mod route_organization {
   pub async fn should_find_people_of_the_organization() {
     let suffix = mock::random_suffix();
     let login = format!("organization_foo_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/organization/{login}/people"),
       http_server::route::organization::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1339,11 +1360,11 @@ mod route_organization {
   pub async fn should_not_find_people_of_the_organization_when_the_org_is_empty() {
     let suffix = mock::random_suffix();
     let login = format!("empty_org_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/organization/{login}/people"),
       http_server::route::organization::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1356,11 +1377,11 @@ mod route_organization {
   pub async fn should_not_find_people_of_a_unknown_organization() {
     let suffix = mock::random_suffix();
     let login = format!("organization_???_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/organization/{login}/people"),
       http_server::route::organization::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1373,11 +1394,11 @@ mod route_organization {
   pub async fn should_find_repositories_of_the_organization() {
     let suffix = mock::random_suffix();
     let login = format!("organization_acme_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/organization/{login}/repositories"),
       http_server::route::organization::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1390,11 +1411,11 @@ mod route_organization {
   pub async fn should_not_find_repositories_of_the_organization_when_the_org_does_not_have_one() {
     let suffix = mock::random_suffix();
     let login = format!("empty_org_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/organization/{login}/repositories"),
       http_server::route::organization::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1407,11 +1428,11 @@ mod route_organization {
   pub async fn should_not_find_repositories_of_a_unknown_organization() {
     let suffix = mock::random_suffix();
     let login = format!("organization_???_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/organization/{login}/repositories"),
       http_server::route::organization::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1434,11 +1455,11 @@ mod route_profile {
   pub async fn should_match_a_user_profile() {
     let suffix = mock::random_suffix();
     let login = format!("user_bar_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/profile/{login}"),
       http_server::route::profile::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1451,11 +1472,11 @@ mod route_profile {
   pub async fn should_match_an_organization_profile() {
     let suffix = mock::random_suffix();
     let login = format!("organization_foo_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/profile/{login}"),
       http_server::route::profile::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1468,11 +1489,11 @@ mod route_profile {
   pub async fn should_return_profile_not_found_when_the_login_is_unknown() {
     let suffix = mock::random_suffix();
     let login = format!("xpto_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/profile/{login}"),
       http_server::route::profile::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1511,7 +1532,13 @@ mod route_spec {
 
 mod route_user {
   use crate::infrastructure::{
-    database::{cursor_connection::CursorConnection, organization::Organization, repository::Repository, user::User},
+    database::{
+      cursor_connection::CursorConnection,
+      follow::{Follower, Following, Profile},
+      organization::Organization,
+      repository::Repository,
+      user::User,
+    },
     http_server::{self, utils::HttpError},
     mock,
   };
@@ -1521,11 +1548,11 @@ mod route_user {
   pub async fn should_match_a_specified_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_foo_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1540,11 +1567,11 @@ mod route_user {
   pub async fn should_find_organizations_of_the_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_foo_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/organizations"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1557,11 +1584,11 @@ mod route_user {
   pub async fn should_not_find_organizations_of_the_user() {
     let suffix = mock::random_suffix();
     let login = format!("empty_user_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/organizations"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1574,11 +1601,11 @@ mod route_user {
   pub async fn should_not_find_organizations_of_a_unknown_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_???_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/organizations"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1593,11 +1620,11 @@ mod route_user {
   pub async fn should_find_repositories_of_the_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_bar_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/repositories"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1610,11 +1637,11 @@ mod route_user {
   pub async fn should_not_find_repositories_of_the_user() {
     let suffix = mock::random_suffix();
     let login = format!("empty_user_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/repositories"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1627,11 +1654,11 @@ mod route_user {
   pub async fn should_not_find_repositories_of_a_unknown_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_???_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/repositories"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1646,11 +1673,11 @@ mod route_user {
   pub async fn should_find_starred_repositories_of_the_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_bar_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/stars"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1664,11 +1691,11 @@ mod route_user {
   pub async fn should_not_find_starred_repositories_of_the_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_dee_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/stars"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1681,11 +1708,11 @@ mod route_user {
   pub async fn should_not_find_starred_repositories_of_a_unknown_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_???_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/stars"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1700,29 +1727,29 @@ mod route_user {
   pub async fn should_find_followers_of_the_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_bar_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/followers"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
-    let body: CursorConnection<User> = test::read_body_json(res).await;
+    let body: CursorConnection<Follower> = test::read_body_json(res).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body.edges.len(), 1);
-    assert_eq!(body.edges[0].node.login, format!("user_dee_{suffix}"));
+    assert_eq!(body.edges[0].node.user.login, format!("user_dee_{suffix}"));
   }
 
   pub async fn should_not_find_followers_of_the_user() {
     let suffix = mock::random_suffix();
     let login = format!("empty_user_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/followers"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1735,11 +1762,11 @@ mod route_user {
   pub async fn should_not_find_followers_of_a_unknown_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_???_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/followers"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
@@ -1754,33 +1781,36 @@ mod route_user {
   pub async fn should_find_following_of_the_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_bar_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/following"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
-    let body: CursorConnection<User> = test::read_body_json(res).await;
+    let body: CursorConnection<Following> = test::read_body_json(res).await;
+    let Profile::User(ref user) = body.edges[0].node.profile else {
+      panic!("user not found");
+    };
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body.edges.len(), 1);
-    assert_eq!(body.edges[0].node.login, format!("user_foo_{suffix}"));
+    assert_eq!(body.edges.len(), 2);
+    assert_eq!(user.login, format!("user_foo_{suffix}"));
   }
 
   pub async fn should_not_find_following_of_the_user() {
     let suffix = mock::random_suffix();
-    let login = format!("user_foo_{suffix}");
+    let login = format!("empty_user_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/following"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
-    let body: CursorConnection<User> = test::read_body_json(res).await;
+    let body: CursorConnection<Following> = test::read_body_json(res).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body.edges.len(), 0);
@@ -1789,11 +1819,11 @@ mod route_user {
   pub async fn should_not_find_following_of_a_unknown_user() {
     let suffix = mock::random_suffix();
     let login = format!("user_???_{suffix}");
+    mock::setup(&suffix).await;
     let res = mock::make_request(
       mock::HttpMethod::Get,
       &format!("/user/{login}/following"),
       http_server::route::user::scope(),
-      &suffix,
     )
     .await;
     let status = res.status();
